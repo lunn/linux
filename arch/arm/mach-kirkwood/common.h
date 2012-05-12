@@ -57,6 +57,11 @@ void dreamplug_init(void);
 #else
 static inline void dreamplug_init(void) {};
 #endif
+#ifdef CONFIG_MACH_TS219_DT
+void qnap_dt_ts219_init(void);
+#else
+static inline void qnap_dt_ts219_init(void) {};
+#endif
 
 /* early init functions not converted to fdt yet */
 char *kirkwood_id(void);

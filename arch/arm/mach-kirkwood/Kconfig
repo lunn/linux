@@ -47,6 +47,7 @@ config MACH_GURUPLUG
 config ARCH_KIRKWOOD_DT
 	bool "Marvell Kirkwood Flattened Device Tree"
 	select USE_OF
+	select SERIAL_OF_PLATFORM
 	help
 	  Say 'Y' here if you want your kernel to support the
 	  Marvell Kirkwood using flattened device tree.
@@ -57,6 +58,16 @@ config MACH_DREAMPLUG_DT
 	help
 	  Say 'Y' here if you want your kernel to support the
 	  Marvell DreamPlug (Flattened Device Tree).
+
+config MACH_TS219_DT
+	bool "Device Tree for QNAP TS-110, TS-119, TS-119P+, TS-210, TS-219, TS-219P and TS-219P+ Turbo NAS"
+	select ARCH_KIRKWOOD_DT
+	select ARM_APPENDED_DTB
+	select ARM_ATAG_DTB_COMPAT
+	help
+	  Say 'Y' here if you want your kernel to support the
+  	  QNAP TS-110, TS-119, TS-119P+, TS-210, TS-219, TS-219P and
+	  TS-219P+ Turbo NAS devices using Fattened Device Tree.
 
 config MACH_TS219
 	bool "QNAP TS-110, TS-119, TS-119P+, TS-210, TS-219, TS-219P and TS-219P+ Turbo NAS"

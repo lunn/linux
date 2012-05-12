@@ -32,5 +32,11 @@
 			reg = <0x10300 0x20>;
 			interrupts = <53>;
 		};
+
+		i2c@11000 {
+			reg = <0x11000 0x20>;
+			interrupts = <29>;
+			status = "disabled";
+		};
 	};
 };
