@@ -1499,14 +1499,19 @@ static void coda_pic_run_work(struct work_struct *work)
 
 	if (!wait_for_completion_timeout(&ctx->completion,
 					 msecs_to_jiffies(coda_timeout_msec))) {
-		dev_err(dev->dev, "CODA PIC_RUN timeout\n");
+		if (ctx->use_bit) {
+			dev_err(dev->dev, "CODA PIC_RUN timeout\n");
+			coda_bit_debug_timeout(ctx);
 
-		ctx->hold = true;
+			ctx->hold = true;
 
-		coda_hw_reset(ctx);
+			coda_hw_reset(ctx);
 
-		if (ctx->ops->run_timeout)
-			ctx->ops->run_timeout(ctx);
+			if (ctx->ops->run_timeout)
+				ctx->ops->run_timeout(ctx);
+		} else {
+			dev_err(dev->dev, "CODA JPEG timeout\n");
+		}
 	} else if (!ctx->aborting) {
 		ctx->ops->finish_run(ctx);
 	}
