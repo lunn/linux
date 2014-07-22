@@ -76,7 +76,7 @@ struct coda_dev {
 	int			firmware;
 	struct vdoa_data	*vdoa;
 
-	void __iomem		*regs_base;
+	struct regmap		*regmap;
 	struct clk		*clk_per;
 	struct clk		*clk_ahb;
 	struct reset_control	*rstc;
