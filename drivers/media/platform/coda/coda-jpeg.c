@@ -1601,6 +1601,16 @@ irqreturn_t coda9_jpeg_irq_handler(int irq, void *data)
 				 err_mb, err_mb >> 24, (err_mb >> 12) & 0xfff,
 				 err_mb & 0xfff);
 		}
+
+v4l2_err(&dev->v4l2_dev,
+	 "cur_pos = %d ext_addr = %x int_addr = %d data_cnt = %d\n",
+	 coda_read(dev, CODA9_REG_JPEG_BBC_CUR_POS),
+	 coda_read(dev, CODA9_REG_JPEG_BBC_EXT_ADDR),
+	 coda_read(dev, CODA9_REG_JPEG_BBC_INT_ADDR),
+	 coda_read(dev, CODA9_REG_JPEG_BBC_DATA_CNT));
+v4l2_err(&dev->v4l2_dev, "word_ptr = %d bit_ptr = %d\n",
+	 coda_read(dev, CODA9_REG_JPEG_GBU_WD_PTR),
+	 coda_read(dev, CODA9_REG_JPEG_GBU_FF_RPTR));
 	}
 
 	ctx = v4l2_m2m_get_curr_priv(dev->m2m_dev);
