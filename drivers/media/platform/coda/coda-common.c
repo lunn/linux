@@ -632,12 +632,21 @@ static int coda_try_fmt_vid_cap(struct file *file, void *priv,
 
 	/*
 	 * If the source format is already fixed, only allow the same output
-	 * resolution
+	 * resolution. When decoding JPEG images, we also have to make sure to
+	 * use the same chroma subsampling.
 	 */
 	src_vq = v4l2_m2m_get_vq(ctx->fh.m2m_ctx, V4L2_BUF_TYPE_VIDEO_OUTPUT);
 	if (vb2_is_streaming(src_vq)) {
 		f->fmt.pix.width = q_data_src->width;
 		f->fmt.pix.height = q_data_src->height;
+
+		if (q_data_src->fourcc == V4L2_PIX_FMT_JPEG) {
+			if (ctx->params.jpeg_format == 0 &&
+			    f->fmt.pix.pixelformat == V4L2_PIX_FMT_YUV422P)
+				f->fmt.pix.pixelformat = V4L2_PIX_FMT_YUV420;
+			else if (ctx->params.jpeg_format == 1)
+				f->fmt.pix.pixelformat = V4L2_PIX_FMT_YUV422P;
+		}
 	}
 
 	f->fmt.pix.colorspace = ctx->colorspace;
@@ -1783,6 +1792,12 @@ static void coda_buf_queue(struct vb2_buffer *vb)
 	struct coda_q_data *q_data;
 
 	q_data = get_q_data(ctx, vb->vb2_queue->type);
+
+	/* Check the first input JPEG buffer to determine chroma subsampling */
+	if (vb->vb2_queue->type == V4L2_BUF_TYPE_VIDEO_OUTPUT &&
+	    q_data->fourcc == V4L2_PIX_FMT_JPEG &&
+	    !ctx->params.jpeg_chroma_subsampling[0])
+			coda_jpeg_decode_header(ctx, vb);
 
 	/*
 	 * In the decoder case, immediately try to copy the buffer into the

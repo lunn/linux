@@ -504,13 +504,19 @@ static int coda9_jpeg_parse_sos_header(struct coda_ctx *ctx, u8 *buf, u8 *end)
 
 static int coda9_jpeg_gen_dec_huff_tab(struct coda_ctx *ctx, int tab_num);
 
-static int coda9_jpeg_decode_header(struct coda_ctx *ctx, int len, u8 *buf)
+int coda_jpeg_decode_header(struct coda_ctx *ctx, struct vb2_buffer *vb)
 {
+	u8 *buf = vb2_plane_vaddr(vb, 0);
+	size_t len = vb2_get_plane_payload(vb, 0);
 	u8 *end = buf + len;
 	u8 *start = buf;
 	int marker;
 	int ret;
 	int i;
+
+	marker = be16_to_cpup((__be16 *)buf);
+	if (marker != SOI_MARKER)
+		return -EINVAL;
 
 	while (++buf < end) {
 		if (buf[-1] != 0xff || buf[0] == 0xff || buf[0] == 0x00)
@@ -564,6 +570,12 @@ static int coda9_jpeg_decode_header(struct coda_ctx *ctx, int len, u8 *buf)
 	/* Generate Huffman table information */
 	for (i = 0; i < 4; i++)
 		coda9_jpeg_gen_dec_huff_tab(ctx, i);
+
+	if (ctx->params.jpeg_chroma_subsampling[0] == 0x21 &&
+	    ctx->params.jpeg_chroma_subsampling[1] == 0x11 &&
+	    ctx->params.jpeg_chroma_subsampling[2] == 0x11) {
+		ctx->params.jpeg_format = 1;
+	}
 
 	return 0;
 }
@@ -1418,8 +1430,7 @@ static int coda9_jpeg_prepare_decode(struct coda_ctx *ctx)
 
 	coda_set_gdi_regs(ctx);
 
-	ret = coda9_jpeg_decode_header(ctx, vb2_get_plane_payload(&src_buf->vb2_buf, 0),
-				       vb2_plane_vaddr(&src_buf->vb2_buf, 0));
+	ret = coda_jpeg_decode_header(ctx, &src_buf->vb2_buf);
 	if (ret < 0) {
 		v4l2_err(&dev->v4l2_dev, "failed to decode JPEG header: %d\n",
 			 ret);
