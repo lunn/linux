@@ -1999,6 +1999,15 @@ static int __coda_decoder_seq_init(struct coda_ctx *ctx)
 					  (top_bottom & 0x3ff);
 	}
 
+	if (src_fourcc == V4L2_PIX_FMT_JPEG) {
+		val = coda_read(dev, CODA_RET_DEC_SEQ_JPG_THUMB_IND) & 0x1;
+		if (val)
+			v4l2_warn(&dev->v4l2_dev, "thumbnail enabled\n");
+		val = coda_read(dev, CODA_RET_DEC_SEQ_JPG_PARA) & 0x7;
+		coda_dbg(1, ctx, "JPEG source format: %d (%s)\n", val,
+			 val ? "4:2:2" : "4:2:0");
+	}
+
 	if (dev->devtype->product != CODA_DX6) {
 		u8 profile, level;
 
