@@ -2248,6 +2248,9 @@ static int coda_prepare_decode(struct coda_ctx *ctx)
 					struct coda_buffer_meta, list);
 
 	if (meta && ctx->codec->src_fourcc == V4L2_PIX_FMT_JPEG) {
+		unsigned int start;
+		unsigned int end;
+		u16 soi, eoi;
 
 		/* If this is the last buffer in the bitstream, add padding */
 		if (meta->end == ctx->bitstream_fifo.kfifo.in) {
@@ -2260,6 +2263,17 @@ static int coda_prepare_decode(struct coda_ctx *ctx)
 			memset(buf, 0xff, sizeof(buf));
 
 			kfifo_in(&ctx->bitstream_fifo, buf, pad);
+		}
+
+		start = meta->start & ctx->bitstream_fifo.kfifo.mask;
+		end = meta->end & ctx->bitstream_fifo.kfifo.mask;
+		soi = be16_to_cpup((__be16 *)(ctx->bitstream.vaddr + start));
+		eoi = be16_to_cpup((__be16 *)(ctx->bitstream.vaddr + end - 2));
+
+		if (soi != 0xffd8 || eoi != 0xffd9) {
+			v4l2_warn(&ctx->dev->v4l2_dev,
+				  "Invalid markers: %04x..%04x (%x - %x)\n",
+				  soi, eoi, start, end);
 		}
 	}
 	spin_unlock(&ctx->buffer_meta_lock);
