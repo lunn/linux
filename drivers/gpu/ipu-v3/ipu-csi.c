@@ -353,11 +353,25 @@ static int fill_csi_bus_cfg(struct ipu_csi_bus_config *csicfg,
 		break;
 	case V4L2_MBUS_BT656:
 		csicfg->ext_vsync = 0;
-		if (V4L2_FIELD_HAS_BOTH(mbus_fmt->field) ||
-		    mbus_fmt->field == V4L2_FIELD_ALTERNATE)
-			csicfg->clk_mode = IPU_CSI_CLK_MODE_CCIR656_INTERLACED;
-		else
-			csicfg->clk_mode = IPU_CSI_CLK_MODE_CCIR656_PROGRESSIVE;
+		switch (mbus_fmt->code) {
+		case MEDIA_BUS_FMT_UYVY8_2X8:
+		case MEDIA_BUS_FMT_YUYV8_2X8:
+			if (V4L2_FIELD_HAS_BOTH(mbus_fmt->field) ||
+			    mbus_fmt->field == V4L2_FIELD_ALTERNATE)
+				csicfg->clk_mode = IPU_CSI_CLK_MODE_CCIR656_INTERLACED;
+			else
+				csicfg->clk_mode = IPU_CSI_CLK_MODE_CCIR656_PROGRESSIVE;
+			break;
+		case MEDIA_BUS_FMT_UYVY8_1X16:
+		case MEDIA_BUS_FMT_YUYV8_1X16:
+			if (V4L2_FIELD_HAS_BOTH(mbus_fmt->field) ||
+			    mbus_fmt->field == V4L2_FIELD_ALTERNATE)
+				csicfg->clk_mode = IPU_CSI_CLK_MODE_CCIR1120_INTERLACED_SDR;
+			else
+				csicfg->clk_mode = IPU_CSI_CLK_MODE_CCIR1120_PROGRESSIVE_SDR;
+			csicfg->data_width = IPU_CSI_DATA_WIDTH_8;
+			break;
+		}
 		break;
 	case V4L2_MBUS_CSI2_DPHY:
 		/*
