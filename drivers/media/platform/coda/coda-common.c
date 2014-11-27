@@ -61,6 +61,10 @@ int coda_debug;
 module_param(coda_debug, int, 0644);
 MODULE_PARM_DESC(coda_debug, "Debug level (0-2)");
 
+static int coda_timeout_msec = 1000;
+module_param(coda_timeout_msec, int, 0644);
+MODULE_PARM_DESC(coda_timeout_msec, "Timeout in milliseconds");
+
 static int disable_tiling;
 module_param(disable_tiling, int, 0644);
 MODULE_PARM_DESC(disable_tiling, "Disable tiled frame buffers");
@@ -1494,7 +1498,7 @@ static void coda_pic_run_work(struct work_struct *work)
 	}
 
 	if (!wait_for_completion_timeout(&ctx->completion,
-					 msecs_to_jiffies(1000))) {
+					 msecs_to_jiffies(coda_timeout_msec))) {
 		dev_err(dev->dev, "CODA PIC_RUN timeout\n");
 
 		ctx->hold = true;
