@@ -188,6 +188,12 @@ int ipu_map_irq(struct ipu_soc *ipu, int irq);
 int ipu_idmac_channel_irq(struct ipu_soc *ipu, struct ipuv3_channel *channel,
 		enum ipu_channel_irq irq);
 
+#define IPU_IRQ_CSI0_PUPE		(256 + 30)
+#define IPU_IRQ_CSI1_PUPE		(256 + 31)
+#define IPU_IRQ_SMFC0_FRM_LOST		(288 + 0)
+#define IPU_IRQ_SMFC1_FRM_LOST		(288 + 1)
+#define IPU_IRQ_SMFC2_FRM_LOST		(288 + 2)
+#define IPU_IRQ_SMFC3_FRM_LOST		(288 + 3)
 #define IPU_IRQ_DP_SF_START		(448 + 2)
 #define IPU_IRQ_DP_SF_END		(448 + 3)
 #define IPU_IRQ_BG_SF_END		IPU_IRQ_DP_SF_END,
