@@ -105,6 +105,7 @@ enum ipu_channel_irq {
 	IPU_IRQ_NFACK = 64,
 	IPU_IRQ_NFB4EOF = 128,
 	IPU_IRQ_EOS = 192,
+	IPU_IRQ_TH = 384,
 };
 
 /*
