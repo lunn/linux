@@ -89,6 +89,7 @@ DECLARE_EVENT_CLASS(coda_buf_meta_class,
 	TP_STRUCT__entry(
 		__field(int, minor)
 		__field(int, index)
+		__field(s64, timestamp)
 		__field(int, start)
 		__field(int, end)
 		__field(int, ctx)
@@ -97,14 +98,15 @@ DECLARE_EVENT_CLASS(coda_buf_meta_class,
 	TP_fast_assign(
 		__entry->minor = ctx->fh.vdev->minor;
 		__entry->index = buf->vb2_buf.index;
+		__entry->timestamp = buf->vb2_buf.timestamp;
 		__entry->start = meta->start & ctx->bitstream_fifo.kfifo.mask;
 		__entry->end = meta->end & ctx->bitstream_fifo.kfifo.mask;
 		__entry->ctx = ctx->idx;
 	),
 
-	TP_printk("minor = %d, index = %d, start = 0x%x, end = 0x%x, ctx = %d",
-		  __entry->minor, __entry->index, __entry->start, __entry->end,
-		  __entry->ctx)
+	TP_printk("minor = %d, index = %d, timestamp = %lld, start = 0x%x, end = 0x%x, ctx = %d",
+		  __entry->minor, __entry->index, __entry->timestamp,
+		   __entry->start, __entry->end, __entry->ctx)
 );
 
 DEFINE_EVENT(coda_buf_meta_class, coda_bit_queue,
