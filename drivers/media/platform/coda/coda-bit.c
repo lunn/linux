@@ -1014,9 +1014,13 @@ static void coda9_set_frame_cache(struct coda_ctx *ctx, u32 fourcc)
 		cache_size = 0x20262024;
 		cache_config = 2 << CODA9_CACHE_PAGEMERGE_OFFSET;
 	} else {
-		/* Luma 0x2 page, 4x4 cache, chroma 0x2 page, 4x3 cache size */
-		cache_size = 0x02440243;
-		cache_config = 1 << CODA9_CACHE_PAGEMERGE_OFFSET;
+		/* Luma 0x2 page, 4x4 cache, chroma 0x2 page, 4x3 cache size
+		 *
+		 * Freescale code sets this to 0x02440243, which causes
+		 * artifacts in the interleaved chroma plane when decoding.
+		 */
+		cache_size = 0x02440224;
+		cache_config = 2 << CODA9_CACHE_PAGEMERGE_OFFSET;
 	}
 	coda_write(ctx->dev, cache_size, CODA9_CMD_SET_FRAME_CACHE_SIZE);
 	if (fourcc == V4L2_PIX_FMT_NV12 || fourcc == V4L2_PIX_FMT_YUYV) {
