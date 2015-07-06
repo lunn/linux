@@ -39,6 +39,7 @@
 
 #include "coda.h"
 #include "imx-vdoa.h"
+#include "trace.h"
 
 #define CODA_NAME		"coda"
 
@@ -1520,6 +1521,7 @@ static int coda_job_ready(void *m2m_priv)
 {
 	struct coda_ctx *ctx = m2m_priv;
 	int src_bufs = v4l2_m2m_num_src_bufs_ready(ctx->fh.m2m_ctx);
+	bool stream_end = ctx->bit_stream_param & CODA_BIT_STREAM_END_FLAG;
 
 	/*
 	 * For both 'P' and 'key' frame cases 1 picture
@@ -1527,20 +1529,21 @@ static int coda_job_ready(void *m2m_priv)
 	 * the compressed frame can be in the bitstream.
 	 */
 	if (!src_bufs && ctx->inst_type != CODA_INST_DECODER) {
+		trace_coda_not_ready(ctx, stream_end, src_bufs, -1, -1);
 		coda_dbg(1, ctx, "not ready: not enough vid-out buffers.\n");
 		return 0;
 	}
 
 	if (!v4l2_m2m_num_dst_bufs_ready(ctx->fh.m2m_ctx)) {
+		trace_coda_not_ready(ctx, stream_end, src_bufs, -2, -2);
 		coda_dbg(1, ctx, "not ready: not enough vid-cap buffers.\n");
 		return 0;
 	}
 
 	if (ctx->inst_type == CODA_INST_DECODER && ctx->use_bit) {
-		bool stream_end = ctx->bit_stream_param &
-				  CODA_BIT_STREAM_END_FLAG;
 		int num_metas = ctx->num_metas;
 		struct coda_buffer_meta *meta;
+		unsigned int payload = coda_get_bitstream_payload(ctx);
 		unsigned int count;
 
 		count = hweight32(ctx->frm_dis_flg);
@@ -1553,12 +1556,14 @@ static int coda_job_ready(void *m2m_priv)
 		}
 
 		if (ctx->hold && !src_bufs) {
+			trace_coda_not_ready(ctx, stream_end, src_bufs, num_metas, payload);
 			coda_dbg(1, ctx,
 				 "not ready: on hold for more buffers.\n");
 			return 0;
 		}
 
 		if (!stream_end && (num_metas + src_bufs) < 2) {
+			trace_coda_not_ready(ctx, stream_end, src_bufs, num_metas, payload);
 			coda_dbg(1, ctx,
 				 "not ready: need 2 buffers available (queue:%d + bitstream:%d)\n",
 				 num_metas, src_bufs);
@@ -1569,6 +1574,7 @@ static int coda_job_ready(void *m2m_priv)
 					struct coda_buffer_meta, list);
 		if (!coda_bitstream_can_fetch_past(ctx, meta->end) &&
 		    !stream_end) {
+			trace_coda_not_ready(ctx, stream_end, src_bufs, num_metas, payload);
 			coda_dbg(1, ctx,
 				 "not ready: not enough bitstream data to read past %u (%u)\n",
 				 meta->end, ctx->bitstream_fifo.kfifo.in);

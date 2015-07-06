@@ -156,6 +156,38 @@ DEFINE_EVENT(coda_buf_meta_class, coda_dec_rot_done,
 	TP_ARGS(ctx, buf, meta)
 );
 
+TRACE_EVENT(coda_not_ready,
+	TP_PROTO(struct coda_ctx *ctx, bool stream_end, int src_bufs,
+		 int num_metas, int payload),
+
+	TP_ARGS(ctx, stream_end, src_bufs, num_metas, payload),
+
+	TP_STRUCT__entry(
+		__field(int, minor)
+		__field(bool, hold)
+		__field(bool, stream_end)
+		__field(int, src_bufs)
+		__field(int, num_metas)
+		__field(int, payload)
+		__field(int, ctx)
+	),
+
+	TP_fast_assign(
+		__entry->minor = ctx->fh.vdev->minor;
+		__entry->hold = ctx->hold;
+		__entry->stream_end = stream_end;
+		__entry->src_bufs = src_bufs;
+		__entry->num_metas = num_metas;
+		__entry->payload = payload;
+		__entry->ctx = ctx->idx;
+	),
+
+	TP_printk("minor = %d, hold = %d, stream_end = %d, src_bufs = %d, metas = %d, payload = %d, ctx = %d",
+		  __entry->minor, __entry->hold, __entry->stream_end,
+		  __entry->src_bufs, __entry->num_metas, __entry->payload,
+		  __entry->ctx)
+);
+
 DEFINE_EVENT(coda_buf_class, coda_jpeg_run,
 	TP_PROTO(struct coda_ctx *ctx, struct vb2_v4l2_buffer *buf),
 	TP_ARGS(ctx, buf)
