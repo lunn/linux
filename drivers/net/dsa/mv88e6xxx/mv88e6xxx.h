@@ -753,6 +753,8 @@ struct mv88e6xxx_chip {
 	struct mv88e6xxx_irq g1_irq;
 	struct mv88e6xxx_irq g2_irq;
 	int irq;
+
+	struct dentry *debugfs_dir;
 };
 
 struct mv88e6xxx_bus_ops {
