@@ -2832,6 +2832,8 @@ static int mv88e6xxx_g1_setup(struct mv88e6xxx_chip *chip)
 	return 0;
 }
 
+#include "debugfs.c"
+
 static int mv88e6xxx_setup(struct dsa_switch *ds)
 {
 	struct mv88e6xxx_chip *chip = ds->priv;
@@ -2872,6 +2874,8 @@ static int mv88e6xxx_setup(struct dsa_switch *ds)
 		if (err)
 			goto unlock;
 	}
+
+	err = mv88e6xxx_dbg_init_chip(chip);
 
 unlock:
 	mutex_unlock(&chip->reg_lock);
@@ -4587,6 +4591,8 @@ static void mv88e6xxx_remove(struct mdio_device *mdiodev)
 	struct dsa_switch *ds = dev_get_drvdata(&mdiodev->dev);
 	struct mv88e6xxx_chip *chip = ds->priv;
 
+	mv88e6xxx_dbg_destroy_chip(chip);
+
 	mv88e6xxx_phy_destroy(chip);
 	mv88e6xxx_unregister_switch(chip);
 	mv88e6xxx_mdios_unregister(chip);
@@ -4623,13 +4629,21 @@ static struct mdio_driver mv88e6xxx_driver = {
 
 static int __init mv88e6xxx_init(void)
 {
+	int err;
+
+	err = mv88e6xxx_dbg_init_module();
+	if (err)
+		return err;
+
 	register_switch_driver(&mv88e6xxx_switch_drv);
+
 	return mdio_driver_register(&mv88e6xxx_driver);
 }
 module_init(mv88e6xxx_init);
 
 static void __exit mv88e6xxx_cleanup(void)
 {
+	mv88e6xxx_dbg_destroy_module();
 	mdio_driver_unregister(&mv88e6xxx_driver);
 	unregister_switch_driver(&mv88e6xxx_switch_drv);
 }

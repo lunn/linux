@@ -714,6 +714,8 @@ struct mv88e6xxx_irq {
 };
 
 struct mv88e6xxx_chip {
+	struct dentry *debugfs_dir;
+
 	const struct mv88e6xxx_info *info;
 
 	/* The dsa_switch this private structure is related to */
