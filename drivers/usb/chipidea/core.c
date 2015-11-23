@@ -400,10 +400,10 @@ static int ci_usb_phy_init(struct ci_hdrc *ci)
 		break;
 	case USBPHY_INTERFACE_MODE_ULPI:
 	case USBPHY_INTERFACE_MODE_SERIAL:
-		hw_phymode_configure(ci);
 		ret = _ci_usb_phy_init(ci);
 		if (ret)
 			return ret;
+		hw_phymode_configure(ci);
 		break;
 	default:
 		ret = _ci_usb_phy_init(ci);
