@@ -58,16 +58,18 @@ DECLARE_EVENT_CLASS(coda_buf_class,
 		__field(int, minor)
 		__field(int, index)
 		__field(int, ctx)
+		__field(dma_addr_t, paddr)
 	),
 
 	TP_fast_assign(
 		__entry->minor = ctx->fh.vdev->minor;
 		__entry->index = buf->vb2_buf.index;
 		__entry->ctx = ctx->idx;
+		__entry->paddr = vb2_dma_contig_plane_dma_addr(&buf->vb2_buf, 0);
 	),
 
-	TP_printk("minor = %d, index = %d, ctx = %d",
-		  __entry->minor, __entry->index, __entry->ctx)
+	TP_printk("minor = %d, index = %d, ctx = %d, paddr = %pad",
+		  __entry->minor, __entry->index, __entry->ctx, &__entry->paddr)
 );
 
 DEFINE_EVENT(coda_buf_class, coda_enc_pic_run,
