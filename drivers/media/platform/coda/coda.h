@@ -218,6 +218,7 @@ struct coda_ctx {
 	struct work_struct		seq_init_work;
 	struct work_struct		seq_end_work;
 	struct completion		completion;
+	unsigned long			dma_attrs;
 	const struct coda_video_device	*cvd;
 	const struct coda_context_ops	*ops;
 	int				aborting;
