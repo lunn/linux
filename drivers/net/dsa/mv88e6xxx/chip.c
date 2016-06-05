@@ -824,6 +824,24 @@ static int mv88e6320_stats_snapshot(struct mv88e6xxx_chip *chip, int port)
 	return _mv88e6xxx_stats_snapshot(chip, port);
 }
 
+static int mv88e6390_stats_snapshot(struct mv88e6xxx_chip *chip, int port)
+{
+	int err;
+
+	port = (port + 1) << 5;
+
+	/* Snapshot the hardware statistics counters for this port. */
+
+	err = mv88e6xxx_g1_write(chip, GLOBAL_STATS_OP,
+				 GLOBAL_STATS_OP_CAPTURE_PORT |
+				 port);
+	if (err)
+		return err;
+
+	/* Wait for the snapshotting to complete. */
+	return _mv88e6xxx_stats_wait(chip);
+}
+
 static int mv88e6xxx_stats_snapshot(struct mv88e6xxx_chip *chip, int port)
 {
 	if (!chip->info->ops->stats_snapshot)
@@ -3532,6 +3550,7 @@ static const struct mv88e6xxx_ops mv88e6390_ops = {
 	.set_switch_mac = mv88e6xxx_g2_set_switch_mac,
 	.phy_read = mv88e6xxx_g2_smi_phy_read,
 	.phy_write = mv88e6xxx_g2_smi_phy_write,
+	.stats_snapshot = mv88e6390_stats_snapshot,
 };
 
 static const struct mv88e6xxx_info mv88e6xxx_table[] = {
