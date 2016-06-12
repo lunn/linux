@@ -283,6 +283,12 @@
 #define GLOBAL_MONITOR_CONTROL_ARP_SHIFT	4
 #define GLOBAL_MONITOR_CONTROL_MIRROR_SHIFT	0
 #define GLOBAL_MONITOR_CONTROL_ARP_DISABLED	(0xf0)
+#define GLOBAL_MONITOR_CONTROL_UPDATE                  BIT(15)
+#define GLOBAL_MONITOR_CONTROL_0180C280000000XLO       (0x00 << 8)
+#define GLOBAL_MONITOR_CONTROL_0180C280000000XHI       (0x01 << 8)
+#define GLOBAL_MONITOR_CONTROL_0180C280000002XLO       (0x02 << 8)
+#define GLOBAL_MONITOR_CONTROL_0180C280000002XHI       (0x03 << 8)
+#define GLOBAL_MONITOR_CONTROL_CPU_DEST		       (0x30 << 8)
 #define GLOBAL_CONTROL_2	0x1c
 #define GLOBAL_CONTROL_2_NO_CASCADE		0xe000
 #define GLOBAL_CONTROL_2_MULTIPLE_CASCADE	0xf000
@@ -771,6 +777,7 @@ struct mv88e6xxx_ops {
 	void (*stats_get_stats)(struct mv88e6xxx_chip *chip,  int port,
 				uint64_t *data);
 	int (*tag_remap)(struct mv88e6xxx_chip *chip, int port);
+	int (*monitor_ctrl)(struct mv88e6xxx_chip *chip, int upstream_port);
 };
 
 #define STATS_TYPE_PORT		BIT(0)
