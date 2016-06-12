@@ -3094,6 +3094,63 @@ static int mv88e6xxx_set_ageing_time(struct dsa_switch *ds,
 	return err;
 }
 
+/* Configure the upstream port, and configure it as the port to which
+ * ingress and egress and ARP monitor frames are to be sent.
+ */
+static int mv88e6095_monitor_ctrl(struct mv88e6xxx_chip *chip,
+				  int upstream_port)
+{
+	u16 reg;
+
+	reg = upstream_port << GLOBAL_MONITOR_CONTROL_INGRESS_SHIFT |
+		upstream_port << GLOBAL_MONITOR_CONTROL_EGRESS_SHIFT |
+		upstream_port << GLOBAL_MONITOR_CONTROL_ARP_SHIFT;
+
+	return mv88e6xxx_g1_write(chip, GLOBAL_MONITOR_CONTROL, reg);
+}
+
+static int mv88e6390_monitor_ctrl(struct mv88e6xxx_chip *chip,
+				  int upstream_port)
+{
+	u16 reg;
+	int err;
+
+	/* Trap destination */
+	reg = GLOBAL_MONITOR_CONTROL_UPDATE |
+		GLOBAL_MONITOR_CONTROL_CPU_DEST |
+		upstream_port;
+	err = mv88e6xxx_g1_write(chip, GLOBAL_MONITOR_CONTROL, reg);
+	if (err)
+		return err;
+
+	/* 01:c2:80:00:00:00:00-01:c2:80:00:00:00:07 are Management */
+	reg = GLOBAL_MONITOR_CONTROL_UPDATE |
+		GLOBAL_MONITOR_CONTROL_0180C280000000XLO | 0xff;
+	err = mv88e6xxx_g1_write(chip, GLOBAL_MONITOR_CONTROL, reg);
+	if (err)
+		return err;
+
+	/* 01:c2:80:00:00:00:08-01:c2:80:00:00:00:0f are Management */
+	reg = GLOBAL_MONITOR_CONTROL_UPDATE |
+		GLOBAL_MONITOR_CONTROL_0180C280000000XHI | 0xff;
+	err = mv88e6xxx_g1_write(chip, GLOBAL_MONITOR_CONTROL, reg);
+	if (err)
+		return err;
+
+	/* 01:c2:80:00:00:00:20-01:c2:80:00:00:00:27 are Management */
+	reg = GLOBAL_MONITOR_CONTROL_UPDATE |
+		GLOBAL_MONITOR_CONTROL_0180C280000002XLO | 0xff;
+	err = mv88e6xxx_g1_write(chip, GLOBAL_MONITOR_CONTROL, reg);
+	if (err)
+		return err;
+
+	/* 01:c2:80:00:00:00:28-01:c2:80:00:00:00:2f are Management */
+	reg = GLOBAL_MONITOR_CONTROL_UPDATE |
+		GLOBAL_MONITOR_CONTROL_0180C280000002XHI | 0xff;
+
+	return mv88e6xxx_g1_write(chip, GLOBAL_MONITOR_CONTROL, reg);
+}
+
 static int mv88e6xxx_g1_setup(struct mv88e6xxx_chip *chip)
 {
 	struct dsa_switch *ds = chip->ds;
@@ -3117,15 +3174,11 @@ static int mv88e6xxx_g1_setup(struct mv88e6xxx_chip *chip)
 	if (err)
 		return err;
 
-	/* Configure the upstream port, and configure it as the port to which
-	 * ingress and egress and ARP monitor frames are to be sent.
-	 */
-	reg = upstream_port << GLOBAL_MONITOR_CONTROL_INGRESS_SHIFT |
-		upstream_port << GLOBAL_MONITOR_CONTROL_EGRESS_SHIFT |
-		upstream_port << GLOBAL_MONITOR_CONTROL_ARP_SHIFT;
-	err = mv88e6xxx_g1_write(chip, GLOBAL_MONITOR_CONTROL, reg);
-	if (err)
-		return err;
+	if (chip->info->ops->monitor_ctrl) {
+		err = chip->info->ops->monitor_ctrl(chip, upstream_port);
+		if (err)
+			return err;
+	}
 
 	/* Disable remote management, and set the switch's DSA device number. */
 	err = mv88e6xxx_g1_write(chip, GLOBAL_CONTROL_2,
@@ -3551,6 +3604,7 @@ static const struct mv88e6xxx_ops mv88e6085_ops = {
 	.stats_get_strings = mv88e6095_get_strings,
 	.stats_get_stats = mv88e6095_get_stats,
 	.tag_remap = mv88e6095_tag_remap,
+	.monitor_ctrl = mv88e6095_monitor_ctrl,
 };
 
 static const struct mv88e6xxx_ops mv88e6095_ops = {
@@ -3562,6 +3616,7 @@ static const struct mv88e6xxx_ops mv88e6095_ops = {
 	.stats_get_sset_count = mv88e6095_get_sset_count,
 	.stats_get_strings = mv88e6095_get_strings,
 	.stats_get_stats = mv88e6095_get_stats,
+	.monitor_ctrl = mv88e6095_monitor_ctrl,
 };
 
 static const struct mv88e6xxx_ops mv88e6123_ops = {
@@ -3574,6 +3629,7 @@ static const struct mv88e6xxx_ops mv88e6123_ops = {
 	.stats_get_strings = mv88e6095_get_strings,
 	.stats_get_stats = mv88e6095_get_stats,
 	.tag_remap = mv88e6095_tag_remap,
+	.monitor_ctrl = mv88e6095_monitor_ctrl,
 };
 
 static const struct mv88e6xxx_ops mv88e6131_ops = {
@@ -3585,6 +3641,7 @@ static const struct mv88e6xxx_ops mv88e6131_ops = {
 	.stats_get_sset_count = mv88e6095_get_sset_count,
 	.stats_get_strings = mv88e6095_get_strings,
 	.stats_get_stats = mv88e6095_get_stats,
+	.monitor_ctrl = mv88e6095_monitor_ctrl,
 };
 
 static const struct mv88e6xxx_ops mv88e6161_ops = {
@@ -3597,6 +3654,7 @@ static const struct mv88e6xxx_ops mv88e6161_ops = {
 	.stats_get_strings = mv88e6095_get_strings,
 	.stats_get_stats = mv88e6095_get_stats,
 	.tag_remap = mv88e6095_tag_remap,
+	.monitor_ctrl = mv88e6095_monitor_ctrl,
 };
 
 static const struct mv88e6xxx_ops mv88e6165_ops = {
@@ -3609,6 +3667,7 @@ static const struct mv88e6xxx_ops mv88e6165_ops = {
 	.stats_get_strings = mv88e6095_get_strings,
 	.stats_get_stats = mv88e6095_get_stats,
 	.tag_remap = mv88e6095_tag_remap,
+	.monitor_ctrl = mv88e6095_monitor_ctrl,
 };
 
 static const struct mv88e6xxx_ops mv88e6171_ops = {
@@ -3621,6 +3680,7 @@ static const struct mv88e6xxx_ops mv88e6171_ops = {
 	.stats_get_strings = mv88e6095_get_strings,
 	.stats_get_stats = mv88e6095_get_stats,
 	.tag_remap = mv88e6095_tag_remap,
+	.monitor_ctrl = mv88e6095_monitor_ctrl,
 };
 
 static const struct mv88e6xxx_ops mv88e6172_ops = {
@@ -3635,6 +3695,7 @@ static const struct mv88e6xxx_ops mv88e6172_ops = {
 	.stats_get_strings = mv88e6095_get_strings,
 	.stats_get_stats = mv88e6095_get_stats,
 	.tag_remap = mv88e6095_tag_remap,
+	.monitor_ctrl = mv88e6095_monitor_ctrl,
 };
 
 static const struct mv88e6xxx_ops mv88e6175_ops = {
@@ -3647,6 +3708,7 @@ static const struct mv88e6xxx_ops mv88e6175_ops = {
 	.stats_get_strings = mv88e6095_get_strings,
 	.stats_get_stats = mv88e6095_get_stats,
 	.tag_remap = mv88e6095_tag_remap,
+	.monitor_ctrl = mv88e6095_monitor_ctrl,
 };
 
 static const struct mv88e6xxx_ops mv88e6176_ops = {
@@ -3661,6 +3723,7 @@ static const struct mv88e6xxx_ops mv88e6176_ops = {
 	.stats_get_strings = mv88e6095_get_strings,
 	.stats_get_stats = mv88e6095_get_stats,
 	.tag_remap = mv88e6095_tag_remap,
+	.monitor_ctrl = mv88e6095_monitor_ctrl,
 };
 
 static const struct mv88e6xxx_ops mv88e6185_ops = {
@@ -3672,6 +3735,7 @@ static const struct mv88e6xxx_ops mv88e6185_ops = {
 	.stats_get_sset_count = mv88e6095_get_sset_count,
 	.stats_get_strings = mv88e6095_get_strings,
 	.stats_get_stats = mv88e6095_get_stats,
+	.monitor_ctrl = mv88e6095_monitor_ctrl,
 };
 
 static const struct mv88e6xxx_ops mv88e6240_ops = {
@@ -3686,6 +3750,7 @@ static const struct mv88e6xxx_ops mv88e6240_ops = {
 	.stats_get_strings = mv88e6095_get_strings,
 	.stats_get_stats = mv88e6095_get_stats,
 	.tag_remap = mv88e6095_tag_remap,
+	.monitor_ctrl = mv88e6095_monitor_ctrl,
 };
 
 static const struct mv88e6xxx_ops mv88e6320_ops = {
@@ -3700,6 +3765,7 @@ static const struct mv88e6xxx_ops mv88e6320_ops = {
 	.stats_get_strings = mv88e6320_get_strings,
 	.stats_get_stats = mv88e6320_get_stats,
 	.tag_remap = mv88e6095_tag_remap,
+	.monitor_ctrl = mv88e6095_monitor_ctrl,
 };
 
 static const struct mv88e6xxx_ops mv88e6321_ops = {
@@ -3714,6 +3780,7 @@ static const struct mv88e6xxx_ops mv88e6321_ops = {
 	.stats_get_strings = mv88e6320_get_strings,
 	.stats_get_stats = mv88e6320_get_stats,
 	.tag_remap = mv88e6095_tag_remap,
+	.monitor_ctrl = mv88e6095_monitor_ctrl,
 };
 
 static const struct mv88e6xxx_ops mv88e6350_ops = {
@@ -3726,6 +3793,7 @@ static const struct mv88e6xxx_ops mv88e6350_ops = {
 	.stats_get_strings = mv88e6095_get_strings,
 	.stats_get_stats = mv88e6095_get_stats,
 	.tag_remap = mv88e6095_tag_remap,
+	.monitor_ctrl = mv88e6095_monitor_ctrl,
 };
 
 static const struct mv88e6xxx_ops mv88e6351_ops = {
@@ -3738,6 +3806,7 @@ static const struct mv88e6xxx_ops mv88e6351_ops = {
 	.stats_get_strings = mv88e6095_get_strings,
 	.stats_get_stats = mv88e6095_get_stats,
 	.tag_remap = mv88e6095_tag_remap,
+	.monitor_ctrl = mv88e6095_monitor_ctrl,
 };
 
 static const struct mv88e6xxx_ops mv88e6352_ops = {
@@ -3752,6 +3821,7 @@ static const struct mv88e6xxx_ops mv88e6352_ops = {
 	.stats_get_strings = mv88e6095_get_strings,
 	.stats_get_stats = mv88e6095_get_stats,
 	.tag_remap = mv88e6095_tag_remap,
+	.monitor_ctrl = mv88e6095_monitor_ctrl,
 };
 
 static const struct mv88e6xxx_ops mv88e6390_ops = {
@@ -3765,6 +3835,7 @@ static const struct mv88e6xxx_ops mv88e6390_ops = {
 	.stats_get_strings = mv88e6320_get_strings,
 	.stats_get_stats = mv88e6390_get_stats,
 	.tag_remap = mv88e6390_tag_remap,
+	.monitor_ctrl = mv88e6390_monitor_ctrl,
 };
 
 static const struct mv88e6xxx_info mv88e6xxx_table[] = {
