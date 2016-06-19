@@ -19,6 +19,7 @@
 #include <linux/workqueue.h>
 #include <linux/of.h>
 #include <linux/ethtool.h>
+#include <net/devlink.h>
 
 struct tc_action;
 struct phy_device;
@@ -179,9 +180,11 @@ struct dsa_port {
 	const char		*name;
 	struct net_device	*netdev;
 	struct device_node	*dn;
+
 	unsigned int		ageing_time;
 	u8			stp_state;
 	struct net_device	*bridge_dev;
+	struct devlink_port	devlink_port;
 };
 
 struct dsa_switch {
@@ -237,9 +240,13 @@ struct dsa_switch {
 	unsigned int ageing_time_min;
 	unsigned int ageing_time_max;
 
+	/* devlink used to represent this switch device */
+	struct devlink 		*devlink;
+
 	/* Dynamically allocated ports, keep last */
 	size_t num_ports;
 	struct dsa_port ports[];
+
 };
 
 static inline bool dsa_is_cpu_port(struct dsa_switch *ds, int p)
