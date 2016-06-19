@@ -1774,7 +1774,11 @@ static const struct b53_chip_data b53_switch_chips[] = {
 		.vlans = 4096,
 		.enabled_ports = 0x1f,
 		.arl_entries = 4,
+#ifdef CONFIG_SCU
+		.cpu_port = 4,
+#else
 		.cpu_port = B53_CPU_PORT,
+#endif
 		.vta_regs = B53_VTA_REGS,
 		.duplex_reg = B53_DUPLEX_STAT_GE,
 		.jumbo_pm_reg = B53_JUMBO_PORT_MASK,
