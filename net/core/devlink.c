@@ -2518,6 +2518,32 @@ void devlink_port_type_ib_set(struct devlink_port *devlink_port,
 EXPORT_SYMBOL_GPL(devlink_port_type_ib_set);
 
 /**
+ *	devlink_port_type_cpu_set - Set port type to CPU
+ *
+ *	@devlink_port: devlink port
+ */
+void devlink_port_type_cpu_set(struct devlink_port *devlink_port)
+{
+	return __devlink_port_type_set(devlink_port,
+				       DEVLINK_PORT_TYPE_CPU,
+				       NULL);
+}
+EXPORT_SYMBOL_GPL(devlink_port_type_cpu_set);
+
+/**
+ *	devlink_port_type_inter_switch_set - Set port type to inter switch
+ *
+ *	@devlink_port: devlink port
+ */
+void devlink_port_type_inter_switch_set(struct devlink_port *devlink_port)
+{
+	return __devlink_port_type_set(devlink_port,
+				       DEVLINK_PORT_TYPE_INTER_SWITCH,
+				       NULL);
+}
+EXPORT_SYMBOL_GPL(devlink_port_type_inter_switch_set);
+
+/**
  *	devlink_port_type_clear - Clear port type
  *
  *	@devlink_port: devlink port

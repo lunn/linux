@@ -298,6 +298,8 @@ void devlink_port_type_eth_set(struct devlink_port *devlink_port,
 			       struct net_device *netdev);
 void devlink_port_type_ib_set(struct devlink_port *devlink_port,
 			      struct ib_device *ibdev);
+void devlink_port_type_cpu_set(struct devlink_port *devlink_port);
+void devlink_port_type_inter_switch_set(struct devlink_port *devlink_port);
 void devlink_port_type_clear(struct devlink_port *devlink_port);
 void devlink_port_split_set(struct devlink_port *devlink_port,
 			    u32 split_group);
@@ -367,6 +369,14 @@ static inline void devlink_port_type_eth_set(struct devlink_port *devlink_port,
 
 static inline void devlink_port_type_ib_set(struct devlink_port *devlink_port,
 					    struct ib_device *ibdev)
+{
+}
+static inline void devlink_port_type_cpu_set(struct devlink_port *devlink_port)
+{
+}
+
+static inline void devlink_port_type_inter_switch_set(
+	struct devlink_port *devlink_port)
 {
 }
 

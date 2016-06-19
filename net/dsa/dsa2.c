@@ -19,6 +19,7 @@
 #include <linux/of.h>
 #include <linux/of_net.h>
 #include <net/dsa.h>
+#include <net/devlink.h>
 #include "dsa_priv.h"
 
 static LIST_HEAD(dsa_switch_trees);
@@ -229,9 +230,15 @@ static int dsa_dsa_port_apply(struct dsa_port *port, u32 index,
 	memset(&ds->ports[index].devlink_port, 0,
 	       sizeof(ds->ports[index].devlink_port));
 
-	return devlink_port_register(ds->devlink,
-				     &ds->ports[index].devlink_port,
-				     index);
+	err = devlink_port_register(ds->devlink,
+				    &ds->ports[index].devlink_port,
+				    index);
+	if (err)
+		return err;
+
+	devlink_port_type_inter_switch_set(&ds->ports[index].devlink_port);
+
+	return 0;
 }
 
 static void dsa_dsa_port_unapply(struct dsa_port *port, u32 index,
@@ -259,7 +266,11 @@ static int dsa_cpu_port_apply(struct dsa_port *port, u32 index,
 	       sizeof(ds->ports[index].devlink_port));
 	err = devlink_port_register(ds->devlink, &ds->ports[index].devlink_port,
 				    index);
-	return err;
+	if (err)
+		return err;
+
+	devlink_port_type_cpu_set(&ds->ports[index].devlink_port);
+	return 0;
 }
 
 static void dsa_cpu_port_unapply(struct dsa_port *port, u32 index,

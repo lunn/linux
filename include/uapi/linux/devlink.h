@@ -80,6 +80,8 @@ enum devlink_port_type {
 	DEVLINK_PORT_TYPE_AUTO,
 	DEVLINK_PORT_TYPE_ETH,
 	DEVLINK_PORT_TYPE_IB,
+	DEVLINK_PORT_TYPE_CPU,
+	DEVLINK_PORT_TYPE_INTER_SWITCH,
 };
 
 enum devlink_sb_pool_type {
