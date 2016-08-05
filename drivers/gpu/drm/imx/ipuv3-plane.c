@@ -584,11 +584,13 @@ static void ipu_plane_atomic_update(struct drm_plane *plane,
 	struct drm_plane_state *state = plane->state;
 	struct ipu_plane_state *ipu_state = to_ipu_plane_state(state);
 	struct drm_crtc_state *crtc_state = state->crtc->state;
+	struct imx_crtc_state *imx_crtc_state = to_imx_crtc_state(crtc_state);
+	u32 bus_format = imx_crtc_state->bus_format;
 	struct drm_framebuffer *fb = state->fb;
 	struct drm_rect *dst = &state->dst;
 	unsigned long eba, ubo, vbo;
 	unsigned long alpha_eba = 0;
-	enum ipu_color_space ics;
+	enum ipu_color_space ics, ics_out;
 	unsigned int axi_id = 0;
 	const struct drm_format_info *info;
 	u8 burstsize, num_bursts;
@@ -651,7 +653,9 @@ static void ipu_plane_atomic_update(struct drm_plane *plane,
 	ics = ipu_drm_fourcc_to_colorspace(fb->format->format);
 	switch (ipu_plane->dp_flow) {
 	case IPU_DP_FLOW_SYNC_BG:
-		ipu_dp_setup_channel(ipu_plane->dp, ics, IPUV3_COLORSPACE_RGB);
+		ics_out = bus_format ? ipu_bus_format_to_colorspace(bus_format)
+				     : IPUV3_COLORSPACE_RGB;
+		ipu_dp_setup_channel(ipu_plane->dp, ics, ics_out);
 		break;
 	case IPU_DP_FLOW_SYNC_FG:
 		ipu_dp_setup_channel(ipu_plane->dp, ics,
