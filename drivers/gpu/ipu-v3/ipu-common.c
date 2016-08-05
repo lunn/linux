@@ -131,6 +131,28 @@ enum ipu_color_space ipu_pixelformat_to_colorspace(u32 pixelformat)
 }
 EXPORT_SYMBOL_GPL(ipu_pixelformat_to_colorspace);
 
+static inline bool ipu_bus_format_is_rgb(u32 bus_format)
+{
+	/* RGB media bus formats start at 0x1000 */
+	return ((bus_format & ~0xfff) == 0x1000);
+}
+
+static inline bool ipu_bus_format_is_yuv(u32 bus_format)
+{
+	/* YUV media bus formats start at 0x2000 */
+	return ((bus_format & ~0xfff) == 0x2000);
+}
+
+enum ipu_color_space ipu_bus_format_to_colorspace(u32 bus_format)
+{
+	if (ipu_bus_format_is_rgb(bus_format))
+		return IPUV3_COLORSPACE_RGB;
+	if (ipu_bus_format_is_yuv(bus_format))
+		return IPUV3_COLORSPACE_YUV;
+	return IPUV3_COLORSPACE_UNKNOWN;
+}
+EXPORT_SYMBOL_GPL(ipu_bus_format_to_colorspace);
+
 bool ipu_pixelformat_is_planar(u32 pixelformat)
 {
 	switch (pixelformat) {

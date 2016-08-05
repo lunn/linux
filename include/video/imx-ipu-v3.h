@@ -482,6 +482,7 @@ int ipu_smfc_map_channel(struct ipu_smfc *smfc, int csi_id, int mipi_id);
 int ipu_smfc_set_burstsize(struct ipu_smfc *smfc, int burstsize);
 int ipu_smfc_set_watermark(struct ipu_smfc *smfc, u32 set_level, u32 clr_level);
 
+enum ipu_color_space ipu_bus_format_to_colorspace(u32 bus_format);
 enum ipu_color_space ipu_drm_fourcc_to_colorspace(u32 drm_fourcc);
 enum ipu_color_space ipu_pixelformat_to_colorspace(u32 pixelformat);
 enum ipu_color_space ipu_mbus_code_to_colorspace(u32 mbus_code);
