@@ -303,6 +303,10 @@ struct mv88e6xxx_ops {
 	int (*port_disable_learn_limit)(struct mv88e6xxx_chip *chip, int port);
 	int (*port_disable_pri_override)(struct mv88e6xxx_chip *chip, int port);
 
+	/* TCAM operations */
+	int (*port_enable_tcam)(struct mv88e6xxx_chip *chip, int port);
+	int (*port_disable_tcam)(struct mv88e6xxx_chip *chip, int port);
+
 	/* CMODE control what PHY mode the MAC will use, eg. SGMII, RGMII, etc.
 	 * Some chips allow this to be configured on specific ports.
 	 */
