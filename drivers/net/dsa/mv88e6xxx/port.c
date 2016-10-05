@@ -415,6 +415,21 @@ static const char * const mv88e6xxx_port_state_names[] = {
 	[MV88E6XXX_PORT_CTL0_STATE_FORWARDING] = "Forwarding",
 };
 
+static int mv88e6xxx_port_get_state(struct mv88e6xxx_chip *chip, int port,
+				    u8 *state)
+{
+	u16 reg;
+	int err;
+
+	err = mv88e6xxx_port_read(chip, port, PORT_CONTROL, &reg);
+	if (err)
+		return err;
+
+	*state = reg & PORT_CONTROL_STATE_MASK;
+
+	return 0;
+}
+
 int mv88e6xxx_port_set_state(struct mv88e6xxx_chip *chip, int port, u8 state)
 {
 	u16 reg;
@@ -882,6 +897,71 @@ int mv88e6xxx_port_disable_learn_limit(struct mv88e6xxx_chip *chip, int port)
 int mv88e6xxx_port_disable_pri_override(struct mv88e6xxx_chip *chip, int port)
 {
 	return mv88e6xxx_port_write(chip, port, MV88E6XXX_PORT_PRI_OVERRIDE, 0);
+}
+
+static const char * const mv88e6xxx_port_tcam_mode_names[] = {
+	[PORT_PRI_OVERRIDE_TCAM_DISABLED] = "Disabled",
+	[PORT_PRI_OVERRIDE_TCAM_48_BYTES] = "Enabled (48-byte only)",
+	[PORT_PRI_OVERRIDE_TCAM_96_BYTES] = "Enabled (48-byte and/or 96-byte)",
+};
+
+static int mv88e6xxx_port_set_tcam_mode(struct mv88e6xxx_chip *chip, int port,
+					u8 mode)
+{
+	u16 reg;
+	int err;
+
+	err = mv88e6xxx_port_read(chip, port, PORT_PRI_OVERRIDE, &reg);
+	if (err)
+		return err;
+
+	reg &= ~PORT_PRI_OVERRIDE_TCAM_MASK;
+	reg |= mode;
+
+	err = mv88e6xxx_port_write(chip, port, PORT_PRI_OVERRIDE, reg);
+	if (err)
+		return err;
+
+	netdev_dbg(chip->ds->ports[port].netdev, "TCAM Mode set to %s\n",
+		   mv88e6xxx_port_tcam_mode_names[mode]);
+
+	return 0;
+}
+
+static int mv88e6xxx_port_change_tcam_mode(struct mv88e6xxx_chip *chip,
+					   int port, u8 mode)
+{
+	u8 state;
+	int err;
+
+	/* TCAM mode must not be changed while frames are flowing into this
+	 * port. Disable the port first, change TCAM mode, then re-enable it.
+	 */
+	err = mv88e6xxx_port_get_state(chip, port, &state);
+	if (err)
+		return err;
+
+	err = mv88e6xxx_port_set_state(chip, port, PORT_CONTROL_STATE_DISABLED);
+	if (err)
+		return err;
+
+	err = mv88e6xxx_port_set_tcam_mode(chip, port, mode);
+	if (err)
+		return err;
+
+	return mv88e6xxx_port_set_state(chip, port, state);
+}
+
+int mv88e6xxx_port_enable_tcam(struct mv88e6xxx_chip *chip, int port)
+{
+	return mv88e6xxx_port_change_tcam_mode(chip, port,
+					       PORT_PRI_OVERRIDE_TCAM_48_BYTES);
+}
+
+int mv88e6xxx_port_disable_tcam(struct mv88e6xxx_chip *chip, int port)
+{
+	return mv88e6xxx_port_change_tcam_mode(chip, port,
+					       PORT_PRI_OVERRIDE_TCAM_DISABLED);
 }
 
 /* Offset 0x0f: Port Ether type */
