@@ -999,21 +999,41 @@ static uint64_t _mv88e6xxx_get_ethtool_stat(struct mv88e6xxx_chip *chip,
 	return value;
 }
 
-static void mv88e6xxx_get_strings(struct dsa_switch *ds, int port,
-				  uint8_t *data)
+static void _mv88e6xxx_get_strings(struct mv88e6xxx_chip *chip,
+				   uint8_t *data, int types)
 {
-	struct mv88e6xxx_chip *chip = ds->priv;
 	struct mv88e6xxx_hw_stat *stat;
 	int i, j;
 
 	for (i = 0, j = 0; i < ARRAY_SIZE(mv88e6xxx_hw_stats); i++) {
 		stat = &mv88e6xxx_hw_stats[i];
-		if (mv88e6xxx_has_stat(chip, stat)) {
+		if (stat->type & types) {
 			memcpy(data + j * ETH_GSTRING_LEN, stat->string,
 			       ETH_GSTRING_LEN);
 			j++;
 		}
 	}
+}
+
+static void mv88e6095_get_strings(struct mv88e6xxx_chip *chip, uint8_t *data)
+{
+	_mv88e6xxx_get_strings(chip, data,
+			       STATS_TYPE_BANK0 | STATS_TYPE_PORT);
+}
+
+static void mv88e6320_get_strings(struct mv88e6xxx_chip *chip, uint8_t *data)
+{
+	_mv88e6xxx_get_strings(chip, data,
+			       STATS_TYPE_BANK0 | STATS_TYPE_BANK1);
+}
+
+static void mv88e6xxx_get_strings(struct dsa_switch *ds, int port,
+				  uint8_t *data)
+{
+	struct mv88e6xxx_chip *chip = ds->priv;
+
+	if (chip->info->ops->stats_get_strings)
+		chip->info->ops->stats_get_strings(chip, data);
 }
 
 static int _mv88e6xxx_get_sset_count(struct mv88e6xxx_chip *chip, int types)
@@ -3456,6 +3476,7 @@ static const struct mv88e6xxx_ops mv88e6085_ops = {
 	.phy_write = mv88e6xxx_phy_ppu_write,
 	.stats_snapshot = _mv88e6xxx_stats_snapshot,
 	.stats_get_sset_count = mv88e6095_get_sset_count,
+	.stats_get_strings = mv88e6095_get_strings,
 };
 
 static const struct mv88e6xxx_ops mv88e6095_ops = {
@@ -3465,6 +3486,7 @@ static const struct mv88e6xxx_ops mv88e6095_ops = {
 	.phy_write = mv88e6xxx_phy_ppu_write,
 	.stats_snapshot = _mv88e6xxx_stats_snapshot,
 	.stats_get_sset_count = mv88e6095_get_sset_count,
+	.stats_get_strings = mv88e6095_get_strings,
 };
 
 static const struct mv88e6xxx_ops mv88e6123_ops = {
@@ -3474,6 +3496,7 @@ static const struct mv88e6xxx_ops mv88e6123_ops = {
 	.phy_write = mv88e6xxx_write,
 	.stats_snapshot = _mv88e6xxx_stats_snapshot,
 	.stats_get_sset_count = mv88e6095_get_sset_count,
+	.stats_get_strings = mv88e6095_get_strings,
 };
 
 static const struct mv88e6xxx_ops mv88e6131_ops = {
@@ -3483,6 +3506,7 @@ static const struct mv88e6xxx_ops mv88e6131_ops = {
 	.phy_write = mv88e6xxx_phy_ppu_write,
 	.stats_snapshot = _mv88e6xxx_stats_snapshot,
 	.stats_get_sset_count = mv88e6095_get_sset_count,
+	.stats_get_strings = mv88e6095_get_strings,
 };
 
 static const struct mv88e6xxx_ops mv88e6161_ops = {
@@ -3492,6 +3516,7 @@ static const struct mv88e6xxx_ops mv88e6161_ops = {
 	.phy_write = mv88e6xxx_write,
 	.stats_snapshot = _mv88e6xxx_stats_snapshot,
 	.stats_get_sset_count = mv88e6095_get_sset_count,
+	.stats_get_strings = mv88e6095_get_strings,
 };
 
 static const struct mv88e6xxx_ops mv88e6165_ops = {
@@ -3501,6 +3526,7 @@ static const struct mv88e6xxx_ops mv88e6165_ops = {
 	.phy_write = mv88e6xxx_write,
 	.stats_snapshot = _mv88e6xxx_stats_snapshot,
 	.stats_get_sset_count = mv88e6095_get_sset_count,
+	.stats_get_strings = mv88e6095_get_strings,
 };
 
 static const struct mv88e6xxx_ops mv88e6171_ops = {
@@ -3510,6 +3536,7 @@ static const struct mv88e6xxx_ops mv88e6171_ops = {
 	.phy_write = mv88e6xxx_g2_smi_phy_write,
 	.stats_snapshot = mv88e6xxx_stats_snapshot,
 	.stats_get_sset_count = mv88e6095_get_sset_count,
+	.stats_get_strings = mv88e6095_get_strings,
 };
 
 static const struct mv88e6xxx_ops mv88e6172_ops = {
@@ -3521,6 +3548,7 @@ static const struct mv88e6xxx_ops mv88e6172_ops = {
 	.phy_write = mv88e6xxx_g2_smi_phy_write,
 	.stats_snapshot = mv88e6320_stats_snapshot,
 	.stats_get_sset_count = mv88e6095_get_sset_count,
+	.stats_get_strings = mv88e6095_get_strings,
 };
 
 static const struct mv88e6xxx_ops mv88e6175_ops = {
@@ -3530,6 +3558,7 @@ static const struct mv88e6xxx_ops mv88e6175_ops = {
 	.phy_write = mv88e6xxx_g2_smi_phy_write,
 	.stats_snapshot = mv88e6xxx_stats_snapshot,
 	.stats_get_sset_count = mv88e6095_get_sset_count,
+	.stats_get_strings = mv88e6095_get_strings,
 };
 
 static const struct mv88e6xxx_ops mv88e6176_ops = {
@@ -3541,6 +3570,7 @@ static const struct mv88e6xxx_ops mv88e6176_ops = {
 	.phy_write = mv88e6xxx_g2_smi_phy_write,
 	.stats_snapshot = mv88e6320_stats_snapshot,
 	.stats_get_sset_count = mv88e6095_get_sset_count,
+	.stats_get_strings = mv88e6095_get_strings,
 };
 
 static const struct mv88e6xxx_ops mv88e6185_ops = {
@@ -3550,6 +3580,7 @@ static const struct mv88e6xxx_ops mv88e6185_ops = {
 	.phy_write = mv88e6xxx_phy_ppu_write,
 	.stats_snapshot = _mv88e6xxx_stats_snapshot,
 	.stats_get_sset_count = mv88e6095_get_sset_count,
+	.stats_get_strings = mv88e6095_get_strings,
 };
 
 static const struct mv88e6xxx_ops mv88e6240_ops = {
@@ -3561,6 +3592,7 @@ static const struct mv88e6xxx_ops mv88e6240_ops = {
 	.phy_write = mv88e6xxx_g2_smi_phy_write,
 	.stats_snapshot = mv88e6320_stats_snapshot,
 	.stats_get_sset_count = mv88e6095_get_sset_count,
+	.stats_get_strings = mv88e6095_get_strings,
 };
 
 static const struct mv88e6xxx_ops mv88e6320_ops = {
@@ -3572,6 +3604,7 @@ static const struct mv88e6xxx_ops mv88e6320_ops = {
 	.phy_write = mv88e6xxx_g2_smi_phy_write,
 	.stats_snapshot = mv88e6320_stats_snapshot,
 	.stats_get_sset_count = mv88e6320_get_sset_count,
+	.stats_get_strings = mv88e6320_get_strings,
 };
 
 static const struct mv88e6xxx_ops mv88e6321_ops = {
@@ -3583,6 +3616,7 @@ static const struct mv88e6xxx_ops mv88e6321_ops = {
 	.phy_write = mv88e6xxx_g2_smi_phy_write,
 	.stats_snapshot = mv88e6320_stats_snapshot,
 	.stats_get_sset_count = mv88e6320_get_sset_count,
+	.stats_get_strings = mv88e6320_get_strings,
 };
 
 static const struct mv88e6xxx_ops mv88e6350_ops = {
@@ -3592,6 +3626,7 @@ static const struct mv88e6xxx_ops mv88e6350_ops = {
 	.phy_write = mv88e6xxx_g2_smi_phy_write,
 	.stats_snapshot = mv88e6xxx_stats_snapshot,
 	.stats_get_sset_count = mv88e6095_get_sset_count,
+	.stats_get_strings = mv88e6095_get_strings,
 };
 
 static const struct mv88e6xxx_ops mv88e6351_ops = {
@@ -3601,6 +3636,7 @@ static const struct mv88e6xxx_ops mv88e6351_ops = {
 	.phy_write = mv88e6xxx_g2_smi_phy_write,
 	.stats_snapshot = mv88e6xxx_stats_snapshot,
 	.stats_get_sset_count = mv88e6095_get_sset_count,
+	.stats_get_strings = mv88e6095_get_strings,
 };
 
 static const struct mv88e6xxx_ops mv88e6352_ops = {
@@ -3612,6 +3648,7 @@ static const struct mv88e6xxx_ops mv88e6352_ops = {
 	.phy_write = mv88e6xxx_g2_smi_phy_write,
 	.stats_snapshot = mv88e6320_stats_snapshot,
 	.stats_get_sset_count = mv88e6095_get_sset_count,
+	.stats_get_strings = mv88e6095_get_strings,
 };
 
 static const struct mv88e6xxx_ops mv88e6390_ops = {
@@ -3622,6 +3659,7 @@ static const struct mv88e6xxx_ops mv88e6390_ops = {
 	.stats_init = mv88e6390_stats_init,
 	.stats_snapshot = mv88e6390_stats_snapshot,
 	.stats_get_sset_count = mv88e6320_get_sset_count,
+	.stats_get_strings = mv88e6320_get_strings,
 };
 
 static const struct mv88e6xxx_info mv88e6xxx_table[] = {
