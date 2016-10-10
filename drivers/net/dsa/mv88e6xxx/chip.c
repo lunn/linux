@@ -837,8 +837,7 @@ static void _mv88e6xxx_stats_read(struct mv88e6xxx_chip *chip,
 	*val = 0;
 
 	err = mv88e6xxx_g1_write(chip, GLOBAL_STATS_OP,
-				 GLOBAL_STATS_OP_READ_CAPTURED |
-				 GLOBAL_STATS_OP_HIST_RX_TX | stat);
+				 GLOBAL_STATS_OP_READ_CAPTURED | stat);
 	if (err)
 		return;
 
@@ -923,7 +922,8 @@ static struct mv88e6xxx_hw_stat mv88e6xxx_hw_stats[] = {
 
 static uint64_t _mv88e6xxx_get_ethtool_stat(struct mv88e6xxx_chip *chip,
 					    struct mv88e6xxx_hw_stat *s,
-					    int port)
+					    int port, u16 bank1_select,
+					    u16 histogram)
 {
 	u32 low;
 	u32 high = 0;
@@ -946,10 +946,10 @@ static uint64_t _mv88e6xxx_get_ethtool_stat(struct mv88e6xxx_chip *chip,
 		}
 		break;
 	case STATS_TYPE_BANK1:
-		reg = GLOBAL_STATS_OP_BANK_1;
+		reg = bank1_select;
 		/* fall through */
 	case STATS_TYPE_BANK0:
-		reg |= s->reg;
+		reg |= s->reg | histogram;
 		_mv88e6xxx_stats_read(chip, reg, &low);
 		if (s->sizeof_stat == 8)
 			_mv88e6xxx_stats_read(chip, reg + 1, &high);
@@ -1031,7 +1031,8 @@ static int mv88e6xxx_get_sset_count(struct dsa_switch *ds)
 }
 
 static void _mv88e6xxx_get_stats(struct mv88e6xxx_chip *chip, int port,
-				 uint64_t *data, int types)
+				 uint64_t *data, int types, u16 bank1_select,
+				 u16 histogram)
 {
 	struct mv88e6xxx_hw_stat *stat;
 	int i, j;
@@ -1040,7 +1041,8 @@ static void _mv88e6xxx_get_stats(struct mv88e6xxx_chip *chip, int port,
 		stat = &mv88e6xxx_hw_stats[i];
 		if (stat->type & types) {
 			data[j] = _mv88e6xxx_get_ethtool_stat(chip, stat, port,
-							      bank1_select);
+							      bank1_select,
+							      histogram);
 			j++;
 		}
 	}
@@ -1050,14 +1052,25 @@ static void mv88e6095_get_stats(struct mv88e6xxx_chip *chip, int port,
 				uint64_t *data)
 {
 	return _mv88e6xxx_get_stats(chip, port, data,
-				    STATS_TYPE_BANK0 | STATS_TYPE_PORT);
+				    STATS_TYPE_BANK0 | STATS_TYPE_PORT,
+				    0, GLOBAL_STATS_OP_HIST_RX_TX);
 }
 
 static void mv88e6320_get_stats(struct mv88e6xxx_chip *chip, int port,
 				uint64_t *data)
 {
 	return _mv88e6xxx_get_stats(chip, port, data,
-				    STATS_TYPE_BANK0 | STATS_TYPE_BANK1);
+				    STATS_TYPE_BANK0 | STATS_TYPE_BANK1,
+				    GLOBAL_STATS_OP_BANK_1_BIT_9,
+				    GLOBAL_STATS_OP_HIST_RX_TX);
+}
+
+static void mv88e6390_get_stats(struct mv88e6xxx_chip *chip, int port,
+				uint64_t *data)
+{
+	return _mv88e6xxx_get_stats(chip, port, data,
+				    STATS_TYPE_BANK0 | STATS_TYPE_BANK1,
+				    GLOBAL_STATS_OP_BANK_1_BIT_10, 0);
 }
 
 static void mv88e6xxx_get_stats(struct mv88e6xxx_chip *chip, int port,
@@ -3522,6 +3535,7 @@ static const struct mv88e6xxx_ops mv88e6390_ops = {
 	.stats_snapshot = mv88e6390_stats_snapshot,
 	.stats_get_sset_count = mv88e6320_get_sset_count,
 	.stats_get_strings = mv88e6320_get_strings,
+	.stats_get_stats = mv88e6390_get_stats,
 };
 
 static const struct mv88e6xxx_ops mv88e6390x_ops = {
@@ -3537,6 +3551,7 @@ static const struct mv88e6xxx_ops mv88e6390x_ops = {
 	.stats_snapshot = mv88e6390_stats_snapshot,
 	.stats_get_sset_count = mv88e6320_get_sset_count,
 	.stats_get_strings = mv88e6320_get_strings,
+	.stats_get_stats = mv88e6390_get_stats,
 };
 
 static const struct mv88e6xxx_info mv88e6xxx_table[] = {
