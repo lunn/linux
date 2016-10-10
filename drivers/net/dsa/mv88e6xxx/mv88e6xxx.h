@@ -754,6 +754,7 @@ struct mv88e6xxx_ops {
 			u16 *val);
 	int (*phy_write)(struct mv88e6xxx_chip *chip, int addr, int reg,
 			 u16 val);
+	int (*stats_init)(struct mv88e6xxx_chip *chip);
 	int (*stats_snapshot)(struct mv88e6xxx_chip *chip, int port);
 };
 
