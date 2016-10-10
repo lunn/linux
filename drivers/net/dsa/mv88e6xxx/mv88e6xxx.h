@@ -796,6 +796,8 @@ struct mv88e6xxx_ops {
 	 */
 	int (*port_set_speed)(struct mv88e6xxx_chip *chip, int port, int speed);
 
+	int (*stats_init)(struct mv88e6xxx_chip *chip);
+
 	/* Snapshot the statistics for a port. The statistics can then
 	 * be read back a leisure but still with a consistent view.
 	 */

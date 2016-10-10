@@ -1031,6 +1031,30 @@ static void mv88e6xxx_get_ethtool_stats(struct dsa_switch *ds, int port,
 	mutex_unlock(&chip->reg_lock);
 }
 
+static int mv88e6390_stats_init(struct mv88e6xxx_chip *chip)
+{
+	u16 val;
+	int err;
+
+	err = mv88e6xxx_g1_read(chip, GLOBAL_CONTROL_2, &val);
+	if (err)
+		return err;
+
+	val |= GLOBAL_CONTROL_2_HIST_RX_TX;
+
+	err = mv88e6xxx_g1_write(chip, GLOBAL_CONTROL_2, val);
+
+	return err;
+}
+
+static int mv88e6xxx_stats_init(struct mv88e6xxx_chip *chip)
+{
+	if (chip->info->ops->stats_init)
+		return chip->info->ops->stats_init(chip);
+
+	return 0;
+}
+
 static int mv88e6xxx_get_regs_len(struct dsa_switch *ds, int port)
 {
 	return 32 * sizeof(u16);
@@ -2819,6 +2843,11 @@ static int mv88e6xxx_g1_setup(struct mv88e6xxx_chip *chip)
 	if (err)
 		return err;
 
+	/* Initialize the statistics unit */
+	err = mv88e6xxx_stats_init(chip);
+	if (err)
+		return err;
+
 	/* Clear the statistics counters for all ports */
 	err = mv88e6xxx_g1_write(chip, GLOBAL_STATS_OP,
 				 GLOBAL_STATS_OP_FLUSH_ALL);
@@ -3383,6 +3412,7 @@ static const struct mv88e6xxx_ops mv88e6390_ops = {
 	.port_set_duplex = mv88e6xxx_port_set_duplex,
 	.port_set_rgmii_delay = mv88e6390_port_set_rgmii_delay,
 	.port_set_speed = mv88e6390_port_set_speed,
+	.stats_init = mv88e6390_stats_init,
 	.stats_snapshot = mv88e6390_stats_snapshot,
 };
 
@@ -3395,6 +3425,7 @@ static const struct mv88e6xxx_ops mv88e6390x_ops = {
 	.port_set_duplex = mv88e6xxx_port_set_duplex,
 	.port_set_rgmii_delay = mv88e6390_port_set_rgmii_delay,
 	.port_set_speed = mv88e6390x_port_set_speed,
+	.stats_init = mv88e6390_stats_init,
 	.stats_snapshot = mv88e6390_stats_snapshot,
 };
 
