@@ -757,6 +757,7 @@ struct mv88e6xxx_ops {
 	int (*stats_init)(struct mv88e6xxx_chip *chip);
 	int (*stats_snapshot)(struct mv88e6xxx_chip *chip, int port);
 	int (*stats_get_sset_count)(struct mv88e6xxx_chip *chip);
+	void (*stats_get_strings)(struct mv88e6xxx_chip *chip,  uint8_t *data);
 };
 
 #define STATS_TYPE_PORT		BIT(0)
