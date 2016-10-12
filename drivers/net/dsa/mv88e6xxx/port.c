@@ -496,3 +496,60 @@ int mv88e6xxx_port_set_8021q_mode(struct mv88e6xxx_chip *chip, int port,
 
 	return 0;
 }
+
+int mv88e6095_tag_remap(struct mv88e6xxx_chip *chip, int port)
+{
+	int err;
+
+	/* Tag Remap: use an identity 802.1p prio -> switch prio
+	 * mapping.
+	 */
+	err = mv88e6xxx_port_write(chip, port, PORT_TAG_REGMAP_0123, 0x3210);
+	if (err)
+		return err;
+
+	/* Tag Remap 2: use an identity 802.1p prio -> switch
+	 * prio mapping.
+	 */
+	return mv88e6xxx_port_write(chip, port, PORT_TAG_REGMAP_4567, 0x7654);
+}
+
+int mv88e6390_tag_remap(struct mv88e6xxx_chip *chip, int port)
+{
+	int err, reg, i;
+
+	for (i = 0; i <= 7; i++) {
+		reg = i | (i << 4) |
+			PORT_PRIO_MAP_TABLE_INGRESS_PCP |
+			PORT_PRIO_MAP_TABLE_UPDATE;
+		err = mv88e6xxx_port_write(chip, port, PORT_PRIO_MAP_TABLE,
+					   reg);
+		if (err)
+			return err;
+
+		reg = i | PORT_PRIO_MAP_TABLE_EGRESS_GREEN_PCP |
+			PORT_PRIO_MAP_TABLE_UPDATE;
+		err = mv88e6xxx_port_write(chip, port, PORT_PRIO_MAP_TABLE,
+					   reg);
+		if (err)
+			return err;
+
+		reg = i |
+			PORT_PRIO_MAP_TABLE_EGRESS_YELLOW_PCP |
+			PORT_PRIO_MAP_TABLE_UPDATE;
+		err = mv88e6xxx_port_write(chip, port, PORT_PRIO_MAP_TABLE,
+					   reg);
+		if (err)
+			return err;
+
+		reg = i |
+			PORT_PRIO_MAP_TABLE_EGRESS_AVB_PCP |
+			PORT_PRIO_MAP_TABLE_UPDATE;
+		err = mv88e6xxx_port_write(chip, port, PORT_PRIO_MAP_TABLE,
+					   reg);
+		if (err)
+			return err;
+	}
+
+	return 0;
+}

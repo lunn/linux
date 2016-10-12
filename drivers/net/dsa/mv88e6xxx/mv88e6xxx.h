@@ -171,6 +171,15 @@
 #define PORT_OUT_FILTERED	0x13
 #define PORT_TAG_REGMAP_0123	0x18
 #define PORT_TAG_REGMAP_4567	0x19
+#define PORT_PRIO_MAP_TABLE	0x18    /* 6390 */
+#define PORT_PRIO_MAP_TABLE_UPDATE		BIT(15)
+#define PORT_PRIO_MAP_TABLE_INGRESS_PCP		(0x0 << 12)
+#define PORT_PRIO_MAP_TABLE_EGRESS_GREEN_PCP	(0x1 << 12)
+#define PORT_PRIO_MAP_TABLE_EGRESS_YELLOW_PCP	(0x2 << 12)
+#define PORT_PRIO_MAP_TABLE_EGRESS_AVB_PCP	(0x3 << 12)
+#define PORT_PRIO_MAP_TABLE_EGRESS_GREEN_DSCP	(0x5 << 12)
+#define PORT_PRIO_MAP_TABLE_EGRESS_YELLOW_DSCP	(0x6 << 12)
+#define PORT_PRIO_MAP_TABLE_EGRESS_AVB_DSCP	(0x7 << 12)
 
 #define GLOBAL_STATUS		0x00
 #define GLOBAL_STATUS_PPU_STATE BIT(15) /* 6351 and 6171 */
@@ -807,6 +816,7 @@ struct mv88e6xxx_ops {
 	void (*stats_get_strings)(struct mv88e6xxx_chip *chip,  uint8_t *data);
 	void (*stats_get_stats)(struct mv88e6xxx_chip *chip,  int port,
 				uint64_t *data);
+	int (*tag_remap)(struct mv88e6xxx_chip *chip, int port);
 };
 
 #define STATS_TYPE_PORT		BIT(0)
