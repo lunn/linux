@@ -2736,6 +2736,63 @@ static int mv88e6xxx_serdes_power_on(struct mv88e6xxx_chip *chip)
 	return err;
 }
 
+static int mv88e6095_tag_remap(struct mv88e6xxx_chip *chip, int port)
+{
+	int err;
+
+	/* Tag Remap: use an identity 802.1p prio -> switch prio
+	 * mapping.
+	 */
+	err = mv88e6xxx_port_write(chip, port, PORT_TAG_REGMAP_0123, 0x3210);
+	if (err)
+		return err;
+
+	/* Tag Remap 2: use an identity 802.1p prio -> switch
+	 * prio mapping.
+	 */
+	return mv88e6xxx_port_write(chip, port, PORT_TAG_REGMAP_4567, 0x7654);
+}
+
+static int mv88e6390_tag_remap(struct mv88e6xxx_chip *chip, int port)
+{
+	int err, reg, i;
+
+	for (i = 0; i <= 7; i++) {
+		reg = i | (i << 4) |
+			PORT_PRIO_MAP_TABLE_INGRESS_PCP |
+			PORT_PRIO_MAP_TABLE_UPDATE;
+		err = mv88e6xxx_port_write(chip, port, PORT_PRIO_MAP_TABLE,
+					   reg);
+		if (err)
+			return err;
+
+		reg = i | PORT_PRIO_MAP_TABLE_EGRESS_GREEN_PCP |
+			PORT_PRIO_MAP_TABLE_UPDATE;
+		err = mv88e6xxx_port_write(chip, port, PORT_PRIO_MAP_TABLE,
+					   reg);
+		if (err)
+			return err;
+
+		reg = i |
+			PORT_PRIO_MAP_TABLE_EGRESS_YELLOW_PCP |
+			PORT_PRIO_MAP_TABLE_UPDATE;
+		err = mv88e6xxx_port_write(chip, port, PORT_PRIO_MAP_TABLE,
+					   reg);
+		if (err)
+			return err;
+
+		reg = i |
+			PORT_PRIO_MAP_TABLE_EGRESS_AVB_PCP |
+			PORT_PRIO_MAP_TABLE_UPDATE;
+		err = mv88e6xxx_port_write(chip, port, PORT_PRIO_MAP_TABLE,
+					   reg);
+		if (err)
+			return err;
+	}
+
+	return 0;
+}
+
 static int mv88e6xxx_setup_port(struct mv88e6xxx_chip *chip, int port)
 {
 	struct dsa_switch *ds = chip->ds;
@@ -2930,20 +2987,10 @@ static int mv88e6xxx_setup_port(struct mv88e6xxx_chip *chip, int port)
 			if (err)
 				return err;
 		}
+	}
 
-		/* Tag Remap: use an identity 802.1p prio -> switch
-		 * prio mapping.
-		 */
-		err = mv88e6xxx_port_write(chip, port, PORT_TAG_REGMAP_0123,
-					   0x3210);
-		if (err)
-			return err;
-
-		/* Tag Remap 2: use an identity 802.1p prio -> switch
-		 * prio mapping.
-		 */
-		err = mv88e6xxx_port_write(chip, port, PORT_TAG_REGMAP_4567,
-					   0x7654);
+	if (chip->info->ops->tag_remap) {
+		err = chip->info->ops->tag_remap(chip, port);
 		if (err)
 			return err;
 	}
@@ -3503,6 +3550,7 @@ static const struct mv88e6xxx_ops mv88e6085_ops = {
 	.stats_get_sset_count = mv88e6095_get_sset_count,
 	.stats_get_strings = mv88e6095_get_strings,
 	.stats_get_stats = mv88e6095_get_stats,
+	.tag_remap = mv88e6095_tag_remap,
 };
 
 static const struct mv88e6xxx_ops mv88e6095_ops = {
@@ -3525,6 +3573,7 @@ static const struct mv88e6xxx_ops mv88e6123_ops = {
 	.stats_get_sset_count = mv88e6095_get_sset_count,
 	.stats_get_strings = mv88e6095_get_strings,
 	.stats_get_stats = mv88e6095_get_stats,
+	.tag_remap = mv88e6095_tag_remap,
 };
 
 static const struct mv88e6xxx_ops mv88e6131_ops = {
@@ -3547,6 +3596,7 @@ static const struct mv88e6xxx_ops mv88e6161_ops = {
 	.stats_get_sset_count = mv88e6095_get_sset_count,
 	.stats_get_strings = mv88e6095_get_strings,
 	.stats_get_stats = mv88e6095_get_stats,
+	.tag_remap = mv88e6095_tag_remap,
 };
 
 static const struct mv88e6xxx_ops mv88e6165_ops = {
@@ -3558,6 +3608,7 @@ static const struct mv88e6xxx_ops mv88e6165_ops = {
 	.stats_get_sset_count = mv88e6095_get_sset_count,
 	.stats_get_strings = mv88e6095_get_strings,
 	.stats_get_stats = mv88e6095_get_stats,
+	.tag_remap = mv88e6095_tag_remap,
 };
 
 static const struct mv88e6xxx_ops mv88e6171_ops = {
@@ -3569,6 +3620,7 @@ static const struct mv88e6xxx_ops mv88e6171_ops = {
 	.stats_get_sset_count = mv88e6095_get_sset_count,
 	.stats_get_strings = mv88e6095_get_strings,
 	.stats_get_stats = mv88e6095_get_stats,
+	.tag_remap = mv88e6095_tag_remap,
 };
 
 static const struct mv88e6xxx_ops mv88e6172_ops = {
@@ -3582,6 +3634,7 @@ static const struct mv88e6xxx_ops mv88e6172_ops = {
 	.stats_get_sset_count = mv88e6095_get_sset_count,
 	.stats_get_strings = mv88e6095_get_strings,
 	.stats_get_stats = mv88e6095_get_stats,
+	.tag_remap = mv88e6095_tag_remap,
 };
 
 static const struct mv88e6xxx_ops mv88e6175_ops = {
@@ -3593,6 +3646,7 @@ static const struct mv88e6xxx_ops mv88e6175_ops = {
 	.stats_get_sset_count = mv88e6095_get_sset_count,
 	.stats_get_strings = mv88e6095_get_strings,
 	.stats_get_stats = mv88e6095_get_stats,
+	.tag_remap = mv88e6095_tag_remap,
 };
 
 static const struct mv88e6xxx_ops mv88e6176_ops = {
@@ -3606,6 +3660,7 @@ static const struct mv88e6xxx_ops mv88e6176_ops = {
 	.stats_get_sset_count = mv88e6095_get_sset_count,
 	.stats_get_strings = mv88e6095_get_strings,
 	.stats_get_stats = mv88e6095_get_stats,
+	.tag_remap = mv88e6095_tag_remap,
 };
 
 static const struct mv88e6xxx_ops mv88e6185_ops = {
@@ -3630,6 +3685,7 @@ static const struct mv88e6xxx_ops mv88e6240_ops = {
 	.stats_get_sset_count = mv88e6095_get_sset_count,
 	.stats_get_strings = mv88e6095_get_strings,
 	.stats_get_stats = mv88e6095_get_stats,
+	.tag_remap = mv88e6095_tag_remap,
 };
 
 static const struct mv88e6xxx_ops mv88e6320_ops = {
@@ -3643,6 +3699,7 @@ static const struct mv88e6xxx_ops mv88e6320_ops = {
 	.stats_get_sset_count = mv88e6320_get_sset_count,
 	.stats_get_strings = mv88e6320_get_strings,
 	.stats_get_stats = mv88e6320_get_stats,
+	.tag_remap = mv88e6095_tag_remap,
 };
 
 static const struct mv88e6xxx_ops mv88e6321_ops = {
@@ -3656,6 +3713,7 @@ static const struct mv88e6xxx_ops mv88e6321_ops = {
 	.stats_get_sset_count = mv88e6320_get_sset_count,
 	.stats_get_strings = mv88e6320_get_strings,
 	.stats_get_stats = mv88e6320_get_stats,
+	.tag_remap = mv88e6095_tag_remap,
 };
 
 static const struct mv88e6xxx_ops mv88e6350_ops = {
@@ -3667,6 +3725,7 @@ static const struct mv88e6xxx_ops mv88e6350_ops = {
 	.stats_get_sset_count = mv88e6095_get_sset_count,
 	.stats_get_strings = mv88e6095_get_strings,
 	.stats_get_stats = mv88e6095_get_stats,
+	.tag_remap = mv88e6095_tag_remap,
 };
 
 static const struct mv88e6xxx_ops mv88e6351_ops = {
@@ -3678,6 +3737,7 @@ static const struct mv88e6xxx_ops mv88e6351_ops = {
 	.stats_get_sset_count = mv88e6095_get_sset_count,
 	.stats_get_strings = mv88e6095_get_strings,
 	.stats_get_stats = mv88e6095_get_stats,
+	.tag_remap = mv88e6095_tag_remap,
 };
 
 static const struct mv88e6xxx_ops mv88e6352_ops = {
@@ -3691,6 +3751,7 @@ static const struct mv88e6xxx_ops mv88e6352_ops = {
 	.stats_get_sset_count = mv88e6095_get_sset_count,
 	.stats_get_strings = mv88e6095_get_strings,
 	.stats_get_stats = mv88e6095_get_stats,
+	.tag_remap = mv88e6095_tag_remap,
 };
 
 static const struct mv88e6xxx_ops mv88e6390_ops = {
@@ -3703,6 +3764,7 @@ static const struct mv88e6xxx_ops mv88e6390_ops = {
 	.stats_get_sset_count = mv88e6320_get_sset_count,
 	.stats_get_strings = mv88e6320_get_strings,
 	.stats_get_stats = mv88e6390_get_stats,
+	.tag_remap = mv88e6390_tag_remap,
 };
 
 static const struct mv88e6xxx_info mv88e6xxx_table[] = {
