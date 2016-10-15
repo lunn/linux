@@ -2792,6 +2792,81 @@ static int mv88e6390_tag_remap(struct mv88e6xxx_chip *chip, int port)
 	return 0;
 }
 
+static int mv88e6095_cpu_port_config(struct mv88e6xxx_chip *chip, int port)
+{
+	u16 reg;
+	int err;
+
+	err = mv88e6xxx_port_read(chip, port, PORT_CONTROL, &reg);
+	if (err)
+		return err;
+
+	reg |= PORT_CONTROL_DSA_TAG |
+		PORT_CONTROL_EGRESS_ADD_TAG |
+		PORT_CONTROL_FORWARD_UNKNOWN;
+
+	return mv88e6xxx_port_write(chip, port, PORT_CONTROL, reg);
+}
+
+static int mv88e6351_cpu_port_config(struct mv88e6xxx_chip *chip, int port)
+{
+	u16 reg;
+	int err;
+
+	err = mv88e6xxx_port_read(chip, port, PORT_CONTROL, &reg);
+	if (err)
+		return err;
+
+	if (chip->info->tag_protocol == DSA_TAG_PROTO_EDSA) {
+		reg |= PORT_CONTROL_FRAME_ETHER_TYPE_DSA |
+			PORT_CONTROL_EGRESS_ADD_TAG;
+
+		/* Port Ethertype: use the Ethertype DSA Ethertype
+		 * value.
+		 */
+		err = mv88e6xxx_port_write(chip, port, PORT_ETH_TYPE,
+					   ETH_P_EDSA);
+		if (err)
+			return err;
+	} else {
+		reg |= PORT_CONTROL_FRAME_MODE_DSA;
+	}
+
+	reg |= PORT_CONTROL_EGREES_ALL_UNKNOWN_DA;
+
+	return mv88e6xxx_port_write(chip, port, PORT_CONTROL, reg);
+}
+
+static int mv88e6095_dsa_port_config(struct mv88e6xxx_chip *chip, int port)
+{
+	u16 reg;
+	int err;
+
+	err = mv88e6xxx_port_read(chip, port, PORT_CONTROL, &reg);
+	if (err)
+		return err;
+
+	reg |= PORT_CONTROL_DSA_TAG |
+		PORT_CONTROL_FORWARD_UNKNOWN;
+
+	return mv88e6xxx_port_write(chip, port, PORT_CONTROL, reg);
+}
+
+static int mv88e6351_dsa_port_config(struct mv88e6xxx_chip *chip, int port)
+{
+	u16 reg;
+	int err;
+
+	err = mv88e6xxx_port_read(chip, port, PORT_CONTROL, &reg);
+	if (err)
+		return err;
+
+	reg |= PORT_CONTROL_FRAME_MODE_DSA |
+		PORT_CONTROL_EGREES_ALL_UNKNOWN_DA;
+
+	return mv88e6xxx_port_write(chip, port, PORT_CONTROL, reg);
+}
+
 static int mv88e6xxx_setup_port(struct mv88e6xxx_chip *chip, int port)
 {
 	struct dsa_switch *ds = chip->ds;
@@ -2842,41 +2917,20 @@ static int mv88e6xxx_setup_port(struct mv88e6xxx_chip *chip, int port)
 	 * If this is the upstream port for this switch, enable
 	 * forwarding of unknown unicasts and multicasts.
 	 */
-	reg = 0;
-	if (mv88e6xxx_6352_family(chip) || mv88e6xxx_6351_family(chip) ||
-	    mv88e6xxx_6165_family(chip) || mv88e6xxx_6097_family(chip) ||
-	    mv88e6xxx_6095_family(chip) || mv88e6xxx_6065_family(chip) ||
-	    mv88e6xxx_6185_family(chip) || mv88e6xxx_6320_family(chip))
-		reg = PORT_CONTROL_IGMP_MLD_SNOOP |
+	reg = PORT_CONTROL_IGMP_MLD_SNOOP |
 		PORT_CONTROL_USE_TAG | PORT_CONTROL_USE_IP |
 		PORT_CONTROL_STATE_FORWARDING;
+	err = mv88e6xxx_port_write(chip, port, PORT_CONTROL, reg);
+	if (err)
+		return err;
+
 	if (dsa_is_cpu_port(ds, port)) {
-		if (chip->info->tag_protocol == DSA_TAG_PROTO_EDSA)
-			reg |= PORT_CONTROL_FRAME_ETHER_TYPE_DSA |
-				PORT_CONTROL_FORWARD_UNKNOWN_MC;
-		else
-			reg |= PORT_CONTROL_DSA_TAG;
-		reg |= PORT_CONTROL_EGRESS_ADD_TAG |
-			PORT_CONTROL_FORWARD_UNKNOWN;
+		err = chip->info->ops->cpu_port_config(chip, port);
+		if (err)
+			return err;
 	}
 	if (dsa_is_dsa_port(ds, port)) {
-		if (mv88e6xxx_6095_family(chip) ||
-		    mv88e6xxx_6185_family(chip))
-			reg |= PORT_CONTROL_DSA_TAG;
-		if (mv88e6xxx_6352_family(chip) ||
-		    mv88e6xxx_6351_family(chip) ||
-		    mv88e6xxx_6165_family(chip) ||
-		    mv88e6xxx_6097_family(chip) ||
-		    mv88e6xxx_6320_family(chip)) {
-			reg |= PORT_CONTROL_FRAME_MODE_DSA;
-		}
-
-		if (port == dsa_upstream_port(ds))
-			reg |= PORT_CONTROL_FORWARD_UNKNOWN |
-				PORT_CONTROL_FORWARD_UNKNOWN_MC;
-	}
-	if (reg) {
-		err = mv88e6xxx_port_write(chip, port, PORT_CONTROL, reg);
+		err = chip->info->ops->dsa_port_config(chip, port);
 		if (err)
 			return err;
 	}
@@ -2976,16 +3030,6 @@ static int mv88e6xxx_setup_port(struct mv88e6xxx_chip *chip, int port)
 					   0x0000);
 		if (err)
 			return err;
-
-		/* Port Ethertype: use the Ethertype DSA Ethertype
-		 * value.
-		 */
-		if (chip->info->tag_protocol == DSA_TAG_PROTO_EDSA) {
-			err = mv88e6xxx_port_write(chip, port, PORT_ETH_TYPE,
-						   ETH_P_EDSA);
-			if (err)
-				return err;
-		}
 	}
 
 	if (chip->info->ops->tag_remap) {
@@ -3604,6 +3648,8 @@ static const struct mv88e6xxx_ops mv88e6085_ops = {
 	.stats_get_stats = mv88e6095_get_stats,
 	.tag_remap = mv88e6095_tag_remap,
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
+	.cpu_port_config = mv88e6351_cpu_port_config,
+	.dsa_port_config = mv88e6351_dsa_port_config,
 };
 
 static const struct mv88e6xxx_ops mv88e6095_ops = {
@@ -3616,6 +3662,8 @@ static const struct mv88e6xxx_ops mv88e6095_ops = {
 	.stats_get_strings = mv88e6095_get_strings,
 	.stats_get_stats = mv88e6095_get_stats,
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
+	.cpu_port_config = mv88e6095_cpu_port_config,
+	.dsa_port_config = mv88e6095_dsa_port_config,
 };
 
 static const struct mv88e6xxx_ops mv88e6123_ops = {
@@ -3629,6 +3677,8 @@ static const struct mv88e6xxx_ops mv88e6123_ops = {
 	.stats_get_stats = mv88e6095_get_stats,
 	.tag_remap = mv88e6095_tag_remap,
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
+	.cpu_port_config = mv88e6351_cpu_port_config,
+	.dsa_port_config = mv88e6351_dsa_port_config,
 };
 
 static const struct mv88e6xxx_ops mv88e6131_ops = {
@@ -3641,6 +3691,8 @@ static const struct mv88e6xxx_ops mv88e6131_ops = {
 	.stats_get_strings = mv88e6095_get_strings,
 	.stats_get_stats = mv88e6095_get_stats,
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
+	.cpu_port_config = mv88e6095_cpu_port_config,
+	.dsa_port_config = mv88e6095_dsa_port_config,
 };
 
 static const struct mv88e6xxx_ops mv88e6161_ops = {
@@ -3654,6 +3706,8 @@ static const struct mv88e6xxx_ops mv88e6161_ops = {
 	.stats_get_stats = mv88e6095_get_stats,
 	.tag_remap = mv88e6095_tag_remap,
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
+	.cpu_port_config = mv88e6351_cpu_port_config,
+	.dsa_port_config = mv88e6351_dsa_port_config,
 };
 
 static const struct mv88e6xxx_ops mv88e6165_ops = {
@@ -3667,6 +3721,8 @@ static const struct mv88e6xxx_ops mv88e6165_ops = {
 	.stats_get_stats = mv88e6095_get_stats,
 	.tag_remap = mv88e6095_tag_remap,
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
+	.cpu_port_config = mv88e6351_cpu_port_config,
+	.dsa_port_config = mv88e6351_dsa_port_config,
 };
 
 static const struct mv88e6xxx_ops mv88e6171_ops = {
@@ -3680,6 +3736,8 @@ static const struct mv88e6xxx_ops mv88e6171_ops = {
 	.stats_get_stats = mv88e6095_get_stats,
 	.tag_remap = mv88e6095_tag_remap,
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
+	.cpu_port_config = mv88e6351_cpu_port_config,
+	.dsa_port_config = mv88e6351_dsa_port_config,
 };
 
 static const struct mv88e6xxx_ops mv88e6172_ops = {
@@ -3695,6 +3753,8 @@ static const struct mv88e6xxx_ops mv88e6172_ops = {
 	.stats_get_stats = mv88e6095_get_stats,
 	.tag_remap = mv88e6095_tag_remap,
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
+	.cpu_port_config = mv88e6351_cpu_port_config,
+	.dsa_port_config = mv88e6351_dsa_port_config,
 };
 
 static const struct mv88e6xxx_ops mv88e6175_ops = {
@@ -3708,6 +3768,8 @@ static const struct mv88e6xxx_ops mv88e6175_ops = {
 	.stats_get_stats = mv88e6095_get_stats,
 	.tag_remap = mv88e6095_tag_remap,
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
+	.cpu_port_config = mv88e6351_cpu_port_config,
+	.dsa_port_config = mv88e6351_dsa_port_config,
 };
 
 static const struct mv88e6xxx_ops mv88e6176_ops = {
@@ -3723,6 +3785,8 @@ static const struct mv88e6xxx_ops mv88e6176_ops = {
 	.stats_get_stats = mv88e6095_get_stats,
 	.tag_remap = mv88e6095_tag_remap,
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
+	.cpu_port_config = mv88e6351_cpu_port_config,
+	.dsa_port_config = mv88e6351_dsa_port_config,
 };
 
 static const struct mv88e6xxx_ops mv88e6185_ops = {
@@ -3735,6 +3799,8 @@ static const struct mv88e6xxx_ops mv88e6185_ops = {
 	.stats_get_strings = mv88e6095_get_strings,
 	.stats_get_stats = mv88e6095_get_stats,
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
+	.cpu_port_config = mv88e6095_cpu_port_config,
+	.dsa_port_config = mv88e6095_dsa_port_config,
 };
 
 static const struct mv88e6xxx_ops mv88e6240_ops = {
@@ -3750,6 +3816,8 @@ static const struct mv88e6xxx_ops mv88e6240_ops = {
 	.stats_get_stats = mv88e6095_get_stats,
 	.tag_remap = mv88e6095_tag_remap,
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
+	.cpu_port_config = mv88e6351_cpu_port_config,
+	.dsa_port_config = mv88e6351_dsa_port_config,
 };
 
 static const struct mv88e6xxx_ops mv88e6320_ops = {
@@ -3765,6 +3833,8 @@ static const struct mv88e6xxx_ops mv88e6320_ops = {
 	.stats_get_stats = mv88e6320_get_stats,
 	.tag_remap = mv88e6095_tag_remap,
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
+	.cpu_port_config = mv88e6351_cpu_port_config,
+	.dsa_port_config = mv88e6351_dsa_port_config,
 };
 
 static const struct mv88e6xxx_ops mv88e6321_ops = {
@@ -3780,6 +3850,8 @@ static const struct mv88e6xxx_ops mv88e6321_ops = {
 	.stats_get_stats = mv88e6320_get_stats,
 	.tag_remap = mv88e6095_tag_remap,
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
+	.cpu_port_config = mv88e6351_cpu_port_config,
+	.dsa_port_config = mv88e6351_dsa_port_config,
 };
 
 static const struct mv88e6xxx_ops mv88e6350_ops = {
@@ -3793,6 +3865,8 @@ static const struct mv88e6xxx_ops mv88e6350_ops = {
 	.stats_get_stats = mv88e6095_get_stats,
 	.tag_remap = mv88e6095_tag_remap,
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
+	.cpu_port_config = mv88e6351_cpu_port_config,
+	.dsa_port_config = mv88e6351_dsa_port_config,
 };
 
 static const struct mv88e6xxx_ops mv88e6351_ops = {
@@ -3806,6 +3880,8 @@ static const struct mv88e6xxx_ops mv88e6351_ops = {
 	.stats_get_stats = mv88e6095_get_stats,
 	.tag_remap = mv88e6095_tag_remap,
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
+	.cpu_port_config = mv88e6351_cpu_port_config,
+	.dsa_port_config = mv88e6351_dsa_port_config,
 };
 
 static const struct mv88e6xxx_ops mv88e6352_ops = {
@@ -3821,6 +3897,8 @@ static const struct mv88e6xxx_ops mv88e6352_ops = {
 	.stats_get_stats = mv88e6095_get_stats,
 	.tag_remap = mv88e6095_tag_remap,
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
+	.cpu_port_config = mv88e6351_cpu_port_config,
+	.dsa_port_config = mv88e6351_dsa_port_config,
 };
 
 static const struct mv88e6xxx_ops mv88e6390_ops = {
@@ -3835,6 +3913,8 @@ static const struct mv88e6xxx_ops mv88e6390_ops = {
 	.stats_get_stats = mv88e6390_get_stats,
 	.tag_remap = mv88e6390_tag_remap,
 	.monitor_ctrl = mv88e6390_monitor_ctrl,
+	.cpu_port_config = mv88e6351_cpu_port_config,
+	.dsa_port_config = mv88e6351_dsa_port_config,
 };
 
 static const struct mv88e6xxx_info mv88e6xxx_table[] = {
