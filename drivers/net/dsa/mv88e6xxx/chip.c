@@ -716,6 +716,49 @@ static bool mv88e6xxx_6352_family(struct mv88e6xxx_chip *chip)
 	return chip->info->family == MV88E6XXX_FAMILY_6352;
 }
 
+static void mv88e6xxx_rgmii_delay(struct mv88e6xxx_chip *chip, int port,
+				  phy_interface_t interface)
+{
+	u16 reg;
+	int err;
+
+	err = mv88e6xxx_port_read(chip, port, PORT_PCS_CTRL, &reg);
+	if (err)
+		return;
+
+	reg &= ~(PORT_PCS_CTRL_RGMII_DELAY_RXCLK |
+			PORT_PCS_CTRL_RGMII_DELAY_TXCLK);
+
+	switch (interface) {
+	case PHY_INTERFACE_MODE_RGMII_RXID:
+		reg |= PORT_PCS_CTRL_RGMII_DELAY_RXCLK;
+		break;
+	case PHY_INTERFACE_MODE_RGMII_TXID:
+		reg |= PORT_PCS_CTRL_RGMII_DELAY_TXCLK;
+		break;
+	case PHY_INTERFACE_MODE_RGMII_ID:
+		reg |= (PORT_PCS_CTRL_RGMII_DELAY_RXCLK |
+			PORT_PCS_CTRL_RGMII_DELAY_TXCLK);
+	default:
+		break;
+	}
+	mv88e6xxx_port_write(chip, port, PORT_PCS_CTRL, reg);
+}
+
+static void mv88e6351_rgmii_delay(struct mv88e6xxx_chip *chip, int port,
+				  phy_interface_t interface)
+{
+	if (port == 5 || port == 6)
+		mv88e6xxx_rgmii_delay(chip, port, interface);
+}
+
+static void mv88e6390_rgmii_delay(struct mv88e6xxx_chip *chip, int port,
+				  phy_interface_t interface)
+{
+	if (port == 0)
+		mv88e6xxx_rgmii_delay(chip, port, interface);
+}
+
 /* We expect the switch to perform auto negotiation if there is a real
  * phy. However, in the case of a fixed link phy, we force the port
  * settings from the fixed link settings.
@@ -768,17 +811,10 @@ static void mv88e6xxx_adjust_link(struct dsa_switch *ds, int port,
 	if (phydev->duplex == DUPLEX_FULL)
 		reg |= PORT_PCS_CTRL_DUPLEX_FULL;
 
-	if ((mv88e6xxx_6352_family(chip) || mv88e6xxx_6351_family(chip)) &&
-	    (port >= mv88e6xxx_num_ports(chip) - 2)) {
-		if (phydev->interface == PHY_INTERFACE_MODE_RGMII_RXID)
-			reg |= PORT_PCS_CTRL_RGMII_DELAY_RXCLK;
-		if (phydev->interface == PHY_INTERFACE_MODE_RGMII_TXID)
-			reg |= PORT_PCS_CTRL_RGMII_DELAY_TXCLK;
-		if (phydev->interface == PHY_INTERFACE_MODE_RGMII_ID)
-			reg |= (PORT_PCS_CTRL_RGMII_DELAY_RXCLK |
-				PORT_PCS_CTRL_RGMII_DELAY_TXCLK);
-	}
 	mv88e6xxx_port_write(chip, port, PORT_PCS_CTRL, reg);
+
+	if (chip->info->ops->rgmii_delay)
+		chip->info->ops->rgmii_delay(chip, port, phydev->interface);
 
 out:
 	mutex_unlock(&chip->reg_lock);
@@ -3738,6 +3774,7 @@ static const struct mv88e6xxx_ops mv88e6171_ops = {
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
 	.cpu_port_config = mv88e6351_cpu_port_config,
 	.dsa_port_config = mv88e6351_dsa_port_config,
+	.rgmii_delay = mv88e6351_rgmii_delay,
 };
 
 static const struct mv88e6xxx_ops mv88e6172_ops = {
@@ -3755,6 +3792,7 @@ static const struct mv88e6xxx_ops mv88e6172_ops = {
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
 	.cpu_port_config = mv88e6351_cpu_port_config,
 	.dsa_port_config = mv88e6351_dsa_port_config,
+	.rgmii_delay = mv88e6351_rgmii_delay,
 };
 
 static const struct mv88e6xxx_ops mv88e6175_ops = {
@@ -3770,6 +3808,7 @@ static const struct mv88e6xxx_ops mv88e6175_ops = {
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
 	.cpu_port_config = mv88e6351_cpu_port_config,
 	.dsa_port_config = mv88e6351_dsa_port_config,
+	.rgmii_delay = mv88e6351_rgmii_delay,
 };
 
 static const struct mv88e6xxx_ops mv88e6176_ops = {
@@ -3787,6 +3826,7 @@ static const struct mv88e6xxx_ops mv88e6176_ops = {
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
 	.cpu_port_config = mv88e6351_cpu_port_config,
 	.dsa_port_config = mv88e6351_dsa_port_config,
+	.rgmii_delay = mv88e6351_rgmii_delay,
 };
 
 static const struct mv88e6xxx_ops mv88e6185_ops = {
@@ -3818,6 +3858,7 @@ static const struct mv88e6xxx_ops mv88e6240_ops = {
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
 	.cpu_port_config = mv88e6351_cpu_port_config,
 	.dsa_port_config = mv88e6351_dsa_port_config,
+	.rgmii_delay = mv88e6351_rgmii_delay,
 };
 
 static const struct mv88e6xxx_ops mv88e6320_ops = {
@@ -3867,6 +3908,7 @@ static const struct mv88e6xxx_ops mv88e6350_ops = {
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
 	.cpu_port_config = mv88e6351_cpu_port_config,
 	.dsa_port_config = mv88e6351_dsa_port_config,
+	.rgmii_delay = mv88e6351_rgmii_delay,
 };
 
 static const struct mv88e6xxx_ops mv88e6351_ops = {
@@ -3882,6 +3924,7 @@ static const struct mv88e6xxx_ops mv88e6351_ops = {
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
 	.cpu_port_config = mv88e6351_cpu_port_config,
 	.dsa_port_config = mv88e6351_dsa_port_config,
+	.rgmii_delay = mv88e6351_rgmii_delay,
 };
 
 static const struct mv88e6xxx_ops mv88e6352_ops = {
@@ -3899,6 +3942,7 @@ static const struct mv88e6xxx_ops mv88e6352_ops = {
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
 	.cpu_port_config = mv88e6351_cpu_port_config,
 	.dsa_port_config = mv88e6351_dsa_port_config,
+	.rgmii_delay = mv88e6351_rgmii_delay,
 };
 
 static const struct mv88e6xxx_ops mv88e6390_ops = {
@@ -3915,6 +3959,7 @@ static const struct mv88e6xxx_ops mv88e6390_ops = {
 	.monitor_ctrl = mv88e6390_monitor_ctrl,
 	.cpu_port_config = mv88e6351_cpu_port_config,
 	.dsa_port_config = mv88e6351_dsa_port_config,
+	.rgmii_delay = mv88e6390_rgmii_delay,
 };
 
 static const struct mv88e6xxx_info mv88e6xxx_table[] = {
