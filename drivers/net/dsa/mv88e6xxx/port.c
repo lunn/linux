@@ -553,3 +553,78 @@ int mv88e6390_tag_remap(struct mv88e6xxx_chip *chip, int port)
 
 	return 0;
 }
+
+int mv88e6095_cpu_port_config(struct mv88e6xxx_chip *chip, int port)
+{
+	u16 reg;
+	int err;
+
+	err = mv88e6xxx_port_read(chip, port, PORT_CONTROL, &reg);
+	if (err)
+		return err;
+
+	reg |= PORT_CONTROL_DSA_TAG |
+		PORT_CONTROL_EGRESS_ADD_TAG |
+		PORT_CONTROL_FORWARD_UNKNOWN;
+
+	return mv88e6xxx_port_write(chip, port, PORT_CONTROL, reg);
+}
+
+int mv88e6351_cpu_port_config(struct mv88e6xxx_chip *chip, int port)
+{
+	u16 reg;
+	int err;
+
+	err = mv88e6xxx_port_read(chip, port, PORT_CONTROL, &reg);
+	if (err)
+		return err;
+
+	if (chip->info->tag_protocol == DSA_TAG_PROTO_EDSA) {
+		reg |= PORT_CONTROL_FRAME_ETHER_TYPE_DSA |
+			PORT_CONTROL_EGRESS_ADD_TAG;
+
+		/* Port Ethertype: use the Ethertype DSA Ethertype
+		 * value.
+		 */
+		err = mv88e6xxx_port_write(chip, port, PORT_ETH_TYPE,
+					   ETH_P_EDSA);
+		if (err)
+			return err;
+	} else {
+		reg |= PORT_CONTROL_FRAME_MODE_DSA;
+	}
+
+	reg |= PORT_CONTROL_EGREES_ALL_UNKNOWN_DA;
+
+	return mv88e6xxx_port_write(chip, port, PORT_CONTROL, reg);
+}
+
+int mv88e6095_dsa_port_config(struct mv88e6xxx_chip *chip, int port)
+{
+	u16 reg;
+	int err;
+
+	err = mv88e6xxx_port_read(chip, port, PORT_CONTROL, &reg);
+	if (err)
+		return err;
+
+	reg |= PORT_CONTROL_DSA_TAG |
+		PORT_CONTROL_FORWARD_UNKNOWN;
+
+	return mv88e6xxx_port_write(chip, port, PORT_CONTROL, reg);
+}
+
+int mv88e6351_dsa_port_config(struct mv88e6xxx_chip *chip, int port)
+{
+	u16 reg;
+	int err;
+
+	err = mv88e6xxx_port_read(chip, port, PORT_CONTROL, &reg);
+	if (err)
+		return err;
+
+	reg |= PORT_CONTROL_FRAME_MODE_DSA |
+		PORT_CONTROL_EGREES_ALL_UNKNOWN_DA;
+
+	return mv88e6xxx_port_write(chip, port, PORT_CONTROL, reg);
+}

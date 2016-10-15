@@ -123,6 +123,10 @@
 #define PORT_CONTROL_USE_TAG		BIT(4)
 #define PORT_CONTROL_FORWARD_UNKNOWN_MC	BIT(3)
 #define PORT_CONTROL_FORWARD_UNKNOWN	BIT(2)
+#define PORT_CONTROL_NOT_EGREES_UNKNOWN_DA		(0x0 << 2)
+#define PORT_CONTROL_NOT_EGREES_UNKNOWN_MULTICAST_DA	(0x1 << 2)
+#define PORT_CONTROL_NOT_EGREES_UNKNOWN_UNITCAST_DA	(0x2 << 2)
+#define PORT_CONTROL_EGREES_ALL_UNKNOWN_DA		(0x3 << 2)
 #define PORT_CONTROL_STATE_MASK		0x03
 #define PORT_CONTROL_STATE_DISABLED	0x00
 #define PORT_CONTROL_STATE_BLOCKING	0x01
@@ -815,6 +819,8 @@ struct mv88e6xxx_ops {
 				uint64_t *data);
 	int (*tag_remap)(struct mv88e6xxx_chip *chip, int port);
 	int (*monitor_ctrl)(struct mv88e6xxx_chip *chip, int upstream_port);
+	int (*cpu_port_config)(struct mv88e6xxx_chip *chip, int port);
+	int (*dsa_port_config)(struct mv88e6xxx_chip *chip, int port);
 };
 
 #define STATS_TYPE_PORT		BIT(0)
