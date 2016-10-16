@@ -2903,6 +2903,20 @@ static int mv88e6351_dsa_port_config(struct mv88e6xxx_chip *chip, int port)
 	return mv88e6xxx_port_write(chip, port, PORT_CONTROL, reg);
 }
 
+static int mv88e6165_jumbo_config(struct mv88e6xxx_chip *chip, int port)
+{
+	u16 reg;
+	int err;
+
+	err = mv88e6xxx_port_read(chip, port, PORT_CONTROL_2, &reg);
+	if (err)
+		return err;
+
+	reg |= PORT_CONTROL_2_JUMBO_10240;
+
+	return mv88e6xxx_port_write(chip, port, PORT_CONTROL_2, reg);
+}
+
 static int mv88e6xxx_setup_port(struct mv88e6xxx_chip *chip, int port)
 {
 	struct dsa_switch *ds = chip->ds;
@@ -3001,10 +3015,6 @@ static int mv88e6xxx_setup_port(struct mv88e6xxx_chip *chip, int port)
 	    mv88e6xxx_6185_family(chip))
 		reg = PORT_CONTROL_2_MAP_DA;
 
-	if (mv88e6xxx_6352_family(chip) || mv88e6xxx_6351_family(chip) ||
-	    mv88e6xxx_6165_family(chip) || mv88e6xxx_6320_family(chip))
-		reg |= PORT_CONTROL_2_JUMBO_10240;
-
 	if (mv88e6xxx_6095_family(chip) || mv88e6xxx_6185_family(chip)) {
 		/* Set the upstream port this port should use */
 		reg |= dsa_upstream_port(ds);
@@ -3019,6 +3029,12 @@ static int mv88e6xxx_setup_port(struct mv88e6xxx_chip *chip, int port)
 
 	if (reg) {
 		err = mv88e6xxx_port_write(chip, port, PORT_CONTROL_2, reg);
+		if (err)
+			return err;
+	}
+
+	if (chip->info->ops->jumbo_config) {
+		err = chip->info->ops->jumbo_config(chip, port);
 		if (err)
 			return err;
 	}
@@ -3082,6 +3098,7 @@ static int mv88e6xxx_setup_port(struct mv88e6xxx_chip *chip, int port)
 					   0x0001);
 		if (err)
 			return err;
+
 	} else if (mv88e6xxx_6185_family(chip) || mv88e6xxx_6095_family(chip)) {
 		err = mv88e6xxx_port_write(chip, port, PORT_RATE_CONTROL,
 					   0x0000);
@@ -3715,6 +3732,7 @@ static const struct mv88e6xxx_ops mv88e6123_ops = {
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
 	.cpu_port_config = mv88e6351_cpu_port_config,
 	.dsa_port_config = mv88e6351_dsa_port_config,
+	.jumbo_config = mv88e6165_jumbo_config,
 };
 
 static const struct mv88e6xxx_ops mv88e6131_ops = {
@@ -3744,6 +3762,7 @@ static const struct mv88e6xxx_ops mv88e6161_ops = {
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
 	.cpu_port_config = mv88e6351_cpu_port_config,
 	.dsa_port_config = mv88e6351_dsa_port_config,
+	.jumbo_config = mv88e6165_jumbo_config,
 };
 
 static const struct mv88e6xxx_ops mv88e6165_ops = {
@@ -3759,6 +3778,7 @@ static const struct mv88e6xxx_ops mv88e6165_ops = {
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
 	.cpu_port_config = mv88e6351_cpu_port_config,
 	.dsa_port_config = mv88e6351_dsa_port_config,
+	.jumbo_config = mv88e6165_jumbo_config,
 };
 
 static const struct mv88e6xxx_ops mv88e6171_ops = {
@@ -3775,6 +3795,7 @@ static const struct mv88e6xxx_ops mv88e6171_ops = {
 	.cpu_port_config = mv88e6351_cpu_port_config,
 	.dsa_port_config = mv88e6351_dsa_port_config,
 	.rgmii_delay = mv88e6351_rgmii_delay,
+	.jumbo_config = mv88e6165_jumbo_config,
 };
 
 static const struct mv88e6xxx_ops mv88e6172_ops = {
@@ -3793,6 +3814,7 @@ static const struct mv88e6xxx_ops mv88e6172_ops = {
 	.cpu_port_config = mv88e6351_cpu_port_config,
 	.dsa_port_config = mv88e6351_dsa_port_config,
 	.rgmii_delay = mv88e6351_rgmii_delay,
+	.jumbo_config = mv88e6165_jumbo_config,
 };
 
 static const struct mv88e6xxx_ops mv88e6175_ops = {
@@ -3809,6 +3831,7 @@ static const struct mv88e6xxx_ops mv88e6175_ops = {
 	.cpu_port_config = mv88e6351_cpu_port_config,
 	.dsa_port_config = mv88e6351_dsa_port_config,
 	.rgmii_delay = mv88e6351_rgmii_delay,
+	.jumbo_config = mv88e6165_jumbo_config,
 };
 
 static const struct mv88e6xxx_ops mv88e6176_ops = {
@@ -3827,6 +3850,7 @@ static const struct mv88e6xxx_ops mv88e6176_ops = {
 	.cpu_port_config = mv88e6351_cpu_port_config,
 	.dsa_port_config = mv88e6351_dsa_port_config,
 	.rgmii_delay = mv88e6351_rgmii_delay,
+	.jumbo_config = mv88e6165_jumbo_config,
 };
 
 static const struct mv88e6xxx_ops mv88e6185_ops = {
@@ -3859,6 +3883,7 @@ static const struct mv88e6xxx_ops mv88e6240_ops = {
 	.cpu_port_config = mv88e6351_cpu_port_config,
 	.dsa_port_config = mv88e6351_dsa_port_config,
 	.rgmii_delay = mv88e6351_rgmii_delay,
+	.jumbo_config = mv88e6165_jumbo_config,
 };
 
 static const struct mv88e6xxx_ops mv88e6320_ops = {
@@ -3876,6 +3901,7 @@ static const struct mv88e6xxx_ops mv88e6320_ops = {
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
 	.cpu_port_config = mv88e6351_cpu_port_config,
 	.dsa_port_config = mv88e6351_dsa_port_config,
+	.jumbo_config = mv88e6165_jumbo_config,
 };
 
 static const struct mv88e6xxx_ops mv88e6321_ops = {
@@ -3893,6 +3919,7 @@ static const struct mv88e6xxx_ops mv88e6321_ops = {
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
 	.cpu_port_config = mv88e6351_cpu_port_config,
 	.dsa_port_config = mv88e6351_dsa_port_config,
+	.jumbo_config = mv88e6165_jumbo_config,
 };
 
 static const struct mv88e6xxx_ops mv88e6350_ops = {
@@ -3909,6 +3936,7 @@ static const struct mv88e6xxx_ops mv88e6350_ops = {
 	.cpu_port_config = mv88e6351_cpu_port_config,
 	.dsa_port_config = mv88e6351_dsa_port_config,
 	.rgmii_delay = mv88e6351_rgmii_delay,
+	.jumbo_config = mv88e6165_jumbo_config,
 };
 
 static const struct mv88e6xxx_ops mv88e6351_ops = {
@@ -3925,6 +3953,7 @@ static const struct mv88e6xxx_ops mv88e6351_ops = {
 	.cpu_port_config = mv88e6351_cpu_port_config,
 	.dsa_port_config = mv88e6351_dsa_port_config,
 	.rgmii_delay = mv88e6351_rgmii_delay,
+	.jumbo_config = mv88e6165_jumbo_config,
 };
 
 static const struct mv88e6xxx_ops mv88e6352_ops = {
@@ -3943,6 +3972,7 @@ static const struct mv88e6xxx_ops mv88e6352_ops = {
 	.cpu_port_config = mv88e6351_cpu_port_config,
 	.dsa_port_config = mv88e6351_dsa_port_config,
 	.rgmii_delay = mv88e6351_rgmii_delay,
+	.jumbo_config = mv88e6165_jumbo_config,
 };
 
 static const struct mv88e6xxx_ops mv88e6390_ops = {
@@ -3960,6 +3990,7 @@ static const struct mv88e6xxx_ops mv88e6390_ops = {
 	.cpu_port_config = mv88e6351_cpu_port_config,
 	.dsa_port_config = mv88e6351_dsa_port_config,
 	.rgmii_delay = mv88e6390_rgmii_delay,
+	.jumbo_config = mv88e6165_jumbo_config,
 };
 
 static const struct mv88e6xxx_info mv88e6xxx_table[] = {
