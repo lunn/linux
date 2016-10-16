@@ -2917,6 +2917,18 @@ static int mv88e6165_jumbo_config(struct mv88e6xxx_chip *chip, int port)
 	return mv88e6xxx_port_write(chip, port, PORT_CONTROL_2, reg);
 }
 
+static int mv88e6095_egress_rate_limiting(struct mv88e6xxx_chip *chip,
+					  int port)
+{
+	return mv88e6xxx_port_write(chip, port, PORT_RATE_CONTROL, 0x0000);
+}
+
+static int mv88e6097_egress_rate_limiting(struct mv88e6xxx_chip *chip,
+					  int port)
+{
+	return mv88e6xxx_port_write(chip, port, PORT_RATE_CONTROL, 0x0001);
+}
+
 static int mv88e6xxx_setup_port(struct mv88e6xxx_chip *chip, int port)
 {
 	struct dsa_switch *ds = chip->ds;
@@ -3090,18 +3102,8 @@ static int mv88e6xxx_setup_port(struct mv88e6xxx_chip *chip, int port)
 			return err;
 	}
 
-	/* Rate Control: disable ingress rate limiting. */
-	if (mv88e6xxx_6352_family(chip) || mv88e6xxx_6351_family(chip) ||
-	    mv88e6xxx_6165_family(chip) || mv88e6xxx_6097_family(chip) ||
-	    mv88e6xxx_6320_family(chip)) {
-		err = mv88e6xxx_port_write(chip, port, PORT_RATE_CONTROL,
-					   0x0001);
-		if (err)
-			return err;
-
-	} else if (mv88e6xxx_6185_family(chip) || mv88e6xxx_6095_family(chip)) {
-		err = mv88e6xxx_port_write(chip, port, PORT_RATE_CONTROL,
-					   0x0000);
+	if (chip->info->ops->egress_rate_limiting) {
+		err = chip->info->ops->egress_rate_limiting(chip, port);
 		if (err)
 			return err;
 	}
@@ -3703,6 +3705,7 @@ static const struct mv88e6xxx_ops mv88e6085_ops = {
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
 	.cpu_port_config = mv88e6351_cpu_port_config,
 	.dsa_port_config = mv88e6351_dsa_port_config,
+	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
 };
 
 static const struct mv88e6xxx_ops mv88e6095_ops = {
@@ -3717,6 +3720,7 @@ static const struct mv88e6xxx_ops mv88e6095_ops = {
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
 	.cpu_port_config = mv88e6095_cpu_port_config,
 	.dsa_port_config = mv88e6095_dsa_port_config,
+	.egress_rate_limiting = mv88e6095_egress_rate_limiting,
 };
 
 static const struct mv88e6xxx_ops mv88e6123_ops = {
@@ -3733,6 +3737,7 @@ static const struct mv88e6xxx_ops mv88e6123_ops = {
 	.cpu_port_config = mv88e6351_cpu_port_config,
 	.dsa_port_config = mv88e6351_dsa_port_config,
 	.jumbo_config = mv88e6165_jumbo_config,
+	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
 };
 
 static const struct mv88e6xxx_ops mv88e6131_ops = {
@@ -3747,6 +3752,7 @@ static const struct mv88e6xxx_ops mv88e6131_ops = {
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
 	.cpu_port_config = mv88e6095_cpu_port_config,
 	.dsa_port_config = mv88e6095_dsa_port_config,
+	.egress_rate_limiting = mv88e6095_egress_rate_limiting,
 };
 
 static const struct mv88e6xxx_ops mv88e6161_ops = {
@@ -3763,6 +3769,7 @@ static const struct mv88e6xxx_ops mv88e6161_ops = {
 	.cpu_port_config = mv88e6351_cpu_port_config,
 	.dsa_port_config = mv88e6351_dsa_port_config,
 	.jumbo_config = mv88e6165_jumbo_config,
+	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
 };
 
 static const struct mv88e6xxx_ops mv88e6165_ops = {
@@ -3779,6 +3786,7 @@ static const struct mv88e6xxx_ops mv88e6165_ops = {
 	.cpu_port_config = mv88e6351_cpu_port_config,
 	.dsa_port_config = mv88e6351_dsa_port_config,
 	.jumbo_config = mv88e6165_jumbo_config,
+	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
 };
 
 static const struct mv88e6xxx_ops mv88e6171_ops = {
@@ -3796,6 +3804,7 @@ static const struct mv88e6xxx_ops mv88e6171_ops = {
 	.dsa_port_config = mv88e6351_dsa_port_config,
 	.rgmii_delay = mv88e6351_rgmii_delay,
 	.jumbo_config = mv88e6165_jumbo_config,
+	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
 };
 
 static const struct mv88e6xxx_ops mv88e6172_ops = {
@@ -3815,6 +3824,7 @@ static const struct mv88e6xxx_ops mv88e6172_ops = {
 	.dsa_port_config = mv88e6351_dsa_port_config,
 	.rgmii_delay = mv88e6351_rgmii_delay,
 	.jumbo_config = mv88e6165_jumbo_config,
+	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
 };
 
 static const struct mv88e6xxx_ops mv88e6175_ops = {
@@ -3832,6 +3842,7 @@ static const struct mv88e6xxx_ops mv88e6175_ops = {
 	.dsa_port_config = mv88e6351_dsa_port_config,
 	.rgmii_delay = mv88e6351_rgmii_delay,
 	.jumbo_config = mv88e6165_jumbo_config,
+	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
 };
 
 static const struct mv88e6xxx_ops mv88e6176_ops = {
@@ -3851,6 +3862,7 @@ static const struct mv88e6xxx_ops mv88e6176_ops = {
 	.dsa_port_config = mv88e6351_dsa_port_config,
 	.rgmii_delay = mv88e6351_rgmii_delay,
 	.jumbo_config = mv88e6165_jumbo_config,
+	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
 };
 
 static const struct mv88e6xxx_ops mv88e6185_ops = {
@@ -3865,6 +3877,7 @@ static const struct mv88e6xxx_ops mv88e6185_ops = {
 	.monitor_ctrl = mv88e6095_monitor_ctrl,
 	.cpu_port_config = mv88e6095_cpu_port_config,
 	.dsa_port_config = mv88e6095_dsa_port_config,
+	.egress_rate_limiting = mv88e6095_egress_rate_limiting,
 };
 
 static const struct mv88e6xxx_ops mv88e6240_ops = {
@@ -3884,6 +3897,7 @@ static const struct mv88e6xxx_ops mv88e6240_ops = {
 	.dsa_port_config = mv88e6351_dsa_port_config,
 	.rgmii_delay = mv88e6351_rgmii_delay,
 	.jumbo_config = mv88e6165_jumbo_config,
+	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
 };
 
 static const struct mv88e6xxx_ops mv88e6320_ops = {
@@ -3902,6 +3916,7 @@ static const struct mv88e6xxx_ops mv88e6320_ops = {
 	.cpu_port_config = mv88e6351_cpu_port_config,
 	.dsa_port_config = mv88e6351_dsa_port_config,
 	.jumbo_config = mv88e6165_jumbo_config,
+	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
 };
 
 static const struct mv88e6xxx_ops mv88e6321_ops = {
@@ -3920,6 +3935,7 @@ static const struct mv88e6xxx_ops mv88e6321_ops = {
 	.cpu_port_config = mv88e6351_cpu_port_config,
 	.dsa_port_config = mv88e6351_dsa_port_config,
 	.jumbo_config = mv88e6165_jumbo_config,
+	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
 };
 
 static const struct mv88e6xxx_ops mv88e6350_ops = {
@@ -3937,6 +3953,7 @@ static const struct mv88e6xxx_ops mv88e6350_ops = {
 	.dsa_port_config = mv88e6351_dsa_port_config,
 	.rgmii_delay = mv88e6351_rgmii_delay,
 	.jumbo_config = mv88e6165_jumbo_config,
+	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
 };
 
 static const struct mv88e6xxx_ops mv88e6351_ops = {
@@ -3954,6 +3971,7 @@ static const struct mv88e6xxx_ops mv88e6351_ops = {
 	.dsa_port_config = mv88e6351_dsa_port_config,
 	.rgmii_delay = mv88e6351_rgmii_delay,
 	.jumbo_config = mv88e6165_jumbo_config,
+	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
 };
 
 static const struct mv88e6xxx_ops mv88e6352_ops = {
@@ -3973,6 +3991,7 @@ static const struct mv88e6xxx_ops mv88e6352_ops = {
 	.dsa_port_config = mv88e6351_dsa_port_config,
 	.rgmii_delay = mv88e6351_rgmii_delay,
 	.jumbo_config = mv88e6165_jumbo_config,
+	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
 };
 
 static const struct mv88e6xxx_ops mv88e6390_ops = {
@@ -3991,6 +4010,7 @@ static const struct mv88e6xxx_ops mv88e6390_ops = {
 	.dsa_port_config = mv88e6351_dsa_port_config,
 	.rgmii_delay = mv88e6390_rgmii_delay,
 	.jumbo_config = mv88e6165_jumbo_config,
+	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
 };
 
 static const struct mv88e6xxx_info mv88e6xxx_table[] = {
