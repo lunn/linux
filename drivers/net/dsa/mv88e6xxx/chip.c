@@ -3379,6 +3379,7 @@ static int mv88e6xxx_set_eeprom(struct dsa_switch *ds,
 }
 
 static const struct mv88e6xxx_ops mv88e6085_ops = {
+	/* MV88E6XXX_FAMILY_6097 */
 	.set_switch_mac = mv88e6xxx_g1_set_switch_mac,
 	.phy_read = mv88e6xxx_phy_ppu_read,
 	.phy_write = mv88e6xxx_phy_ppu_write,
@@ -3386,6 +3387,7 @@ static const struct mv88e6xxx_ops mv88e6085_ops = {
 };
 
 static const struct mv88e6xxx_ops mv88e6095_ops = {
+	/* MV88E6XXX_FAMILY_6095 */
 	.set_switch_mac = mv88e6xxx_g1_set_switch_mac,
 	.phy_read = mv88e6xxx_phy_ppu_read,
 	.phy_write = mv88e6xxx_phy_ppu_write,
@@ -3393,6 +3395,7 @@ static const struct mv88e6xxx_ops mv88e6095_ops = {
 };
 
 static const struct mv88e6xxx_ops mv88e6123_ops = {
+	/* MV88E6XXX_FAMILY_6165 */
 	.set_switch_mac = mv88e6xxx_g2_set_switch_mac,
 	.phy_read = mv88e6xxx_read,
 	.phy_write = mv88e6xxx_write,
@@ -3400,6 +3403,7 @@ static const struct mv88e6xxx_ops mv88e6123_ops = {
 };
 
 static const struct mv88e6xxx_ops mv88e6131_ops = {
+	/* MV88E6XXX_FAMILY_6185 */
 	.set_switch_mac = mv88e6xxx_g1_set_switch_mac,
 	.phy_read = mv88e6xxx_phy_ppu_read,
 	.phy_write = mv88e6xxx_phy_ppu_write,
@@ -3407,6 +3411,7 @@ static const struct mv88e6xxx_ops mv88e6131_ops = {
 };
 
 static const struct mv88e6xxx_ops mv88e6161_ops = {
+	/* MV88E6XXX_FAMILY_6165 */
 	.set_switch_mac = mv88e6xxx_g2_set_switch_mac,
 	.phy_read = mv88e6xxx_read,
 	.phy_write = mv88e6xxx_write,
@@ -3414,6 +3419,7 @@ static const struct mv88e6xxx_ops mv88e6161_ops = {
 };
 
 static const struct mv88e6xxx_ops mv88e6165_ops = {
+	/* MV88E6XXX_FAMILY_6165 */
 	.set_switch_mac = mv88e6xxx_g2_set_switch_mac,
 	.phy_read = mv88e6xxx_read,
 	.phy_write = mv88e6xxx_write,
@@ -3421,6 +3427,7 @@ static const struct mv88e6xxx_ops mv88e6165_ops = {
 };
 
 static const struct mv88e6xxx_ops mv88e6171_ops = {
+	/* MV88E6XXX_FAMILY_6351 */
 	.set_switch_mac = mv88e6xxx_g2_set_switch_mac,
 	.phy_read = mv88e6xxx_g2_smi_phy_read,
 	.phy_write = mv88e6xxx_g2_smi_phy_write,
@@ -3428,6 +3435,7 @@ static const struct mv88e6xxx_ops mv88e6171_ops = {
 };
 
 static const struct mv88e6xxx_ops mv88e6172_ops = {
+	/* MV88E6XXX_FAMILY_6352 */
 	.get_eeprom = mv88e6xxx_g2_get_eeprom16,
 	.set_eeprom = mv88e6xxx_g2_set_eeprom16,
 	.set_switch_mac = mv88e6xxx_g2_set_switch_mac,
@@ -3437,6 +3445,7 @@ static const struct mv88e6xxx_ops mv88e6172_ops = {
 };
 
 static const struct mv88e6xxx_ops mv88e6175_ops = {
+	/* MV88E6XXX_FAMILY_6351 */
 	.set_switch_mac = mv88e6xxx_g2_set_switch_mac,
 	.phy_read = mv88e6xxx_g2_smi_phy_read,
 	.phy_write = mv88e6xxx_g2_smi_phy_write,
@@ -3444,6 +3453,7 @@ static const struct mv88e6xxx_ops mv88e6175_ops = {
 };
 
 static const struct mv88e6xxx_ops mv88e6176_ops = {
+	/* MV88E6XXX_FAMILY_6352 */
 	.get_eeprom = mv88e6xxx_g2_get_eeprom16,
 	.set_eeprom = mv88e6xxx_g2_set_eeprom16,
 	.set_switch_mac = mv88e6xxx_g2_set_switch_mac,
@@ -3453,6 +3463,7 @@ static const struct mv88e6xxx_ops mv88e6176_ops = {
 };
 
 static const struct mv88e6xxx_ops mv88e6185_ops = {
+	/* MV88E6XXX_FAMILY_6185 */
 	.set_switch_mac = mv88e6xxx_g1_set_switch_mac,
 	.phy_read = mv88e6xxx_phy_ppu_read,
 	.phy_write = mv88e6xxx_phy_ppu_write,
@@ -3460,6 +3471,7 @@ static const struct mv88e6xxx_ops mv88e6185_ops = {
 };
 
 static const struct mv88e6xxx_ops mv88e6240_ops = {
+	/* MV88E6XXX_FAMILY_6352 */
 	.get_eeprom = mv88e6xxx_g2_get_eeprom16,
 	.set_eeprom = mv88e6xxx_g2_set_eeprom16,
 	.set_switch_mac = mv88e6xxx_g2_set_switch_mac,
@@ -3469,6 +3481,7 @@ static const struct mv88e6xxx_ops mv88e6240_ops = {
 };
 
 static const struct mv88e6xxx_ops mv88e6320_ops = {
+	/* MV88E6XXX_FAMILY_6320 */
 	.get_eeprom = mv88e6xxx_g2_get_eeprom16,
 	.set_eeprom = mv88e6xxx_g2_set_eeprom16,
 	.set_switch_mac = mv88e6xxx_g2_set_switch_mac,
@@ -3478,6 +3491,7 @@ static const struct mv88e6xxx_ops mv88e6320_ops = {
 };
 
 static const struct mv88e6xxx_ops mv88e6321_ops = {
+	/* MV88E6XXX_FAMILY_6321 */
 	.get_eeprom = mv88e6xxx_g2_get_eeprom16,
 	.set_eeprom = mv88e6xxx_g2_set_eeprom16,
 	.set_switch_mac = mv88e6xxx_g2_set_switch_mac,
@@ -3487,6 +3501,7 @@ static const struct mv88e6xxx_ops mv88e6321_ops = {
 };
 
 static const struct mv88e6xxx_ops mv88e6350_ops = {
+	/* MV88E6XXX_FAMILY_6351 */
 	.set_switch_mac = mv88e6xxx_g2_set_switch_mac,
 	.phy_read = mv88e6xxx_g2_smi_phy_read,
 	.phy_write = mv88e6xxx_g2_smi_phy_write,
@@ -3494,6 +3509,7 @@ static const struct mv88e6xxx_ops mv88e6350_ops = {
 };
 
 static const struct mv88e6xxx_ops mv88e6351_ops = {
+	/* MV88E6XXX_FAMILY_6351 */
 	.set_switch_mac = mv88e6xxx_g2_set_switch_mac,
 	.phy_read = mv88e6xxx_g2_smi_phy_read,
 	.phy_write = mv88e6xxx_g2_smi_phy_write,
@@ -3501,6 +3517,7 @@ static const struct mv88e6xxx_ops mv88e6351_ops = {
 };
 
 static const struct mv88e6xxx_ops mv88e6352_ops = {
+	/* MV88E6XXX_FAMILY_6352 */
 	.get_eeprom = mv88e6xxx_g2_get_eeprom16,
 	.set_eeprom = mv88e6xxx_g2_set_eeprom16,
 	.set_switch_mac = mv88e6xxx_g2_set_switch_mac,
@@ -3510,6 +3527,7 @@ static const struct mv88e6xxx_ops mv88e6352_ops = {
 };
 
 static const struct mv88e6xxx_ops mv88e6390_ops = {
+	/* MV88E6XXX_FAMILY_6390 */
 	.set_switch_mac = mv88e6xxx_g2_set_switch_mac,
 	.phy_read = mv88e6xxx_g2_smi_phy_read,
 	.phy_write = mv88e6xxx_g2_smi_phy_write,
