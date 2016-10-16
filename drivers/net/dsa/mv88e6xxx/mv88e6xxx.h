@@ -831,6 +831,7 @@ struct mv88e6xxx_ops {
 				   enum mv88e6xxx_frame_mode mode);
 	int (*port_set_egress_unknowns)(struct mv88e6xxx_chip *chip, int port,
 					bool on);
+	int (*port_jumbo_config)(struct mv88e6xxx_chip *chip, int port);
 
 	/* Snapshot the statistics for a port. The statistics can then
 	 * be read back a leisure but still with a consistent view.
