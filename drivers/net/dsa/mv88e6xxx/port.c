@@ -628,3 +628,17 @@ int mv88e6351_dsa_port_config(struct mv88e6xxx_chip *chip, int port)
 
 	return mv88e6xxx_port_write(chip, port, PORT_CONTROL, reg);
 }
+
+int mv88e6165_jumbo_config(struct mv88e6xxx_chip *chip, int port)
+{
+	u16 reg;
+	int err;
+
+	err = mv88e6xxx_port_read(chip, port, PORT_CONTROL_2, &reg);
+	if (err)
+		return err;
+
+	reg |= PORT_CONTROL_2_JUMBO_10240;
+
+	return mv88e6xxx_port_write(chip, port, PORT_CONTROL_2, reg);
+}

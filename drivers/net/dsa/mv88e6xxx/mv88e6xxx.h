@@ -821,6 +821,7 @@ struct mv88e6xxx_ops {
 	int (*monitor_ctrl)(struct mv88e6xxx_chip *chip, int upstream_port);
 	int (*cpu_port_config)(struct mv88e6xxx_chip *chip, int port);
 	int (*dsa_port_config)(struct mv88e6xxx_chip *chip, int port);
+	int (*jumbo_config)(struct mv88e6xxx_chip *chip, int port);
 };
 
 #define STATS_TYPE_PORT		BIT(0)

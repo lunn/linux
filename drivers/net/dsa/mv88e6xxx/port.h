@@ -55,5 +55,6 @@ int mv88e6095_cpu_port_config(struct mv88e6xxx_chip *chip, int port);
 int mv88e6351_cpu_port_config(struct mv88e6xxx_chip *chip, int port);
 int mv88e6095_dsa_port_config(struct mv88e6xxx_chip *chip, int port);
 int mv88e6351_dsa_port_config(struct mv88e6xxx_chip *chip, int port);
+int mv88e6165_jumbo_config(struct mv88e6xxx_chip *chip, int port);
 
 #endif /* _MV88E6XXX_PORT_H */
