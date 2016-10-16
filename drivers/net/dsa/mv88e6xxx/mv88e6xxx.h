@@ -833,6 +833,8 @@ struct mv88e6xxx_ops {
 					bool on);
 	int (*port_jumbo_config)(struct mv88e6xxx_chip *chip, int port);
 
+	int (*port_egress_rate_limiting)(struct mv88e6xxx_chip *chip, int port);
+
 	/* Snapshot the statistics for a port. The statistics can then
 	 * be read back a leisure but still with a consistent view.
 	 */
