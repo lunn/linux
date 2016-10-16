@@ -642,3 +642,13 @@ int mv88e6165_jumbo_config(struct mv88e6xxx_chip *chip, int port)
 
 	return mv88e6xxx_port_write(chip, port, PORT_CONTROL_2, reg);
 }
+
+int mv88e6095_egress_rate_limiting(struct mv88e6xxx_chip *chip, int port)
+{
+	return mv88e6xxx_port_write(chip, port, PORT_RATE_CONTROL, 0x0000);
+}
+
+int mv88e6097_egress_rate_limiting(struct mv88e6xxx_chip *chip, int port)
+{
+	return mv88e6xxx_port_write(chip, port, PORT_RATE_CONTROL, 0x0001);
+}
