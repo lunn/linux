@@ -652,3 +652,13 @@ int mv88e6097_egress_rate_limiting(struct mv88e6xxx_chip *chip, int port)
 {
 	return mv88e6xxx_port_write(chip, port, PORT_RATE_CONTROL, 0x0001);
 }
+
+/* Do not limit the period of time that this port can be paused for by
+ * the remote end or the period of time that this port can pause the
+ * remote end.
+ */
+int mv88e6097_pause_config(struct mv88e6xxx_chip *chip, int port)
+{
+	return mv88e6xxx_port_write(chip, port, PORT_PAUSE_CTRL, 0x0000);
+}
+

@@ -823,6 +823,7 @@ struct mv88e6xxx_ops {
 	int (*dsa_port_config)(struct mv88e6xxx_chip *chip, int port);
 	int (*jumbo_config)(struct mv88e6xxx_chip *chip, int port);
 	int (*egress_rate_limiting)(struct mv88e6xxx_chip *chip, int port);
+	int (*pause_config)(struct mv88e6xxx_chip *chip, int port);
 };
 
 #define STATS_TYPE_PORT		BIT(0)
