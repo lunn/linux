@@ -777,6 +777,7 @@ struct mv88e6xxx_ops {
 	int (*dsa_port_config)(struct mv88e6xxx_chip *chip, int port);
 	void (*rgmii_delay)(struct mv88e6xxx_chip *chip, int port,
 			    phy_interface_t interface);
+	int (*jumbo_config)(struct mv88e6xxx_chip *chip, int port);
 };
 
 #define STATS_TYPE_PORT		BIT(0)
