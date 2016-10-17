@@ -2938,6 +2938,19 @@ static int mv88e6097_pause_config(struct mv88e6xxx_chip *chip, int port)
 	return mv88e6xxx_port_write(chip, port, PORT_PAUSE_CTRL, 0x0000);
 }
 
+static int mv88e6390_pause_config(struct mv88e6xxx_chip *chip, int port)
+{
+	int err;
+
+	err = mv88e6xxx_port_write(chip, port, PORT_PAUSE_CTRL,
+				   PORT_FLOW_CTRL_LIMIT_IN | 0);
+	if (err)
+		return err;
+
+	return mv88e6xxx_port_write(chip, port, PORT_PAUSE_CTRL,
+				    PORT_FLOW_CTRL_LIMIT_OUT | 0);
+}
+
 static int mv88e6xxx_setup_port(struct mv88e6xxx_chip *chip, int port)
 {
 	struct dsa_switch *ds = chip->ds;
@@ -4032,6 +4045,7 @@ static const struct mv88e6xxx_ops mv88e6390_ops = {
 	.rgmii_delay = mv88e6390_rgmii_delay,
 	.jumbo_config = mv88e6165_jumbo_config,
 	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
+	.pause_config = mv88e6390_pause_config,
 };
 
 static const struct mv88e6xxx_info mv88e6xxx_table[] = {
