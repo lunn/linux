@@ -769,10 +769,9 @@ static void mv88e6390_rgmii_delay(struct mv88e6xxx_chip *chip, int port,
  * phy. However, in the case of a fixed link phy, we force the port
  * settings from the fixed link settings.
  */
-static void mv88e6xxx_adjust_link(struct dsa_switch *ds, int port,
-				  struct phy_device *phydev)
+static void _mv88e6xxx_adjust_link(struct mv88e6xxx_chip *chip, int port,
+				   struct phy_device *phydev)
 {
-	struct mv88e6xxx_chip *chip = ds->priv;
 	u16 reg;
 	int err;
 
@@ -794,9 +793,6 @@ static void mv88e6xxx_adjust_link(struct dsa_switch *ds, int port,
 	reg |= PORT_PCS_CTRL_FORCE_LINK;
 	if (phydev->link)
 		reg |= PORT_PCS_CTRL_LINK_UP;
-
-	if (mv88e6xxx_6065_family(chip) && phydev->speed > SPEED_100)
-		goto out;
 
 	switch (phydev->speed) {
 	case SPEED_1000:
@@ -824,6 +820,175 @@ static void mv88e6xxx_adjust_link(struct dsa_switch *ds, int port,
 
 out:
 	mutex_unlock(&chip->reg_lock);
+}
+
+static void mv88e6065_adjust_link(struct mv88e6xxx_chip *chip, int port,
+				  struct phy_device *phydev)
+{
+	if (phydev->speed > SPEED_100)
+		return;
+
+	_mv88e6xxx_adjust_link(chip, port, phydev);
+}
+
+static void mv88e6095_adjust_link(struct mv88e6xxx_chip *chip, int port,
+				  struct phy_device *phydev)
+{
+	_mv88e6xxx_adjust_link(chip, port, phydev);
+}
+
+static void _mv88e6390_adjust_link(struct mv88e6xxx_chip *chip, int port,
+				   u16 speed_reg, struct phy_device *phydev)
+{
+	int err;
+	u16 reg;
+
+	if (!phy_is_pseudo_fixed_link(phydev))
+		return;
+
+	mutex_lock(&chip->reg_lock);
+
+	err = mv88e6xxx_port_read(chip, port, PORT_PCS_CTRL, &reg);
+	if (err)
+		goto out;
+
+	reg &= ~(PORT_PCS_CTRL_LINK_UP |
+		 PORT_PCS_CTRL_FORCE_LINK |
+		 PORT_PCS_CTRL_DUPLEX_FULL |
+		 PORT_PCS_CTRL_FORCE_DUPLEX |
+		 PORT_PCS_CTRL_FORCE_SPEED |
+		 PORT_PCS_CTRL_UNFORCED);
+
+	reg |= PORT_PCS_CTRL_FORCE_LINK;
+	if (phydev->link)
+		reg |= PORT_PCS_CTRL_LINK_UP;
+
+	reg |= speed_reg | PORT_PCS_CTRL_FORCE_SPEED;
+
+	reg |= PORT_PCS_CTRL_FORCE_DUPLEX;
+	if (phydev->duplex == DUPLEX_FULL)
+		reg |= PORT_PCS_CTRL_DUPLEX_FULL;
+
+	mv88e6xxx_port_write(chip, port, PORT_PCS_CTRL, reg);
+
+	if (chip->info->ops->rgmii_delay)
+		chip->info->ops->rgmii_delay(chip, port, phydev->interface);
+
+out:
+	mutex_unlock(&chip->reg_lock);
+}
+
+static void mv88e6390_adjust_link(struct mv88e6xxx_chip *chip, int port,
+				  struct phy_device *phydev)
+{
+	u16 reg;
+
+	switch (port) {
+	case 0:
+	case 9:
+	case 10:
+		/* Alternative speeds are valid */
+		switch (phydev->speed) {
+		case SPEED_2500:
+			reg |= PORT_PCS_CTRL_2500;
+			break;
+		case SPEED_1000:
+			reg |= PORT_PCS_CTRL_1000;
+			break;
+		case 200:
+			reg |= PORT_PCS_CTRL_200;
+			break;
+		case SPEED_100:
+			reg |= PORT_PCS_CTRL_100;
+			break;
+		case SPEED_10:
+			reg |= PORT_PCS_CTRL_10;
+			break;
+		default:
+			pr_info("Unknown speed");
+			return;
+		}
+
+	default:
+		/* Only standard speeds */
+		switch (phydev->speed) {
+		case SPEED_1000:
+			reg |= PORT_PCS_CTRL_1000;
+			break;
+		case SPEED_100:
+			reg |= PORT_PCS_CTRL_100;
+			break;
+		case SPEED_10:
+			reg |= PORT_PCS_CTRL_10;
+			break;
+		default:
+			pr_info("Unknown speed");
+			return;
+		}
+	}
+
+	_mv88e6390_adjust_link(chip, port, reg, phydev);
+}
+
+static void mv88e6390x_adjust_link(struct mv88e6xxx_chip *chip, int port,
+				   struct phy_device *phydev)
+{
+	u16 reg;
+
+	switch (port) {
+	case 0:
+	case 9:
+	case 10:
+		/* Alternative speeds are valid */
+		switch (phydev->speed) {
+		case SPEED_10000:
+			reg |= PORT_PCS_CTRL_10000;
+			break;
+		case SPEED_1000:
+			reg |= PORT_PCS_CTRL_1000;
+			break;
+		case 200:
+			reg |= PORT_PCS_CTRL_200;
+			break;
+		case SPEED_100:
+			reg |= PORT_PCS_CTRL_100;
+			break;
+		case SPEED_10:
+			reg |= PORT_PCS_CTRL_10;
+			break;
+		default:
+			pr_info("Unknown speed");
+			return;
+		}
+
+	default:
+		/* Only standard speeds */
+		switch (phydev->speed) {
+		case SPEED_1000:
+			reg |= PORT_PCS_CTRL_1000;
+			break;
+		case SPEED_100:
+			reg |= PORT_PCS_CTRL_100;
+			break;
+		case SPEED_10:
+			reg |= PORT_PCS_CTRL_10;
+			break;
+		default:
+			pr_info("Unknown speed");
+			return;
+		}
+	}
+
+	_mv88e6390_adjust_link(chip, port, reg, phydev);
+}
+
+static void mv88e6xxx_adjust_link(struct dsa_switch *ds, int port,
+				  struct phy_device *phydev)
+{
+	struct mv88e6xxx_chip *chip = ds->priv;
+
+	if (chip->info->ops->adjust_link)
+		chip->info->ops->adjust_link(chip, port, phydev);
 }
 
 static int _mv88e6xxx_stats_wait(struct mv88e6xxx_chip *chip)
@@ -3735,6 +3900,7 @@ static const struct mv88e6xxx_ops mv88e6085_ops = {
 	.dsa_port_config = mv88e6351_dsa_port_config,
 	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
 	.pause_config = mv88e6097_pause_config,
+	.adjust_link = mv88e6065_adjust_link,
 };
 
 static const struct mv88e6xxx_ops mv88e6095_ops = {
@@ -3750,6 +3916,7 @@ static const struct mv88e6xxx_ops mv88e6095_ops = {
 	.cpu_port_config = mv88e6095_cpu_port_config,
 	.dsa_port_config = mv88e6095_dsa_port_config,
 	.egress_rate_limiting = mv88e6095_egress_rate_limiting,
+	.adjust_link = mv88e6095_adjust_link,
 };
 
 static const struct mv88e6xxx_ops mv88e6123_ops = {
@@ -3768,6 +3935,7 @@ static const struct mv88e6xxx_ops mv88e6123_ops = {
 	.jumbo_config = mv88e6165_jumbo_config,
 	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
 	.pause_config = mv88e6097_pause_config,
+	.adjust_link = mv88e6095_adjust_link,
 };
 
 static const struct mv88e6xxx_ops mv88e6131_ops = {
@@ -3783,6 +3951,7 @@ static const struct mv88e6xxx_ops mv88e6131_ops = {
 	.cpu_port_config = mv88e6095_cpu_port_config,
 	.dsa_port_config = mv88e6095_dsa_port_config,
 	.egress_rate_limiting = mv88e6095_egress_rate_limiting,
+	.adjust_link = mv88e6095_adjust_link,
 };
 
 static const struct mv88e6xxx_ops mv88e6161_ops = {
@@ -3801,6 +3970,7 @@ static const struct mv88e6xxx_ops mv88e6161_ops = {
 	.jumbo_config = mv88e6165_jumbo_config,
 	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
 	.pause_config = mv88e6097_pause_config,
+	.adjust_link = mv88e6095_adjust_link,
 };
 
 static const struct mv88e6xxx_ops mv88e6165_ops = {
@@ -3819,6 +3989,7 @@ static const struct mv88e6xxx_ops mv88e6165_ops = {
 	.jumbo_config = mv88e6165_jumbo_config,
 	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
 	.pause_config = mv88e6097_pause_config,
+	.adjust_link = mv88e6095_adjust_link,
 };
 
 static const struct mv88e6xxx_ops mv88e6171_ops = {
@@ -3838,6 +4009,7 @@ static const struct mv88e6xxx_ops mv88e6171_ops = {
 	.jumbo_config = mv88e6165_jumbo_config,
 	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
 	.pause_config = mv88e6097_pause_config,
+	.adjust_link = mv88e6095_adjust_link,
 };
 
 static const struct mv88e6xxx_ops mv88e6172_ops = {
@@ -3859,6 +4031,7 @@ static const struct mv88e6xxx_ops mv88e6172_ops = {
 	.jumbo_config = mv88e6165_jumbo_config,
 	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
 	.pause_config = mv88e6097_pause_config,
+	.adjust_link = mv88e6095_adjust_link,
 };
 
 static const struct mv88e6xxx_ops mv88e6175_ops = {
@@ -3878,6 +4051,7 @@ static const struct mv88e6xxx_ops mv88e6175_ops = {
 	.jumbo_config = mv88e6165_jumbo_config,
 	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
 	.pause_config = mv88e6097_pause_config,
+	.adjust_link = mv88e6095_adjust_link,
 };
 
 static const struct mv88e6xxx_ops mv88e6176_ops = {
@@ -3899,6 +4073,7 @@ static const struct mv88e6xxx_ops mv88e6176_ops = {
 	.jumbo_config = mv88e6165_jumbo_config,
 	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
 	.pause_config = mv88e6097_pause_config,
+	.adjust_link = mv88e6095_adjust_link,
 };
 
 static const struct mv88e6xxx_ops mv88e6185_ops = {
@@ -3914,6 +4089,7 @@ static const struct mv88e6xxx_ops mv88e6185_ops = {
 	.cpu_port_config = mv88e6095_cpu_port_config,
 	.dsa_port_config = mv88e6095_dsa_port_config,
 	.egress_rate_limiting = mv88e6095_egress_rate_limiting,
+	.adjust_link = mv88e6095_adjust_link,
 };
 
 static const struct mv88e6xxx_ops mv88e6240_ops = {
@@ -3935,6 +4111,7 @@ static const struct mv88e6xxx_ops mv88e6240_ops = {
 	.jumbo_config = mv88e6165_jumbo_config,
 	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
 	.pause_config = mv88e6097_pause_config,
+	.adjust_link = mv88e6095_adjust_link,
 };
 
 static const struct mv88e6xxx_ops mv88e6320_ops = {
@@ -3955,6 +4132,7 @@ static const struct mv88e6xxx_ops mv88e6320_ops = {
 	.jumbo_config = mv88e6165_jumbo_config,
 	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
 	.pause_config = mv88e6097_pause_config,
+	.adjust_link = mv88e6095_adjust_link,
 };
 
 static const struct mv88e6xxx_ops mv88e6321_ops = {
@@ -3975,6 +4153,7 @@ static const struct mv88e6xxx_ops mv88e6321_ops = {
 	.jumbo_config = mv88e6165_jumbo_config,
 	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
 	.pause_config = mv88e6097_pause_config,
+	.adjust_link = mv88e6095_adjust_link,
 };
 
 static const struct mv88e6xxx_ops mv88e6350_ops = {
@@ -3994,6 +4173,7 @@ static const struct mv88e6xxx_ops mv88e6350_ops = {
 	.jumbo_config = mv88e6165_jumbo_config,
 	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
 	.pause_config = mv88e6097_pause_config,
+	.adjust_link = mv88e6095_adjust_link,
 };
 
 static const struct mv88e6xxx_ops mv88e6351_ops = {
@@ -4013,6 +4193,7 @@ static const struct mv88e6xxx_ops mv88e6351_ops = {
 	.jumbo_config = mv88e6165_jumbo_config,
 	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
 	.pause_config = mv88e6097_pause_config,
+	.adjust_link = mv88e6095_adjust_link,
 };
 
 static const struct mv88e6xxx_ops mv88e6352_ops = {
@@ -4034,6 +4215,7 @@ static const struct mv88e6xxx_ops mv88e6352_ops = {
 	.jumbo_config = mv88e6165_jumbo_config,
 	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
 	.pause_config = mv88e6097_pause_config,
+	.adjust_link = mv88e6095_adjust_link,
 };
 
 static const struct mv88e6xxx_ops mv88e6390_ops = {
@@ -4054,6 +4236,28 @@ static const struct mv88e6xxx_ops mv88e6390_ops = {
 	.jumbo_config = mv88e6165_jumbo_config,
 	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
 	.pause_config = mv88e6390_pause_config,
+	.adjust_link = mv88e6390_adjust_link,
+};
+
+static const struct mv88e6xxx_ops mv88e6390x_ops = {
+	/* MV88E6XXX_FAMILY_6390 */
+	.set_switch_mac = mv88e6xxx_g2_set_switch_mac,
+	.phy_read = mv88e6xxx_g2_smi_phy_read,
+	.phy_write = mv88e6xxx_g2_smi_phy_write,
+	.stats_init = mv88e6390_stats_init,
+	.stats_snapshot = mv88e6390_stats_snapshot,
+	.stats_get_sset_count = mv88e6320_get_sset_count,
+	.stats_get_strings = mv88e6320_get_strings,
+	.stats_get_stats = mv88e6390_get_stats,
+	.tag_remap = mv88e6390_tag_remap,
+	.monitor_ctrl = mv88e6390_monitor_ctrl,
+	.cpu_port_config = mv88e6351_cpu_port_config,
+	.dsa_port_config = mv88e6351_dsa_port_config,
+	.rgmii_delay = mv88e6390_rgmii_delay,
+	.jumbo_config = mv88e6165_jumbo_config,
+	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
+	.pause_config = mv88e6390_pause_config,
+	.adjust_link = mv88e6390x_adjust_link,
 };
 
 static const struct mv88e6xxx_info mv88e6xxx_table[] = {
@@ -4249,7 +4453,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.g1_irqs = 9,
 		.tag_protocol = DSA_TAG_PROTO_DSA,
 		.flags = MV88E6XXX_FLAGS_FAMILY_6390,
-		.ops = &mv88e6390_ops,
+		.ops = &mv88e6390x_ops,
 	},
 
 	[MV88E6191] = {
@@ -4397,7 +4601,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.g1_irqs = 9,
 		.tag_protocol = DSA_TAG_PROTO_DSA,
 		.flags = MV88E6XXX_FLAGS_FAMILY_6390,
-		.ops = &mv88e6390_ops,
+		.ops = &mv88e6390x_ops,
 	},
 };
 
