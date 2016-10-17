@@ -716,6 +716,11 @@ static bool mv88e6xxx_6352_family(struct mv88e6xxx_chip *chip)
 	return chip->info->family == MV88E6XXX_FAMILY_6352;
 }
 
+static bool mv88e6xxx_6390_family(struct mv88e6xxx_chip *chip)
+{
+	return chip->info->family == MV88E6XXX_FAMILY_6390;
+}
+
 static void mv88e6xxx_rgmii_delay(struct mv88e6xxx_chip *chip, int port,
 				  phy_interface_t interface)
 {
@@ -2031,7 +2036,8 @@ static int _mv88e6xxx_vtu_new(struct mv88e6xxx_chip *chip, u16 vid,
 			: GLOBAL_VTU_DATA_MEMBER_TAG_NON_MEMBER;
 
 	if (mv88e6xxx_6097_family(chip) || mv88e6xxx_6165_family(chip) ||
-	    mv88e6xxx_6351_family(chip) || mv88e6xxx_6352_family(chip)) {
+	    mv88e6xxx_6351_family(chip) || mv88e6xxx_6352_family(chip) ||
+	    mv88e6xxx_6390_family(chip)) {
 		struct mv88e6xxx_vtu_entry vstp;
 
 		/* Adding a VTU entry requires a valid STU entry. As VSTP is not
@@ -2960,7 +2966,8 @@ static int mv88e6xxx_setup_port(struct mv88e6xxx_chip *chip, int port)
 	if (mv88e6xxx_6352_family(chip) || mv88e6xxx_6351_family(chip) ||
 	    mv88e6xxx_6165_family(chip) || mv88e6xxx_6097_family(chip) ||
 	    mv88e6xxx_6185_family(chip) || mv88e6xxx_6095_family(chip) ||
-	    mv88e6xxx_6065_family(chip) || mv88e6xxx_6320_family(chip)) {
+	    mv88e6xxx_6065_family(chip) || mv88e6xxx_6320_family(chip) ||
+	    mv88e6xxx_6390_family(chip)) {
 		/* MAC Forcing register: don't force link, speed,
 		 * duplex or flow control state to any particular
 		 * values on physical ports, but force the CPU port
@@ -3046,7 +3053,7 @@ static int mv88e6xxx_setup_port(struct mv88e6xxx_chip *chip, int port)
 	if (mv88e6xxx_6352_family(chip) || mv88e6xxx_6351_family(chip) ||
 	    mv88e6xxx_6165_family(chip) || mv88e6xxx_6097_family(chip) ||
 	    mv88e6xxx_6095_family(chip) || mv88e6xxx_6320_family(chip) ||
-	    mv88e6xxx_6185_family(chip))
+	    mv88e6xxx_6185_family(chip) || mv88e6xxx_6390_family(chip))
 		reg = PORT_CONTROL_2_MAP_DA;
 
 	if (mv88e6xxx_6095_family(chip) || mv88e6xxx_6185_family(chip)) {
@@ -3100,7 +3107,7 @@ static int mv88e6xxx_setup_port(struct mv88e6xxx_chip *chip, int port)
 
 	if (mv88e6xxx_6352_family(chip) || mv88e6xxx_6351_family(chip) ||
 	    mv88e6xxx_6165_family(chip) || mv88e6xxx_6097_family(chip) ||
-	    mv88e6xxx_6320_family(chip)) {
+	    mv88e6xxx_6320_family(chip) || mv88e6xxx_6390_family(chip)) {
 		/* Port ATU control: disable limiting the number of
 		 * address database entries that this port is allowed
 		 * to use.
