@@ -3671,6 +3671,7 @@ static const struct mv88e6xxx_ops mv88e6390x_ops = {
 	.dsa_port_config = mv88e6351_dsa_port_config,
 	.jumbo_config = mv88e6165_jumbo_config,
 	.egress_rate_limiting = mv88e6097_egress_rate_limiting,
+	.pause_config = mv88e6390_pause_config,
 };
 
 static const struct mv88e6xxx_info mv88e6xxx_table[] = {
