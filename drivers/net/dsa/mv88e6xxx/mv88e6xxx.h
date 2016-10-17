@@ -61,6 +61,8 @@
 #define PORT_PCS_CTRL		0x01
 #define PORT_PCS_CTRL_RGMII_DELAY_RXCLK	BIT(15)
 #define PORT_PCS_CTRL_RGMII_DELAY_TXCLK	BIT(14)
+#define PORT_PCS_CTRL_FORCE_SPEED	BIT(13)
+#define PORT_PCS_CTRL_ALT_SPEED		BIT(12)
 #define PORT_PCS_CTRL_FC		BIT(7)
 #define PORT_PCS_CTRL_FORCE_FC		BIT(6)
 #define PORT_PCS_CTRL_LINK_UP		BIT(5)
@@ -69,8 +71,11 @@
 #define PORT_PCS_CTRL_FORCE_DUPLEX	BIT(2)
 #define PORT_PCS_CTRL_10		0x00
 #define PORT_PCS_CTRL_100		0x01
+#define PORT_PCS_CTRL_200		(0x01 | PORT_PCS_CTRL_ALT_SPEED)
 #define PORT_PCS_CTRL_1000		0x02
 #define PORT_PCS_CTRL_UNFORCED		0x03
+#define PORT_PCS_CTRL_2500		(0x03 | PORT_PCS_CTRL_ALT_SPEED)
+#define PORT_PCS_CTRL_10000		0x03
 #define PORT_PAUSE_CTRL		0x02
 #define PORT_FLOW_CTRL_LIMIT_IN		((0x00 << 8) | BIT(15))
 #define PORT_FLOW_CTRL_LIMIT_OUT	((0x01 << 8) | BIT(15))
@@ -782,6 +787,8 @@ struct mv88e6xxx_ops {
 	int (*jumbo_config)(struct mv88e6xxx_chip *chip, int port);
 	int (*egress_rate_limiting)(struct mv88e6xxx_chip *chip, int port);
 	int (*pause_config)(struct mv88e6xxx_chip *chip, int port);
+	void (*adjust_link)(struct mv88e6xxx_chip *chip, int port,
+			    struct phy_device *phydev);
 };
 
 #define STATS_TYPE_PORT		BIT(0)
