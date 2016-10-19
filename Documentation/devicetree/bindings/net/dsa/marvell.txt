@@ -28,6 +28,10 @@ Optional properties:
 #interrupt-cells = <2>	: Controller uses two cells, number and flag
 - mdio			: container of PHY and devices on the switches MDIO
 			  bus
+
+Optional for the "marvell,mv88e6390"
+- mdio-external		: A collection of PHY nodes on external bus
+
 Example:
 
        mdio {
