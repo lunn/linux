@@ -24,9 +24,9 @@ static inline int mv88e6xxx_g2_require(struct mv88e6xxx_chip *chip)
 }
 
 int mv88e6xxx_g2_smi_phy_read(struct mv88e6xxx_chip *chip, int addr, int reg,
-			      u16 *val);
+			      u16 *val, bool external);
 int mv88e6xxx_g2_smi_phy_write(struct mv88e6xxx_chip *chip, int addr, int reg,
-			       u16 val);
+			       u16 val, bool external);
 int mv88e6xxx_g2_set_switch_mac(struct mv88e6xxx_chip *chip, u8 *addr);
 int mv88e6xxx_g2_get_eeprom16(struct mv88e6xxx_chip *chip,
 			      struct ethtool_eeprom *eeprom, u8 *data);

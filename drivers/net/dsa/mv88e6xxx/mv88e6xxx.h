@@ -376,6 +376,8 @@
 #define GLOBAL2_PTP_AVB_DATA	0x17
 #define GLOBAL2_SMI_PHY_CMD			0x18
 #define GLOBAL2_SMI_PHY_CMD_BUSY		BIT(15)
+#define GLOBAL2_SMI_PHY_CMD_INTERNAL		(0x0 << 13)
+#define GLOBAL2_SMI_PHY_CMD_EXTERNAL		(0x1 << 13)
 #define GLOBAL2_SMI_PHY_CMD_MODE_22		BIT(12)
 #define GLOBAL2_SMI_PHY_CMD_OP_22_WRITE_DATA	((0x1 << 10) | \
 						 GLOBAL2_SMI_PHY_CMD_MODE_22 | \
@@ -471,6 +473,7 @@ enum mv88e6xxx_cap {
 	MV88E6XXX_CAP_G2_PVT_ADDR,	/* (0x0b) Cross Chip Port VLAN Addr */
 	MV88E6XXX_CAP_G2_PVT_DATA,	/* (0x0c) Cross Chip Port VLAN Data */
 	MV88E6XXX_CAP_G2_POT,		/* (0x0f) Priority Override Table */
+	MV88E6XXX_CAP_G2_EXTERNAL_MDIO, /* (0x18) SMI PHY Command */
 
 	/* PHY Polling Unit.
 	 * See GLOBAL_CONTROL_PPU_ENABLE and GLOBAL_STATUS_PPU_POLLING.
@@ -518,7 +521,7 @@ enum mv88e6xxx_cap {
 #define MV88E6XXX_FLAG_G2_PVT_ADDR	BIT_ULL(MV88E6XXX_CAP_G2_PVT_ADDR)
 #define MV88E6XXX_FLAG_G2_PVT_DATA	BIT_ULL(MV88E6XXX_CAP_G2_PVT_DATA)
 #define MV88E6XXX_FLAG_G2_POT		BIT_ULL(MV88E6XXX_CAP_G2_POT)
-
+#define MV88E6XXX_FLAG_G2_EXTERNAL_MDIO	BIT_ULL(MV88E6XXX_CAP_G2_EXTERNAL_MDIO)
 #define MV88E6XXX_FLAG_PPU		BIT_ULL(MV88E6XXX_CAP_PPU)
 #define MV88E6XXX_FLAG_PPU_ACTIVE	BIT_ULL(MV88E6XXX_CAP_PPU_ACTIVE)
 #define MV88E6XXX_FLAG_STU		BIT_ULL(MV88E6XXX_CAP_STU)
@@ -641,16 +644,17 @@ enum mv88e6xxx_cap {
 
 struct mv88e6xxx_ops;
 
-#define MV88E6XXX_FLAGS_FAMILY_6390	\
-	(MV88E6XXX_FLAG_EEE |		\
-	 MV88E6XXX_FLAG_GLOBAL2 |	\
-	 MV88E6XXX_FLAG_PPU_ACTIVE |	\
-	 MV88E6XXX_FLAG_STU |		\
-	 MV88E6XXX_FLAG_TEMP |		\
-	 MV88E6XXX_FLAG_TEMP_LIMIT |	\
-	 MV88E6XXX_FLAG_VTU |		\
-	 MV88E6XXX_FLAGS_IRL |		\
-	 MV88E6XXX_FLAGS_MULTI_CHIP |	\
+#define MV88E6XXX_FLAGS_FAMILY_6390		\
+	(MV88E6XXX_FLAG_EEE |			\
+	 MV88E6XXX_FLAG_GLOBAL2 |		\
+	 MV88E6XXX_FLAG_G2_EXTERNAL_MDIO |	\
+	 MV88E6XXX_FLAG_PPU_ACTIVE |		\
+	 MV88E6XXX_FLAG_STU |			\
+	 MV88E6XXX_FLAG_TEMP |			\
+	 MV88E6XXX_FLAG_TEMP_LIMIT |		\
+	 MV88E6XXX_FLAG_VTU |			\
+	 MV88E6XXX_FLAGS_IRL |			\
+	 MV88E6XXX_FLAGS_MULTI_CHIP |		\
 	 MV88E6XXX_FLAGS_PVT)
 
 struct mv88e6xxx_info {
@@ -754,12 +758,23 @@ struct mv88e6xxx_chip {
 	struct mv88e6xxx_irq g2_irq;
 	int irq;
 
+	/* Device node for the external MDIO bus */
+	struct device_node *external_mdio_np;
+
+	/* And the MDIO bus itself */
+	struct mii_bus *external_mdio_bus;
+
 	struct dentry *debugfs_dir;
 };
 
 struct mv88e6xxx_bus_ops {
 	int (*read)(struct mv88e6xxx_chip *chip, int addr, int reg, u16 *val);
 	int (*write)(struct mv88e6xxx_chip *chip, int addr, int reg, u16 val);
+};
+
+struct mv88e6xxx_mdio_bus {
+	bool external;
+	struct mv88e6xxx_chip *chip;
 };
 
 struct mv88e6xxx_ops {
@@ -771,9 +786,9 @@ struct mv88e6xxx_ops {
 	int (*set_switch_mac)(struct mv88e6xxx_chip *chip, u8 *addr);
 
 	int (*phy_read)(struct mv88e6xxx_chip *chip, int addr, int reg,
-			u16 *val);
+			u16 *val, bool external);
 	int (*phy_write)(struct mv88e6xxx_chip *chip, int addr, int reg,
-			 u16 val);
+			 u16 val, bool external);
 	int (*stats_init)(struct mv88e6xxx_chip *chip);
 	int (*stats_snapshot)(struct mv88e6xxx_chip *chip, int port);
 	int (*stats_get_sset_count)(struct mv88e6xxx_chip *chip);
