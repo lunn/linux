@@ -3151,8 +3151,13 @@ static int mv88e6xxx_setup_port(struct mv88e6xxx_chip *chip, int port)
 				reg |= PORT_PCS_CTRL_100;
 			else
 				reg |= PORT_PCS_CTRL_1000;
+			if (mv88e6xxx_6390_family(chip))
+				reg |= PORT_PCS_CTRL_FORCE_SPEED;
 		} else {
 			reg |= PORT_PCS_CTRL_UNFORCED;
+
+			if (mv88e6xxx_6390_family(chip))
+				reg &= ~PORT_PCS_CTRL_FORCE_SPEED;
 		}
 
 		err = mv88e6xxx_port_write(chip, port, PORT_PCS_CTRL, reg);
