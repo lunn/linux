@@ -374,6 +374,13 @@ static int ipu_plane_atomic_check(struct drm_plane *plane,
 	if (ret)
 		return ret;
 
+	DRM_DEBUG_KMS("%.4s pitch(%u %u %u) offset(%u %u %u)\n",
+		      (char *)&fb->format->format,
+		      fb->pitches[0], fb->pitches[1], fb->pitches[2],
+		      fb->offsets[0], fb->offsets[1], fb->offsets[2]);
+	drm_rect_debug_print("src: ", &state->src, true);
+	drm_rect_debug_print("dst: ", &state->dst, false);
+
 	/* nothing to check when disabling or disabled */
 	if (!crtc_state->enable)
 		return 0;
@@ -381,8 +388,12 @@ static int ipu_plane_atomic_check(struct drm_plane *plane,
 	switch (plane->type) {
 	case DRM_PLANE_TYPE_PRIMARY:
 		/* full plane minimum width is 13 pixels */
-		if (drm_rect_width(&state->dst) < 13)
+		if (drm_rect_width(&state->dst) < 13) {
+			DRM_DEBUG_KMS("Full plane minimum width is 13 pixels\n");
+			drm_rect_debug_print("src: ", &state->src, true);
+			drm_rect_debug_print("dst: ", &state->dst, false);
 			return -EINVAL;
+		}
 		break;
 	case DRM_PLANE_TYPE_OVERLAY:
 		break;
@@ -391,8 +402,12 @@ static int ipu_plane_atomic_check(struct drm_plane *plane,
 		return -EINVAL;
 	}
 
-	if (drm_rect_height(&state->dst) < 2)
+	if (drm_rect_height(&state->dst) < 2) {
+		DRM_DEBUG_KMS("Plane minimum height is 2 pixels\n");
+		drm_rect_debug_print("src: ", &state->src, true);
+		drm_rect_debug_print("dst: ", &state->dst, false);
 		return -EINVAL;
+	}
 
 	/*
 	 * We support resizing active plane or changing its format by
@@ -409,11 +424,16 @@ static int ipu_plane_atomic_check(struct drm_plane *plane,
 
 	eba = drm_plane_state_to_eba(state, 0);
 
-	if (eba & 0x7)
+	if (eba & 0x7) {
+		DRM_DEBUG_KMS("EBA must be a multiple of 8 bytes\neba: 0x%lx",
+			      eba);
 		return -EINVAL;
+	}
 
-	if (fb->pitches[0] < 1 || fb->pitches[0] > 16384)
+	if (fb->pitches[0] < 1 || fb->pitches[0] > 16384) {
+		DRM_DEBUG_KMS("Pitch %u out of range\n", fb->pitches[0]);
 		return -EINVAL;
+	}
 
 	if (old_fb && fb->pitches[0] != old_fb->pitches[0])
 		crtc_state->mode_changed = true;
@@ -435,8 +455,11 @@ static int ipu_plane_atomic_check(struct drm_plane *plane,
 		 */
 		vbo = drm_plane_state_to_vbo(state);
 
-		if (vbo & 0x7 || vbo > 0xfffff8)
+		if (vbo & 0x7 || vbo > 0xfffff8) {
+			DRM_DEBUG_KMS("VBO %lu must be a multiple of 8 bytes and < 16 MiB\n",
+				      vbo);
 			return -EINVAL;
+		}
 
 		if (old_fb && (fb->format == old_fb->format)) {
 			old_vbo = drm_plane_state_to_vbo(old_state);
@@ -444,16 +467,21 @@ static int ipu_plane_atomic_check(struct drm_plane *plane,
 				crtc_state->mode_changed = true;
 		}
 
-		if (fb->pitches[1] != fb->pitches[2])
+		if (fb->pitches[1] != fb->pitches[2]) {
+			DRM_DEBUG_KMS("U/V pitches differ\n");
 			return -EINVAL;
+		}
 
 		/* fall-through */
 	case DRM_FORMAT_NV12:
 	case DRM_FORMAT_NV16:
 		ubo = drm_plane_state_to_ubo(state);
 
-		if (ubo & 0x7 || ubo > 0xfffff8)
+		if (ubo & 0x7 || ubo > 0xfffff8) {
+			DRM_DEBUG_KMS("UBO %lu must be a multiple of 8 bytes and < 16 MiB\n",
+				      ubo);
 			return -EINVAL;
+		}
 
 		if (old_fb && (fb->format == old_fb->format)) {
 			old_ubo = drm_plane_state_to_ubo(old_state);
@@ -461,8 +489,10 @@ static int ipu_plane_atomic_check(struct drm_plane *plane,
 				crtc_state->mode_changed = true;
 		}
 
-		if (fb->pitches[1] < 1 || fb->pitches[1] > 16384)
+		if (fb->pitches[1] < 1 || fb->pitches[1] > 16384) {
+			DRM_DEBUG_KMS("U/V pitches out of range\n");
 			return -EINVAL;
+		}
 
 		if (old_fb && old_fb->pitches[1] != fb->pitches[1])
 			crtc_state->mode_changed = true;
@@ -472,8 +502,10 @@ static int ipu_plane_atomic_check(struct drm_plane *plane,
 		 * chroma subsampling.
 		 */
 		if (((state->src.x1 >> 16) & (fb->format->hsub - 1)) ||
-		    ((state->src.y1 >> 16) & (fb->format->vsub - 1)))
+		    ((state->src.y1 >> 16) & (fb->format->vsub - 1))) {
+			DRM_DEBUG_KMS("Odd offsets not allowed due to chroma subsampling\n");
 			return -EINVAL;
+		}
 		break;
 	case DRM_FORMAT_RGB565_A8:
 	case DRM_FORMAT_BGR565_A8:
@@ -482,11 +514,15 @@ static int ipu_plane_atomic_check(struct drm_plane *plane,
 	case DRM_FORMAT_RGBX8888_A8:
 	case DRM_FORMAT_BGRX8888_A8:
 		alpha_eba = drm_plane_state_to_eba(state, 1);
-		if (alpha_eba & 0x7)
+		if (alpha_eba & 0x7) {
+			DRM_DEBUG_KMS("Alpha EBA must be a multiple of 8 bytes\n");
 			return -EINVAL;
+		}
 
-		if (fb->pitches[1] < 1 || fb->pitches[1] > 16384)
+		if (fb->pitches[1] < 1 || fb->pitches[1] > 16384) {
+			DRM_DEBUG_KMS("Pitch %u out of range\n", fb->pitches[1]);
 			return -EINVAL;
+		}
 
 		if (old_fb && old_fb->pitches[1] != fb->pitches[1])
 			crtc_state->mode_changed = true;
