@@ -402,7 +402,21 @@ int mv88e6xxx_g2_smi_phy_read(struct mv88e6xxx_chip *chip, int addr, int reg,
 	if (err)
 		return err;
 
-	return mv88e6xxx_g2_read(chip, GLOBAL2_SMI_PHY_DATA, val);
+	err = mv88e6xxx_g2_read(chip, GLOBAL2_SMI_PHY_DATA, val);
+	if (err)
+		return err;
+
+	if (reg == MII_PHYSID2) {
+		/* The mv88e6390 internal PHYS don't have a model number.
+		 * Use the switch family model number instead.
+		 */
+		if (!(*val & 0x1ff)) {
+			if (chip->info->family == MV88E6XXX_FAMILY_6390)
+				*val |= PORT_SWITCH_ID_PROD_NUM_6390;
+		}
+	}
+
+	return 0;
 }
 
 int mv88e6xxx_g2_smi_phy_write(struct mv88e6xxx_chip *chip, int addr, int reg,
