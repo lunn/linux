@@ -940,14 +940,62 @@ static void mv88e6390_adjust_link(struct mv88e6xxx_chip *chip, int port,
 	_mv88e6390_adjust_link(chip, port, reg, phydev);
 }
 
+static int mv88e6390x_set_cmode(struct mv88e6xxx_chip *chip, int port,
+				 struct phy_device *phydev)
+{
+	u16 reg;
+	u16 cmode;
+	int err;
+
+	switch (phydev->interface) {
+	case PHY_INTERFACE_MODE_1000BASEX:
+		cmode = PORT_STATUS_CMODE_1000BASE_X;
+		break;
+	case PHY_INTERFACE_MODE_SGMII:
+		cmode = PORT_STATUS_CMODE_SGMII;
+		break;
+	case PHY_INTERFACE_MODE_2500BASEX:
+		cmode = PORT_STATUS_CMODE_2500BASEX;
+		break;
+	case PHY_INTERFACE_MODE_QSGMII:
+		cmode = PORT_STATUS_CMODE_XAUI;
+		break;
+	case PHY_INTERFACE_MODE_RXAUI:
+		cmode = PORT_STATUS_CMODE_RXAUI;
+		break;
+	default:
+		cmode = 0;
+	}
+
+	if (cmode) {
+		err = mv88e6xxx_port_read(chip, port, PORT_STATUS, &reg);
+		if (err)
+			return err;
+
+		reg &= ~PORT_STATUS_CMODE_MASK;
+		reg |= cmode;
+
+		err = mv88e6xxx_port_write(chip, port, PORT_STATUS, reg);
+		if (err)
+			return err;
+	}
+
+	return 0;
+}
+
 static void mv88e6390x_adjust_link(struct mv88e6xxx_chip *chip, int port,
 				   struct phy_device *phydev)
 {
 	u16 reg;
+	int err;
 
 	switch (port) {
 	case 9:
 	case 10:
+		err = mv88e6390x_set_cmode(chip, port, phydev);
+		if (err)
+			return;
+
 		/* Alternative speeds are valid */
 		switch (phydev->speed) {
 		case SPEED_10000:
