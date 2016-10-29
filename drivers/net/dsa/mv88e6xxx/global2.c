@@ -385,11 +385,37 @@ static int mv88e6xxx_g2_smi_phy_cmd(struct mv88e6xxx_chip *chip, u16 cmd)
 	return mv88e6xxx_g2_smi_phy_wait(chip);
 }
 
+int mv88e6xxx_g2_smi_phy_c45_addr(struct mv88e6xxx_chip *chip, int addr,
+				  bool external)
+{
+	u16 cmd = GLOBAL2_SMI_PHY_CMD_OP_45_WRITE_ADDR | (addr << 5);
+	int err;
+
+	if (external)
+		cmd |= GLOBAL2_SMI_PHY_CMD_EXTERNAL;
+
+	err = mv88e6xxx_g2_smi_phy_wait(chip);
+	if (err)
+		return err;
+
+	return mv88e6xxx_g2_smi_phy_cmd(chip, cmd);
+}
+
 int mv88e6xxx_g2_smi_phy_read(struct mv88e6xxx_chip *chip, int addr, int reg,
 			      u16 *val, bool external)
 {
 	u16 cmd = GLOBAL2_SMI_PHY_CMD_OP_22_READ_DATA | (addr << 5) | reg;
 	int err;
+
+	if (addr & MII_ADDR_C45) {
+		err = mv88e6xxx_g2_smi_phy_c45_addr(chip, addr >> 16,
+						    external);
+		if (err)
+			return err;
+
+		addr &= 0xffff;
+		cmd = GLOBAL2_SMI_PHY_CMD_OP_45_READ_DATA | (addr << 5) | reg;
+	}
 
 	if (external)
 		cmd |= GLOBAL2_SMI_PHY_CMD_EXTERNAL;
@@ -424,6 +450,16 @@ int mv88e6xxx_g2_smi_phy_write(struct mv88e6xxx_chip *chip, int addr, int reg,
 {
 	u16 cmd = GLOBAL2_SMI_PHY_CMD_OP_22_WRITE_DATA | (addr << 5) | reg;
 	int err;
+
+	if (addr & MII_ADDR_C45) {
+		err = mv88e6xxx_g2_smi_phy_c45_addr(chip, addr >> 16,
+						    external);
+		if (err)
+			return err;
+
+		addr &= 0xffff;
+		cmd = GLOBAL2_SMI_PHY_CMD_OP_45_WRITE_DATA | (addr << 5) | reg;
+	}
 
 	if (external)
 		cmd |= GLOBAL2_SMI_PHY_CMD_EXTERNAL;
