@@ -11,6 +11,7 @@
  * (at your option) any later version.
  */
 
+#include <linux/phy.h>
 #include "mv88e6xxx.h"
 #include "port.h"
 
@@ -28,6 +29,55 @@ int mv88e6xxx_port_write(struct mv88e6xxx_chip *chip, int port, int reg,
 	int addr = chip->info->port_base_addr + port;
 
 	return mv88e6xxx_write(chip, addr, reg, val);
+}
+
+int mv88e6390x_port_set_cmode(struct mv88e6xxx_chip *chip, int port,
+			      phy_interface_t mode)
+{
+	u16 reg;
+	u16 cmode;
+	int err;
+
+	if (mode == PHY_INTERFACE_MODE_NA)
+		return 0;
+
+	if (port != 9 && port != 10)
+		return -EOPNOTSUPP;
+
+	switch (mode) {
+	case PHY_INTERFACE_MODE_1000BASEX:
+		cmode = PORT_STATUS_CMODE_1000BASE_X;
+		break;
+	case PHY_INTERFACE_MODE_SGMII:
+		cmode = PORT_STATUS_CMODE_SGMII;
+		break;
+	case PHY_INTERFACE_MODE_2500BASEX:
+		cmode = PORT_STATUS_CMODE_2500BASEX;
+		break;
+	case PHY_INTERFACE_MODE_QSGMII:
+		cmode = PORT_STATUS_CMODE_XAUI;
+		break;
+	case PHY_INTERFACE_MODE_RXAUI:
+		cmode = PORT_STATUS_CMODE_RXAUI;
+		break;
+	default:
+		cmode = 0;
+	}
+
+	if (cmode) {
+		err = mv88e6xxx_port_read(chip, port, PORT_STATUS, &reg);
+		if (err)
+			return err;
+
+		reg &= ~PORT_STATUS_CMODE_MASK;
+		reg |= cmode;
+
+		err = mv88e6xxx_port_write(chip, port, PORT_STATUS, reg);
+		if (err)
+			return err;
+	}
+
+	return 0;
 }
 
 /* Offset 0x01: MAC (or PCS or Physical) Control Register

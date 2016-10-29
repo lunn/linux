@@ -60,5 +60,7 @@ int mv88e6095_egress_rate_limiting(struct mv88e6xxx_chip *chip, int port);
 int mv88e6097_egress_rate_limiting(struct mv88e6xxx_chip *chip, int port);
 int mv88e6097_pause_config(struct mv88e6xxx_chip *chip, int port);
 int mv88e6390_pause_config(struct mv88e6xxx_chip *chip, int port);
+int mv88e6390x_port_set_cmode(struct mv88e6xxx_chip *chip, int port,
+			      phy_interface_t mode);
 
 #endif /* _MV88E6XXX_PORT_H */

@@ -58,6 +58,9 @@
 #define PORT_STATUS_CMODE_100BASE_X	0x8
 #define PORT_STATUS_CMODE_1000BASE_X	0x9
 #define PORT_STATUS_CMODE_SGMII		0xa
+#define PORT_STATUS_CMODE_2500BASEX	0xb
+#define PORT_STATUS_CMODE_XAUI		0xc
+#define PORT_STATUS_CMODE_RXAUI		0xd
 #define PORT_PCS_CTRL		0x01
 #define PORT_PCS_CTRL_RGMII_DELAY_RXCLK	BIT(15)
 #define PORT_PCS_CTRL_RGMII_DELAY_TXCLK	BIT(14)
@@ -824,6 +827,8 @@ struct mv88e6xxx_ops {
 	 */
 	int (*port_set_speed)(struct mv88e6xxx_chip *chip, int port, int speed);
 
+	int (*port_set_cmode)(struct mv88e6xxx_chip *chip, int port,
+			      phy_interface_t mode);
 	int (*stats_init)(struct mv88e6xxx_chip *chip);
 
 	/* Snapshot the statistics for a port. The statistics can then
