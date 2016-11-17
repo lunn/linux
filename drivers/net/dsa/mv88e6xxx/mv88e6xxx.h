@@ -35,9 +35,6 @@
 #define PHY_PAGE		0x16
 #define PHY_PAGE_COPPER		0x00
 
-#define ADDR_SERDES		0x0f
-#define SERDES_PAGE_FIBER	0x01
-
 #define PORT_STATUS		0x00
 #define PORT_STATUS_PAUSE_EN	BIT(15)
 #define PORT_STATUS_MY_PAUSE	BIT(14)
@@ -502,14 +499,6 @@ enum mv88e6xxx_cap {
 	MV88E6XXX_CAP_SMI_CMD,		/* (0x00) SMI Command */
 	MV88E6XXX_CAP_SMI_DATA,		/* (0x01) SMI Data */
 
-	/* PHY Registers.
-	 */
-	MV88E6XXX_CAP_PHY_PAGE,		/* (0x16) Page Register */
-
-	/* Fiber/SERDES Registers (SMI address F).
-	 */
-	MV88E6XXX_CAP_SERDES,
-
 	/* Switch Global (1) Registers.
 	 */
 	MV88E6XXX_CAP_G1_ATU_FID,	/* (0x01) ATU FID Register */
@@ -546,10 +535,6 @@ enum mv88e6xxx_cap {
 #define MV88E6XXX_FLAG_SMI_CMD		BIT_ULL(MV88E6XXX_CAP_SMI_CMD)
 #define MV88E6XXX_FLAG_SMI_DATA		BIT_ULL(MV88E6XXX_CAP_SMI_DATA)
 
-#define MV88E6XXX_FLAG_PHY_PAGE		BIT_ULL(MV88E6XXX_CAP_PHY_PAGE)
-
-#define MV88E6XXX_FLAG_SERDES		BIT_ULL(MV88E6XXX_CAP_SERDES)
-
 #define MV88E6XXX_FLAG_G1_ATU_FID	BIT_ULL(MV88E6XXX_CAP_G1_ATU_FID)
 #define MV88E6XXX_FLAG_G1_VTU_FID	BIT_ULL(MV88E6XXX_CAP_G1_VTU_FID)
 
@@ -580,11 +565,6 @@ enum mv88e6xxx_cap {
 #define MV88E6XXX_FLAGS_PVT		\
 	(MV88E6XXX_FLAG_G2_PVT_ADDR |	\
 	 MV88E6XXX_FLAG_G2_PVT_DATA)
-
-/* Fiber/SERDES Registers at SMI address F, page 1 */
-#define MV88E6XXX_FLAGS_SERDES		\
-	(MV88E6XXX_FLAG_PHY_PAGE |	\
-	 MV88E6XXX_FLAG_SERDES)
 
 #define MV88E6XXX_FLAGS_FAMILY_6095	\
 	(MV88E6XXX_FLAG_GLOBAL2 |	\
@@ -649,8 +629,7 @@ enum mv88e6xxx_cap {
 	 MV88E6XXX_FLAG_VTU |		\
 	 MV88E6XXX_FLAGS_IRL |		\
 	 MV88E6XXX_FLAGS_MULTI_CHIP |	\
-	 MV88E6XXX_FLAGS_PVT |		\
-	 MV88E6XXX_FLAGS_SERDES)
+	 MV88E6XXX_FLAGS_PVT)
 
 #define MV88E6XXX_FLAGS_FAMILY_6351	\
 	(MV88E6XXX_FLAG_G1_ATU_FID |	\
@@ -679,8 +658,7 @@ enum mv88e6xxx_cap {
 	 MV88E6XXX_FLAG_VTU |		\
 	 MV88E6XXX_FLAGS_IRL |		\
 	 MV88E6XXX_FLAGS_MULTI_CHIP |	\
-	 MV88E6XXX_FLAGS_PVT |		\
-	 MV88E6XXX_FLAGS_SERDES)
+	 MV88E6XXX_FLAGS_PVT)
 
 struct mv88e6xxx_ops;
 
@@ -905,6 +883,8 @@ struct mv88e6xxx_ops {
 
 	/* Can be either in g1 or g2, so don't use a prefix */
 	int (*mgmt_rsvd2cpu)(struct mv88e6xxx_chip *chip);
+
+	int (*serdes_power)(struct mv88e6xxx_chip *chip, int port, bool on);
 };
 
 struct mv88e6xxx_irq_ops {
@@ -948,5 +928,8 @@ int mv88e6xxx_write(struct mv88e6xxx_chip *chip, int addr, int reg, u16 val);
 int mv88e6xxx_update(struct mv88e6xxx_chip *chip, int addr, int reg,
 		     u16 update);
 int mv88e6xxx_wait(struct mv88e6xxx_chip *chip, int addr, int reg, u16 mask);
-
+int mv88e6xxx_phy_page_write(struct mv88e6xxx_chip *chip, int phy,
+			     u8 page, int reg, u16 val);
+int mv88e6xxx_phy_page_read(struct mv88e6xxx_chip *chip, int phy,
+			    u8 page, int reg, u16 *val);
 #endif
