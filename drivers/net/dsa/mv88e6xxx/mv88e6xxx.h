@@ -928,4 +928,8 @@ int mv88e6xxx_phy_page_write(struct mv88e6xxx_chip *chip, int phy,
 			     u8 page, int reg, u16 val);
 int mv88e6xxx_phy_page_read(struct mv88e6xxx_chip *chip, int phy,
 			    u8 page, int reg, u16 *val);
+int mv88e6xxx_phy_write(struct mv88e6xxx_chip *chip, int phy,
+			int reg, u16 val);
+int mv88e6xxx_phy_read(struct mv88e6xxx_chip *chip, int phy,
+		       int reg, u16 *val);
 #endif
