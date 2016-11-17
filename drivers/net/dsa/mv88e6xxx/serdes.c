@@ -13,13 +13,13 @@
 
 #include <linux/mii.h>
 
+#include "global2.h"
 #include "mv88e6xxx.h"
 #include "port.h"
 #include "serdes.h"
 
 #define MV88E6352_ADDR_SERDES		0x0f
 #define MV88E6352_SERDES_PAGE_FIBER	0x01
-
 
 int mv88e6352_serdes_read(struct mv88e6xxx_chip *chip, int reg, u16 *val)
 {
@@ -73,4 +73,95 @@ int mv88e6352_serdes_power(struct mv88e6xxx_chip *chip, int port, bool on)
 	}
 
 	return 0;
+}
+
+/* Set the power on/off for 10GBASE-R and 10GBASE-X4/X2 */
+static int mv88e6390_serdes_power_base(struct mv88e6xxx_chip *chip, int addr,
+				       bool on)
+{
+	u16 val, new_val;
+	int reg_c45;
+	int err;
+
+	reg_c45 = MII_ADDR_C45 | MV88E6390_SERDES_DEVICE |
+		MV88E6390_PCS_CONTROL_1;
+	err = mv88e6xxx_phy_read(chip, addr, reg_c45, &val, false);
+	if (err)
+		return err;
+
+	if (on)
+		new_val = val & ~(MV88E6390_PCS_CONTROL_1_RESET |
+				  MV88E6390_PCS_CONTROL_1_LOOPBACK |
+				  MV88E6390_PCS_CONTROL_1_PDOWN);
+	else
+		new_val = val | MV88E6390_PCS_CONTROL_1_PDOWN;
+
+	pr_info("mv88e6390_serdes_power: %d %x %x\n",
+		addr, val, new_val);
+
+	if (val != new_val)
+		err = mv88e6xxx_phy_write(chip, addr, reg_c45, new_val, false);
+
+	return err;
+}
+
+int mv88e6390_serdes_power_port9(struct mv88e6xxx_chip *chip, u8 cmode,
+				 bool on)
+{
+	int err;
+
+	switch (cmode) {
+	case PORT_STATUS_CMODE_SGMII:
+		break;
+	case PORT_STATUS_CMODE_XAUI:
+	case PORT_STATUS_CMODE_RXAUI:
+	case PORT_STATUS_CMODE_1000BASE_X:
+	case PORT_STATUS_CMODE_2500BASEX:
+		err = mv88e6390_serdes_power_base(chip, MV88E6390_PORT9_LANE0,
+						  on);
+		if (err)
+			return err;
+	}
+
+	return 0;
+}
+
+int mv88e6390_serdes_power_port10(struct mv88e6xxx_chip *chip, u8 cmode,
+				  bool on)
+{
+	int err;
+
+	switch (cmode) {
+	case PORT_STATUS_CMODE_SGMII:
+		break;
+	case PORT_STATUS_CMODE_XAUI:
+	case PORT_STATUS_CMODE_RXAUI:
+	case PORT_STATUS_CMODE_1000BASE_X:
+	case PORT_STATUS_CMODE_2500BASEX:
+		err = mv88e6390_serdes_power_base(chip, MV88E6390_PORT10_LANE0,
+						  on);
+		if (err)
+			return err;
+	}
+
+	return 0;
+}
+
+int mv88e6390_serdes_power(struct mv88e6xxx_chip *chip, int port, bool on)
+{
+	u8 cmode;
+	int err;
+
+	err = mv88e6xxx_port_get_cmode(chip, port, &cmode);
+	if (err)
+		return cmode;
+
+	switch (port) {
+	case 9:
+		return mv88e6390_serdes_power_port9(chip, cmode, on);
+	case 10:
+		return mv88e6390_serdes_power_port10(chip, cmode, on);
+	default:
+		return 0;
+	}
 }
