@@ -235,8 +235,8 @@ static int mv88e6xxx_write_phy(struct mv88e6xxx_chip *chip, int addr, int reg,
 	return mv88e6xxx_write(chip, addr, reg, val);
 }
 
-static int mv88e6xxx_phy_read(struct mv88e6xxx_chip *chip, int phy,
-			      int reg, u16 *val, bool external)
+int mv88e6xxx_phy_read(struct mv88e6xxx_chip *chip, int phy,
+		       int reg, u16 *val, bool external)
 {
 	int addr = phy; /* PHY devices addresses start at 0x0 */
 
@@ -246,8 +246,8 @@ static int mv88e6xxx_phy_read(struct mv88e6xxx_chip *chip, int phy,
 	return chip->info->ops->phy_read(chip, addr, reg, val, external);
 }
 
-static int mv88e6xxx_phy_write(struct mv88e6xxx_chip *chip, int phy,
-			       int reg, u16 val, bool external)
+int mv88e6xxx_phy_write(struct mv88e6xxx_chip *chip, int phy,
+			int reg, u16 val, bool external)
 {
 	int addr = phy; /* PHY devices addresses start at 0x0 */
 
@@ -2429,8 +2429,15 @@ static int mv88e6xxx_setup_port_dsa(struct mv88e6xxx_chip *chip, int port,
 	if (err)
 		return err;
 
-	return chip->info->ops->port_set_egress_unknowns(
+	err = chip->info->ops->port_set_egress_unknowns(
 		chip, port, port == upstream_port);
+	if (err)
+		return err;
+
+	if (chip->info->ops->serdes_power)
+		err = chip->info->ops->serdes_power(chip, port, true);
+
+	return err;
 }
 
 static int mv88e6xxx_setup_port_cpu(struct mv88e6xxx_chip *chip, int port)
@@ -2470,7 +2477,14 @@ static int mv88e6xxx_setup_port_cpu(struct mv88e6xxx_chip *chip, int port)
 	if (err)
 		return err;
 
-	return chip->info->ops->port_set_egress_unknowns(chip, port, true);
+	err = chip->info->ops->port_set_egress_unknowns(chip, port, true);
+	if (err)
+		return err;
+
+	if (chip->info->ops->serdes_power)
+		err = chip->info->ops->serdes_power(chip, port, true);
+
+	return err;
 }
 
 static int mv88e6xxx_setup_port_normal(struct mv88e6xxx_chip *chip, int port)
@@ -2537,15 +2551,6 @@ static int mv88e6xxx_setup_port(struct mv88e6xxx_chip *chip, int port)
 	}
 	if (err)
 		return err;
-
-	/* If this port is connected to a SerDes, make sure the SerDes is
-	 * powered up.
-	 */
-	if (chip->info->ops->serdes_power) {
-		err = chip->info->ops->serdes_power(chip, port, true);
-		if (err)
-			return err;
-	}
 
 	/* Port Control 2: don't force a good FCS, set the maximum frame size to
 	 * 10240 bytes, disable 802.1q tags checking, don't discard tagged or
@@ -2662,6 +2667,31 @@ static int mv88e6xxx_setup_port(struct mv88e6xxx_chip *chip, int port)
 	 * ID, and set the default packet priority to zero.
 	 */
 	return mv88e6xxx_port_write(chip, port, PORT_DEFAULT_VLAN, 0x0000);
+}
+
+static int mv88e6xxx_port_enable(struct dsa_switch *ds, int port,
+				 struct phy_device *phydev)
+{
+	struct mv88e6xxx_chip *chip = ds->priv;
+	int err = 0;
+
+	mutex_lock(&chip->reg_lock);
+	if (chip->info->ops->serdes_power)
+		err = chip->info->ops->serdes_power(chip, port, true);
+	mutex_unlock(&chip->reg_lock);
+
+	return err;
+}
+
+static void mv88e6xxx_port_disable(struct dsa_switch *ds, int port,
+				   struct phy_device *phydev)
+{
+	struct mv88e6xxx_chip *chip = ds->priv;
+
+	mutex_lock(&chip->reg_lock);
+	if (chip->info->ops->serdes_power)
+		chip->info->ops->serdes_power(chip, port, false);
+	mutex_unlock(&chip->reg_lock);
 }
 
 static int mv88e6xxx_g1_set_switch_mac(struct mv88e6xxx_chip *chip, u8 *addr)
@@ -3537,6 +3567,7 @@ static const struct mv88e6xxx_ops mv88e6190_ops = {
 	.g1_set_cpu_port = mv88e6390_g1_set_cpu_port,
 	.g1_set_egress_port = mv88e6390_g1_set_egress_port,
 	.mgmt_rsvd2cpu = mv88e6390_g1_mgmt_rsvd2cpu,
+	.serdes_power = mv88e6390_serdes_power,
 };
 
 static const struct mv88e6xxx_ops mv88e6190x_ops = {
@@ -3561,6 +3592,7 @@ static const struct mv88e6xxx_ops mv88e6190x_ops = {
 	.g1_set_cpu_port = mv88e6390_g1_set_cpu_port,
 	.g1_set_egress_port = mv88e6390_g1_set_egress_port,
 	.mgmt_rsvd2cpu = mv88e6390_g1_mgmt_rsvd2cpu,
+	.serdes_power = mv88e6390_serdes_power,
 };
 
 static const struct mv88e6xxx_ops mv88e6191_ops = {
@@ -3585,6 +3617,7 @@ static const struct mv88e6xxx_ops mv88e6191_ops = {
 	.g1_set_cpu_port = mv88e6390_g1_set_cpu_port,
 	.g1_set_egress_port = mv88e6390_g1_set_egress_port,
 	.mgmt_rsvd2cpu = mv88e6390_g1_mgmt_rsvd2cpu,
+	.serdes_power = mv88e6390_serdes_power,
 };
 
 static const struct mv88e6xxx_ops mv88e6240_ops = {
@@ -3637,6 +3670,7 @@ static const struct mv88e6xxx_ops mv88e6290_ops = {
 	.g1_set_cpu_port = mv88e6390_g1_set_cpu_port,
 	.g1_set_egress_port = mv88e6390_g1_set_egress_port,
 	.mgmt_rsvd2cpu = mv88e6390_g1_mgmt_rsvd2cpu,
+	.serdes_power = mv88e6390_serdes_power,
 };
 
 static const struct mv88e6xxx_ops mv88e6320_ops = {
@@ -3793,6 +3827,7 @@ static const struct mv88e6xxx_ops mv88e6390_ops = {
 	.g1_set_cpu_port = mv88e6390_g1_set_cpu_port,
 	.g1_set_egress_port = mv88e6390_g1_set_egress_port,
 	.mgmt_rsvd2cpu = mv88e6390_g1_mgmt_rsvd2cpu,
+	.serdes_power = mv88e6390_serdes_power,
 };
 
 static const struct mv88e6xxx_ops mv88e6390x_ops = {
@@ -3819,6 +3854,7 @@ static const struct mv88e6xxx_ops mv88e6390x_ops = {
 	.g1_set_cpu_port = mv88e6390_g1_set_cpu_port,
 	.g1_set_egress_port = mv88e6390_g1_set_egress_port,
 	.mgmt_rsvd2cpu = mv88e6390_g1_mgmt_rsvd2cpu,
+	.serdes_power = mv88e6390_serdes_power,
 };
 
 static const struct mv88e6xxx_ops mv88e6391_ops = {
@@ -3843,6 +3879,7 @@ static const struct mv88e6xxx_ops mv88e6391_ops = {
 	.g1_set_cpu_port = mv88e6390_g1_set_cpu_port,
 	.g1_set_egress_port = mv88e6390_g1_set_egress_port,
 	.mgmt_rsvd2cpu = mv88e6390_g1_mgmt_rsvd2cpu,
+	.serdes_power = mv88e6390_serdes_power,
 };
 
 static int mv88e6xxx_verify_madatory_ops(struct mv88e6xxx_chip *chip,
@@ -4427,6 +4464,8 @@ static struct dsa_switch_ops mv88e6xxx_switch_ops = {
 	.get_strings		= mv88e6xxx_get_strings,
 	.get_ethtool_stats	= mv88e6xxx_get_ethtool_stats,
 	.get_sset_count		= mv88e6xxx_get_sset_count,
+	.port_enable		= mv88e6xxx_port_enable,
+	.port_disable		= mv88e6xxx_port_disable,
 	.set_eee		= mv88e6xxx_set_eee,
 	.get_eee		= mv88e6xxx_get_eee,
 #ifdef CONFIG_NET_DSA_HWMON
