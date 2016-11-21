@@ -1169,8 +1169,10 @@ static int dsa_slave_phy_setup(struct dsa_slave_priv *p,
 		of_node_put(phy_dn);
 	}
 
-	if (p->phy && phy_is_fixed)
+	if (p->phy && phy_is_fixed) {
+		dsa_slave_adjust_link(slave_dev);
 		fixed_phy_set_link_update(p->phy, dsa_slave_fixed_link_update);
+	}
 
 	/* We could not connect to a designated PHY, so use the switch internal
 	 * MDIO bus instead
