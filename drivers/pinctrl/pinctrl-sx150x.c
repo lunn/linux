@@ -1239,7 +1239,7 @@ static int sx150x_probe(struct i2c_client *client,
 
 		gpiochip_set_nested_irqchip(&pctl->gpio,
 					    &pctl->irq_chip,
-					    client-irq);
+					    client->irq);
 	}
 
 	/* Pinctrl_desc */
