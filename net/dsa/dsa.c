@@ -242,12 +242,15 @@ static int __init dsa_init_module(void)
 
 	dev_add_pack(&dsa_pack_type);
 
+	dsa_debugfs_create_module();
+
 	return 0;
 }
 module_init(dsa_init_module);
 
 static void __exit dsa_cleanup_module(void)
 {
+	dsa_debugfs_destroy_module();
 	dsa_slave_unregister_notifier();
 	dev_remove_pack(&dsa_pack_type);
 	dsa_legacy_unregister();
