@@ -15,6 +15,20 @@ config NET_DSA
 
 if NET_DSA
 
+config NET_DSA_DEBUGFS
+	bool "Distributed Switch Architecture debugfs interface"
+	depends on DEBUG_FS
+	---help---
+	  Enable creation of debugfs files for the DSA core.
+
+	  These debugfs files provide per-switch information, such as the tag
+	  protocol used and ports connectivity. They also allow querying the
+	  hardware directly through the switch operations for debugging instead
+	  of passing through the bridge, switchdev and DSA layers.
+
+	  This is also the only way to inspect the FDB, MDB or VLAN entries of
+	  CPU and DSA links since they are not exposed to userspace.
+
 # tagging formats
 config NET_DSA_TAG_BRCM
 	bool
