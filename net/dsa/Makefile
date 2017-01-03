@@ -1,6 +1,7 @@
 # the core
 obj-$(CONFIG_NET_DSA) += dsa_core.o
 dsa_core-y += dsa.o slave.o dsa2.o switch.o legacy.o
+dsa_core-$(CONFIG_NET_DSA_DEBUGFS) += debugfs.o
 
 # tagging formats
 dsa_core-$(CONFIG_NET_DSA_TAG_BRCM) += tag_brcm.o

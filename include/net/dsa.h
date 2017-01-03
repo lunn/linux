@@ -244,9 +244,17 @@ struct dsa_switch {
 	/* devlink used to represent this switch device */
 	struct devlink		*devlink;
 
+#ifdef CONFIG_NET_DSA_DEBUGFS
+	/*
+	 * Debugfs interface.
+	 */
+	struct dentry *debugfs_dir;
+#endif
+
 	/* Dynamically allocated ports, keep last */
 	size_t num_ports;
 	struct dsa_port ports[];
+
 };
 
 static inline bool dsa_is_cpu_port(struct dsa_switch *ds, int p)
