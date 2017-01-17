@@ -10,6 +10,7 @@
 #include <linux/clk.h>
 #include <linux/debugfs.h>
 #include <linux/delay.h>
+#include <linux/devcoredump.h>
 #include <linux/firmware.h>
 #include <linux/gcd.h>
 #include <linux/genalloc.h>
@@ -1497,6 +1498,54 @@ static void coda_device_run(void *m2m_priv)
 	queue_work(dev->workqueue, &ctx->pic_run_work);
 }
 
+static void coda_dump_metas(struct coda_ctx *ctx)
+{
+	struct v4l2_device *v4l2_dev = &ctx->dev->v4l2_dev;
+	struct coda_buffer_meta *meta;
+
+	list_for_each_entry(meta, &ctx->buffer_meta_list, list) {
+		unsigned int mask = ctx->bitstream_fifo.kfifo.mask;
+		unsigned int meta_start = meta->start & mask;
+		unsigned int meta_end = meta->end & mask;
+		char *buf = ctx->bitstream.vaddr + meta_start;
+
+		v4l2_err(v4l2_dev,
+			 "\tmeta %d: %u - %u (%02x %02x %02x %02x %02x)\n",
+			 meta->sequence, meta_start, meta_end,
+			 buf[0], buf[1], buf[2], buf[3], buf[4]);
+	}
+}
+
+static void coda_dump_payload(struct coda_ctx *ctx)
+{
+	struct v4l2_device *v4l2_dev = &ctx->dev->v4l2_dev;
+	unsigned int payload;
+	void *dump;
+
+	payload = coda_get_bitstream_payload(ctx);
+	if (!payload || payload > ctx->bitstream.size)
+		return;
+
+	dump = vmalloc(payload);
+	if (dump) {
+		unsigned int start = ctx->bitstream_fifo.kfifo.out &
+				     ctx->bitstream_fifo.kfifo.mask;
+		unsigned int count = min_t(unsigned int, payload,
+					   ctx->bitstream.size - start);
+
+		v4l2_err(v4l2_dev, "\tpayload %u-%u\n", start, start + count);
+		memcpy(dump, ctx->bitstream.vaddr + start, count);
+		if (count < payload) {
+			v4l2_err(v4l2_dev, "\tpayload 0-%u\n", payload - count);
+			memcpy(dump + count, ctx->bitstream.vaddr,
+			       payload - count);
+		}
+
+		dev_coredumpv(ctx->dev->v4l2_dev.dev, dump, payload,
+			      GFP_KERNEL);
+	}
+}
+
 static void coda_pic_run_work(struct work_struct *work)
 {
 	struct coda_ctx *ctx = container_of(work, struct coda_ctx, pic_run_work);
@@ -1519,6 +1568,8 @@ static void coda_pic_run_work(struct work_struct *work)
 		if (ctx->use_bit) {
 			dev_err(dev->dev, "CODA PIC_RUN timeout\n");
 			coda_bit_debug_timeout(ctx);
+			coda_dump_metas(ctx);
+			coda_dump_payload(ctx);
 
 			ctx->hold = true;
 
@@ -1953,6 +2004,7 @@ static int coda_start_streaming(struct vb2_queue *q, unsigned int count)
 	struct coda_q_data *q_data_src, *q_data_dst;
 	struct v4l2_m2m_buffer *m2m_buf, *tmp;
 	struct vb2_v4l2_buffer *buf;
+	unsigned int payload;
 	struct list_head list;
 	int ret = 0;
 
@@ -1972,9 +2024,13 @@ static int coda_start_streaming(struct vb2_queue *q, unsigned int count)
 			coda_fill_bitstream(ctx, &list);
 			mutex_unlock(&ctx->bitstream_mutex);
 
+			payload = coda_get_bitstream_payload(ctx);
 			if (ctx->dev->devtype->product != CODA_960 &&
-			    coda_get_bitstream_payload(ctx) < 512) {
-				v4l2_err(v4l2_dev, "start payload < 512\n");
+			    payload < 512) {
+				v4l2_err(v4l2_dev, "start payload: %u < 512, count: %u\n",
+					 payload, count);
+				coda_dump_metas(ctx);
+				coda_dump_payload(ctx);
 				ret = -EINVAL;
 				goto err;
 			}
