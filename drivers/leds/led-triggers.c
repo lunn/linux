@@ -223,22 +223,32 @@ EXPORT_SYMBOL_GPL(led_trigger_rename_static);
 
 /* LED Trigger Interface */
 
+static int led_trigger_name_used(const char *name, struct list_head *list)
+{
+	struct led_trigger *trig;
+
+	list_for_each_entry(trig, list, next_trig) {
+		if (!strcmp(trig->name, name))
+			return -EEXIST;
+	}
+
+	return 0;
+}
+
 int led_trigger_register(struct led_trigger *trig)
 {
 	struct led_classdev *led_cdev;
-	struct led_trigger *_trig;
 
 	rwlock_init(&trig->leddev_list_lock);
 	INIT_LIST_HEAD(&trig->led_cdevs);
 
 	down_write(&triggers_list_lock);
 	/* Make sure the trigger's name isn't already in use */
-	list_for_each_entry(_trig, &trigger_list, next_trig) {
-		if (!strcmp(_trig->name, trig->name)) {
-			up_write(&triggers_list_lock);
-			return -EEXIST;
-		}
+	if (led_trigger_name_used(trig->name, &trigger_list)) {
+		up_write(&triggers_list_lock);
+		return -EEXIST;
 	}
+
 	/* Add to the list of led triggers */
 	list_add_tail(&trig->next_trig, &trigger_list);
 	up_write(&triggers_list_lock);
