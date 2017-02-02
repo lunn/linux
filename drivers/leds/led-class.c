@@ -296,6 +296,7 @@ int led_classdev_register_ext(struct device *parent,
 	led_cdev->work_flags = 0;
 #ifdef CONFIG_LEDS_TRIGGERS
 	init_rwsem(&led_cdev->trigger_lock);
+	INIT_LIST_HEAD(&led_cdev->hw_trig_list);
 #endif
 #ifdef CONFIG_LEDS_BRIGHTNESS_HW_CHANGED
 	led_cdev->brightness_hw_changed = -1;

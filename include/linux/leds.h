@@ -139,6 +139,8 @@ struct led_classdev {
 	void			*trigger_data;
 	/* true if activated - deactivate routine uses it to do cleanup */
 	bool			activated;
+	/* List of hardware triggers specific to this LED */
+	struct list_head	 hw_trig_list;
 #endif
 
 #ifdef CONFIG_LEDS_BRIGHTNESS_HW_CHANGED
@@ -368,6 +370,10 @@ ssize_t led_trigger_show(struct device *dev, struct device_attribute *attr,
 /* Registration functions for complex triggers */
 extern int led_trigger_register(struct led_trigger *trigger);
 extern void led_trigger_unregister(struct led_trigger *trigger);
+extern int led_hw_trigger_register(struct led_trigger *trig,
+				   struct led_classdev *led_cdev);
+extern void led_hw_trigger_unregister(struct led_trigger *trig,
+				      struct led_classdev *led_cdev);
 extern int devm_led_trigger_register(struct device *dev,
 				     struct led_trigger *trigger);
 
@@ -430,6 +436,10 @@ struct led_trigger {};
 static inline void led_trigger_register_simple(const char *name,
 					struct led_trigger **trigger) {}
 static inline void led_trigger_unregister_simple(struct led_trigger *trigger) {}
+static inline int led_hw_trigger_register(struct led_trigger *trig,
+					  struct led_classdev *led_cdev);
+static inline void led_hw_trigger_unregister(struct led_trigger *trig,
+					     struct led_classdev *led_cdev);
 static inline void led_trigger_event(struct led_trigger *trigger,
 				enum led_brightness event) {}
 static inline void led_trigger_blink(struct led_trigger *trigger,

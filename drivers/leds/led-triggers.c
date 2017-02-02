@@ -270,6 +270,40 @@ int led_trigger_register(struct led_trigger *trig)
 }
 EXPORT_SYMBOL_GPL(led_trigger_register);
 
+int led_hw_trigger_register(struct led_trigger *trig,
+			    struct led_classdev *led_cdev)
+{
+	rwlock_init(&trig->leddev_list_lock);
+	INIT_LIST_HEAD(&trig->led_cdevs);
+
+	down_write(&triggers_list_lock);
+	/* Make sure the trigger's name isn't already in use */
+	if (led_trigger_name_used(trig->name, &trigger_list)) {
+		up_write(&triggers_list_lock);
+		return -EEXIST;
+	}
+
+	/* And is also not in use with this specific LED */
+	if (led_trigger_name_used(trig->name, &led_cdev->hw_trig_list)) {
+		up_write(&triggers_list_lock);
+		return -EEXIST;
+	}
+
+	/* Add to the list of led triggers for this LED */
+	list_add_tail(&trig->next_trig, &led_cdev->hw_trig_list);
+	up_write(&triggers_list_lock);
+
+	/* If this trigger is the default trigger, set it*/
+	down_write(&led_cdev->trigger_lock);
+	if (!led_cdev->trigger && led_cdev->default_trigger &&
+	    !strcmp(led_cdev->default_trigger, trig->name))
+		led_trigger_set(led_cdev, trig);
+	up_write(&led_cdev->trigger_lock);
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(led_hw_trigger_register);
+
 void led_trigger_unregister(struct led_trigger *trig)
 {
 	struct led_classdev *led_cdev;
@@ -293,6 +327,31 @@ void led_trigger_unregister(struct led_trigger *trig)
 	up_read(&leds_list_lock);
 }
 EXPORT_SYMBOL_GPL(led_trigger_unregister);
+
+void led_hw_trigger_unregister(struct led_trigger *trig,
+			       struct led_classdev *led_cdev)
+{
+	struct led_trigger *_trig;
+
+	down_write(&triggers_list_lock);
+
+	/* Remove from LEDs list of led triggers */
+	list_for_each_entry(_trig, &led_cdev->hw_trig_list, next_trig) {
+		if (_trig == trig) {
+			list_del(&_trig->next_trig);
+			break;
+		}
+	}
+
+	up_write(&triggers_list_lock);
+
+	/* Remove the trigger, if it is in use */
+	down_write(&led_cdev->trigger_lock);
+	if (led_cdev->trigger == trig)
+		led_trigger_set(led_cdev, NULL);
+	up_write(&led_cdev->trigger_lock);
+}
+EXPORT_SYMBOL_GPL(led_hw_trigger_unregister);
 
 static void devm_led_trigger_release(struct device *dev, void *res)
 {
