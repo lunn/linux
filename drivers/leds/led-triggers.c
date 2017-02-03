@@ -56,6 +56,17 @@ ssize_t led_trigger_store(struct device *dev, struct device_attribute *attr,
 			goto unlock;
 		}
 	}
+
+	list_for_each_entry(trig, &led_cdev->hw_trig_list, next_trig) {
+		if (sysfs_streq(buf, trig->name)) {
+			down_write(&led_cdev->trigger_lock);
+			led_trigger_set(led_cdev, trig);
+			up_write(&led_cdev->trigger_lock);
+
+			up_read(&triggers_list_lock);
+			goto unlock;
+		}
+	}
 	/* we come here only if buf matches no trigger */
 	ret = -EINVAL;
 	up_read(&triggers_list_lock);
