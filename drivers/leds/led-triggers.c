@@ -90,6 +90,17 @@ ssize_t led_trigger_show(struct device *dev, struct device_attribute *attr,
 			len += scnprintf(buf+len, PAGE_SIZE - len, "%s ",
 					 trig->name);
 	}
+
+	list_for_each_entry(trig, &led_cdev->hw_trig_list, next_trig) {
+		if (led_cdev->trigger && !strcmp(led_cdev->trigger->name,
+							trig->name))
+			len += scnprintf(buf+len, PAGE_SIZE - len, "[%s] ",
+					 trig->name);
+		else
+			len += scnprintf(buf+len, PAGE_SIZE - len, "%s ",
+					 trig->name);
+	}
+
 	up_read(&led_cdev->trigger_lock);
 	up_read(&triggers_list_lock);
 
