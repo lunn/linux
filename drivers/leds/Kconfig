@@ -822,6 +822,12 @@ config LEDS_LM36274
 	help
 	  Say Y to enable the LM36274 LED driver for TI LMU devices.
 	  This supports the LED device LM36274.
+config LEDS_RAVE_SP
+	tristate "LED support for RAVE SP devices"
+	depends on LEDS_CLASS && RAVE_SP_CORE
+	help
+	  This option enables support for LEDs connected to RAVE SP
+	  devices.
 
 comment "LED Triggers"
 source "drivers/leds/trigger/Kconfig"
