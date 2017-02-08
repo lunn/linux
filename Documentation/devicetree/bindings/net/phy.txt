@@ -53,6 +53,20 @@ Optional Properties:
   to ensure the integrated PHY is used. The absence of this property indicates
   the muxers should be configured so that the external PHY is used.
 
+- leds: A container for child nodes representing LEDs
+
+If the leds property is present, it should contain children, each
+describing one LED. These child nodes have the following property:
+
+Required properties:
+- #address-cells	: Must be 1
+- #size-cells		: Must be 0
+- reg			: Describes the LED number
+- label			: See leds/common.txt
+
+Optional properties:
+- linux,default-trigger	: See leds/common.txt
+
 Example:
 
 ethernet-phy@0 {
@@ -60,4 +74,22 @@ ethernet-phy@0 {
 	interrupt-parent = <&PIC>;
 	interrupts = <35 IRQ_TYPE_EDGE_RISING>;
 	reg = <0>;
+};
+
+ethernet-phy@0 {
+	reg = <4>;
+
+	leds {
+		led0 : led@0: {
+			reg = <0>;
+			label = "Left:Red";
+			linux,default-trigger = "Collision";
+		};
+
+		led1 : led@1: {
+			reg = <1>;
+			label = "Right:Green";
+			linux,default-trigger = "1000Link_Activity";
+		};
+	};
 };

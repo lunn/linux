@@ -25,6 +25,8 @@
 #include <linux/timer.h>
 #include <linux/workqueue.h>
 #include <linux/mod_devicetable.h>
+#include <linux/phy_led_triggers.h>
+#include <linux/leds.h>
 
 #include <linux/atomic.h>
 
@@ -481,6 +483,18 @@ struct phy_device {
 };
 #define to_phy_device(d) container_of(to_mdio_device(d), \
 				      struct phy_device, mdio)
+
+/* phy_led: An LED driven by the PHY
+ *
+ * phydev: Pointer to the PHY this LED belongs to
+ * led_cdev: Standard LED class structure
+ * index: Number of the LED
+ */
+struct phy_led {
+	struct phy_device *phydev;
+	struct led_classdev led_cdev;
+	u32 index;
+};
 
 /* struct phy_driver: Driver structure for a particular PHY type
  *
