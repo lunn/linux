@@ -2310,7 +2310,18 @@ static bool phy_drv_supports_irq(struct phy_driver *phydrv)
 static int phy_led_set_brightness(struct led_classdev *led_cdev,
 				  enum led_brightness value)
 {
-	return 0;
+	struct phy_led *phyled = to_phy_led(led_cdev);
+	struct phy_device *phydev = phyled->phydev;
+	int err;
+
+	if (!phydev->drv->led_brightness_set)
+		return -ENOTSUPP;
+
+	mutex_lock(&phydev->lock);
+	err = phydev->drv->led_brightness_set(phydev, phyled->index, value);
+	mutex_unlock(&phydev->lock);
+
+	return err;
 }
 
 static int of_phy_led(struct phy_device *phydev,
@@ -2342,7 +2353,8 @@ static int of_phy_led(struct phy_device *phydev,
 	if (err && err != -EINVAL)
 		return err;
 
-	cdev->brightness_set_blocking = phy_led_set_brightness;
+	if (phydev->drv->led_brightness_set)
+		cdev->brightness_set_blocking = phy_led_set_brightness;
 
 	err = devm_led_classdev_register(dev, cdev);
 	if (err)
