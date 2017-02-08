@@ -64,6 +64,18 @@ unlock:
 }
 static DEVICE_ATTR_RW(brightness);
 
+static umode_t brightness_is_visible(struct kobject *kobj,
+				     struct attribute *attr, int n)
+{
+	struct device *dev = container_of(kobj, struct device, kobj);
+	struct led_classdev *led_cdev = dev_get_drvdata(dev);
+
+	if (led_cdev->brightness_set || led_cdev->brightness_set_blocking)
+		return attr->mode;
+
+	return 0;
+}
+
 static ssize_t max_brightness_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
@@ -92,6 +104,7 @@ static struct attribute *led_class_attrs[] = {
 
 static const struct attribute_group led_group = {
 	.attrs = led_class_attrs,
+	.is_visible = brightness_is_visible,
 };
 
 static const struct attribute_group *led_groups[] = {
