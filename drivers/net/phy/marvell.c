@@ -1396,7 +1396,8 @@ static int m88e1121_did_interrupt(struct phy_device *phydev)
 	return 0;
 }
 
-static void m88e1318_get_wol(struct phy_device *phydev, struct ethtool_wolinfo *wol)
+static void m88e1318_get_wol(struct phy_device *phydev,
+			     struct ethtool_wolinfo *wol)
 {
 	wol->supported = WAKE_MAGIC;
 	wol->wolopts = 0;
@@ -1412,7 +1413,8 @@ static void m88e1318_get_wol(struct phy_device *phydev, struct ethtool_wolinfo *
 		return;
 }
 
-static int m88e1318_set_wol(struct phy_device *phydev, struct ethtool_wolinfo *wol)
+static int m88e1318_set_wol(struct phy_device *phydev,
+			    struct ethtool_wolinfo *wol)
 {
 	int err, oldpage, temp;
 
