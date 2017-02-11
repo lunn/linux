@@ -83,8 +83,8 @@
 #define MII_M1111_HWCFG_FIBER_COPPER_AUTO	0x8000
 #define MII_M1111_HWCFG_FIBER_COPPER_RES	0x2000
 
-#define MII_M1111_COPPER		0
-#define MII_M1111_FIBER			1
+#define MII_M1111_COPPER_PAGE		0
+#define MII_M1111_FIBER_PAGE		1
 
 #define MII_88E1121_PHY_MSCR_PAGE	2
 #define MII_88E1121_PHY_MSCR_REG	21
@@ -606,7 +606,7 @@ static int m88e1510_config_aneg(struct phy_device *phydev)
 {
 	int err;
 
-	err = marvell_set_page(phydev, MII_M1111_COPPER);
+	err = marvell_set_page(phydev, MII_M1111_COPPER_PAGE);
 	if (err < 0)
 		goto error;
 
@@ -616,7 +616,7 @@ static int m88e1510_config_aneg(struct phy_device *phydev)
 		goto error;
 
 	/* Then the fiber link */
-	err = marvell_set_page(phydev, MII_M1111_FIBER);
+	err = marvell_set_page(phydev, MII_M1111_FIBER_PAGE);
 	if (err < 0)
 		goto error;
 
@@ -624,10 +624,10 @@ static int m88e1510_config_aneg(struct phy_device *phydev)
 	if (err < 0)
 		goto error;
 
-	return marvell_set_page(phydev, MII_M1111_COPPER);
+	return marvell_set_page(phydev, MII_M1111_COPPER_PAGE);
 
 error:
-	marvell_set_page(phydev, MII_M1111_COPPER);
+	marvell_set_page(phydev, MII_M1111_COPPER_PAGE);
 	return err;
 }
 
@@ -650,7 +650,7 @@ static int m88e1116r_config_init(struct phy_device *phydev)
 
 	mdelay(500);
 
-	err = marvell_set_page(phydev, 0);
+	err = marvell_set_page(phydev, MII_M1111_COPPER_PAGE);
 	if (err < 0)
 		return err;
 
@@ -662,7 +662,7 @@ static int m88e1116r_config_init(struct phy_device *phydev)
 	if (err < 0)
 		return err;
 
-	err = marvell_set_page(phydev, 2);
+	err = marvell_set_page(phydev, MII_88E1121_PHY_MSCR_PAGE);
 	if (err < 0)
 		return err;
 	temp = phy_read(phydev, MII_M1116R_CONTROL_REG_MAC);
@@ -671,7 +671,7 @@ static int m88e1116r_config_init(struct phy_device *phydev)
 	err = phy_write(phydev, MII_M1116R_CONTROL_REG_MAC, temp);
 	if (err < 0)
 		return err;
-	err = marvell_set_page(phydev, 0);
+	err = marvell_set_page(phydev, MII_M1111_COPPER_PAGE);
 	if (err < 0)
 		return err;
 
@@ -892,7 +892,7 @@ static int m88e1510_config_init(struct phy_device *phydev)
 			return err;
 
 		/* Reset page selection */
-		err = marvell_set_page(phydev, 0);
+		err = marvell_set_page(phydev, MII_M1111_COPPER_PAGE);
 		if (err < 0)
 			return err;
 	}
@@ -922,7 +922,7 @@ static int m88e1118_config_init(struct phy_device *phydev)
 	int err;
 
 	/* Change address */
-	err = marvell_set_page(phydev, 2);
+	err = marvell_set_page(phydev, MII_88E1121_PHY_MSCR_PAGE);
 	if (err < 0)
 		return err;
 
@@ -932,7 +932,7 @@ static int m88e1118_config_init(struct phy_device *phydev)
 		return err;
 
 	/* Change address */
-	err = marvell_set_page(phydev, 3);
+	err = marvell_set_page(phydev, MII_88E1318S_PHY_LED_PAGE);
 	if (err < 0)
 		return err;
 
@@ -949,7 +949,7 @@ static int m88e1118_config_init(struct phy_device *phydev)
 		return err;
 
 	/* Reset address */
-	err = marvell_set_page(phydev, 0);
+	err = marvell_set_page(phydev, MII_M1111_COPPER_PAGE);
 	if (err < 0)
 		return err;
 
@@ -961,7 +961,7 @@ static int m88e1149_config_init(struct phy_device *phydev)
 	int err;
 
 	/* Change address */
-	err = marvell_set_page(phydev, 2);
+	err = marvell_set_page(phydev, MII_88E1121_PHY_MSCR_PAGE);
 	if (err < 0)
 		return err;
 
@@ -975,7 +975,7 @@ static int m88e1149_config_init(struct phy_device *phydev)
 		return err;
 
 	/* Reset address */
-	err = marvell_set_page(phydev, 0);
+	err = marvell_set_page(phydev, MII_M1111_COPPER_PAGE);
 	if (err < 0)
 		return err;
 
@@ -1245,7 +1245,7 @@ static int marvell_read_status_page(struct phy_device *phydev, int page)
 	/* Detect and update the link, but return if there
 	 * was an error
 	 */
-	if (page == MII_M1111_FIBER)
+	if (page == MII_M1111_FIBER_PAGE)
 		fiber = 1;
 	else
 		fiber = 0;
@@ -1278,11 +1278,11 @@ static int marvell_read_status(struct phy_device *phydev)
 	/* Check the fiber mode first */
 	if (phydev->supported & SUPPORTED_FIBRE &&
 	    phydev->interface != PHY_INTERFACE_MODE_SGMII) {
-		err = marvell_set_page(phydev, MII_M1111_FIBER);
+		err = marvell_set_page(phydev, MII_M1111_FIBER_PAGE);
 		if (err < 0)
 			goto error;
 
-		err = marvell_read_status_page(phydev, MII_M1111_FIBER);
+		err = marvell_read_status_page(phydev, MII_M1111_FIBER_PAGE);
 		if (err < 0)
 			goto error;
 
@@ -1297,15 +1297,15 @@ static int marvell_read_status(struct phy_device *phydev)
 			return 0;
 
 		/* If fiber link is down, check and save copper mode state */
-		err = marvell_set_page(phydev, MII_M1111_COPPER);
+		err = marvell_set_page(phydev, MII_M1111_COPPER_PAGE);
 		if (err < 0)
 			goto error;
 	}
 
-	return marvell_read_status_page(phydev, MII_M1111_COPPER);
+	return marvell_read_status_page(phydev, MII_M1111_COPPER_PAGE);
 
 error:
-	marvell_set_page(phydev, MII_M1111_COPPER);
+	marvell_set_page(phydev, MII_M1111_COPPER_PAGE);
 	return err;
 }
 
@@ -1320,7 +1320,7 @@ static int marvell_suspend(struct phy_device *phydev)
 
 	/* Suspend the fiber mode first */
 	if (!(phydev->supported & SUPPORTED_FIBRE)) {
-		err = marvell_set_page(phydev, MII_M1111_FIBER);
+		err = marvell_set_page(phydev, MII_M1111_FIBER_PAGE);
 		if (err < 0)
 			goto error;
 
@@ -1330,7 +1330,7 @@ static int marvell_suspend(struct phy_device *phydev)
 			goto error;
 
 		/* Then, the copper link */
-		err = marvell_set_page(phydev, MII_M1111_COPPER);
+		err = marvell_set_page(phydev, MII_M1111_COPPER_PAGE);
 		if (err < 0)
 			goto error;
 	}
@@ -1339,7 +1339,7 @@ static int marvell_suspend(struct phy_device *phydev)
 	return genphy_suspend(phydev);
 
 error:
-	marvell_set_page(phydev, MII_M1111_COPPER);
+	marvell_set_page(phydev, MII_M1111_COPPER_PAGE);
 	return err;
 }
 
@@ -1354,7 +1354,7 @@ static int marvell_resume(struct phy_device *phydev)
 
 	/* Resume the fiber mode first */
 	if (!(phydev->supported & SUPPORTED_FIBRE)) {
-		err = marvell_set_page(phydev, MII_M1111_FIBER);
+		err = marvell_set_page(phydev, MII_M1111_FIBER_PAGE);
 		if (err < 0)
 			goto error;
 
@@ -1364,7 +1364,7 @@ static int marvell_resume(struct phy_device *phydev)
 			goto error;
 
 		/* Then, the copper link */
-		err = marvell_set_page(phydev, MII_M1111_COPPER);
+		err = marvell_set_page(phydev, MII_M1111_COPPER_PAGE);
 		if (err < 0)
 			goto error;
 	}
@@ -1373,7 +1373,7 @@ static int marvell_resume(struct phy_device *phydev)
 	return genphy_resume(phydev);
 
 error:
-	marvell_set_page(phydev, MII_M1111_COPPER);
+	marvell_set_page(phydev, MII_M1111_COPPER_PAGE);
 	return err;
 }
 
@@ -1408,7 +1408,7 @@ static void m88e1318_get_wol(struct phy_device *phydev, struct ethtool_wolinfo *
 	    MII_88E1318S_PHY_WOL_CTRL_MAGIC_PACKET_MATCH_ENABLE)
 		wol->wolopts |= WAKE_MAGIC;
 
-	if (marvell_set_page(phydev, 0x00) < 0)
+	if (marvell_set_page(phydev, MII_M1111_COPPER_PAGE) < 0)
 		return;
 }
 
@@ -1420,7 +1420,7 @@ static int m88e1318_set_wol(struct phy_device *phydev, struct ethtool_wolinfo *w
 
 	if (wol->wolopts & WAKE_MAGIC) {
 		/* Explicitly switch to page 0x00, just to be sure */
-		err = marvell_set_page(phydev, 0x00);
+		err = marvell_set_page(phydev, MII_M1111_COPPER_PAGE);
 		if (err < 0)
 			return err;
 
