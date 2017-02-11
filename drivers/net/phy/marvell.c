@@ -1693,7 +1693,7 @@ error:
 	return ret;
 }
 
-int m88e1510_get_temp_critical(struct phy_device *phydev, long *temp)
+static int m88e1510_get_temp_critical(struct phy_device *phydev, long *temp)
 {
 	int ret;
 
@@ -1721,7 +1721,7 @@ error:
 	return ret;
 }
 
-int m88e1510_set_temp_critical(struct phy_device *phydev, long temp)
+static int m88e1510_set_temp_critical(struct phy_device *phydev, long temp)
 {
 	int ret;
 
@@ -1748,7 +1748,7 @@ error:
 	return ret;
 }
 
-int m88e1510_get_temp_alarm(struct phy_device *phydev, long *alarm)
+static int m88e1510_get_temp_alarm(struct phy_device *phydev, long *alarm)
 {
 	int ret;
 
