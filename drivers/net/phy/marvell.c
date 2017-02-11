@@ -55,10 +55,6 @@
 #define MII_M1011_PHY_SCR_AUTO_CROSS	0x0060
 
 #define MII_M1145_PHY_EXT_ADDR_PAGE	0x16
-#define MII_M1145_PHY_EXT_SR		0x1b
-#define MII_M1145_HWCFG_MODE_SGMII_NO_CLK	0x4
-#define MII_M1145_HWCFG_MODE_MASK		0xf
-#define MII_M1145_HWCFG_FIBER_COPPER_AUTO	0x8000
 
 #define MII_M1111_PHY_LED_CONTROL	0x18
 #define MII_M1111_PHY_LED_DIRECT	0x4100
@@ -69,12 +65,13 @@
 #define MII_M1111_PHY_EXT_SR		0x1b
 
 #define MII_M1111_HWCFG_MODE_MASK		0xf
-#define MII_M1111_HWCFG_MODE_COPPER_RGMII	0xb
 #define MII_M1111_HWCFG_MODE_FIBER_RGMII	0x3
 #define MII_M1111_HWCFG_MODE_SGMII_NO_CLK	0x4
+#define MII_M1111_HWCFG_MODE_RTBI		0x7
 #define MII_M1111_HWCFG_MODE_COPPER_RTBI	0x9
-#define MII_M1111_HWCFG_FIBER_COPPER_AUTO	0x8000
-#define MII_M1111_HWCFG_FIBER_COPPER_RES	0x2000
+#define MII_M1111_HWCFG_MODE_COPPER_RGMII	0xb
+#define MII_M1111_HWCFG_FIBER_COPPER_RES	BIT(13)
+#define MII_M1111_HWCFG_FIBER_COPPER_AUTO	BIT(15)
 
 #define MII_M1111_COPPER_PAGE		0
 #define MII_M1111_FIBER_PAGE		1
@@ -677,6 +674,28 @@ static int m88e3016_config_init(struct phy_device *phydev)
 	return marvell_config_init(phydev);
 }
 
+static int m88e1111_config_init_hwcfg_mode(struct phy_device *phydev,
+					   u16 mode,
+					   int fibre_copper_auto)
+{
+	int temp;
+
+	temp = phy_read(phydev, MII_M1111_PHY_EXT_SR);
+	if (temp < 0)
+		return temp;
+
+	temp &= ~(MII_M1111_HWCFG_MODE_MASK |
+		  MII_M1111_HWCFG_FIBER_COPPER_AUTO |
+		  MII_M1111_HWCFG_FIBER_COPPER_RES);
+	temp |= mode;
+
+	if (fibre_copper_auto)
+		temp |= MII_M1111_HWCFG_FIBER_COPPER_AUTO;
+
+	return phy_write(phydev, MII_M1111_PHY_EXT_SR, temp);
+}
+
+
 static int m88e1111_config_init_rgmii_delays(struct phy_device *phydev)
 {
 	int temp;
@@ -724,17 +743,11 @@ static int m88e1111_config_init_rgmii(struct phy_device *phydev)
 static int m88e1111_config_init_sgmii(struct phy_device *phydev)
 {
 	int err;
-	int temp;
 
-	temp = phy_read(phydev, MII_M1111_PHY_EXT_SR);
-	if (temp < 0)
-		return temp;
-
-	temp &= ~(MII_M1111_HWCFG_MODE_MASK);
-	temp |= MII_M1111_HWCFG_MODE_SGMII_NO_CLK;
-	temp |= MII_M1111_HWCFG_FIBER_COPPER_AUTO;
-
-	err = phy_write(phydev, MII_M1111_PHY_EXT_SR, temp);
+	err = m88e1111_config_init_hwcfg_mode(
+		phydev,
+		MII_M1111_HWCFG_MODE_SGMII_NO_CLK,
+		MII_M1111_HWCFG_FIBER_COPPER_AUTO);
 	if (err < 0)
 		return err;
 
@@ -749,21 +762,15 @@ static int m88e1111_config_init_sgmii(struct phy_device *phydev)
 static int m88e1111_config_init_rtbi(struct phy_device *phydev)
 {
 	int err;
-	int temp;
 
 	err = m88e1111_config_init_rgmii_delays(phydev);
 	if (err)
 		return err;
 
-	temp = phy_read(phydev, MII_M1111_PHY_EXT_SR);
-	if (temp < 0)
-		return temp;
-
-	temp &= ~(MII_M1111_HWCFG_MODE_MASK |
-		  MII_M1111_HWCFG_FIBER_COPPER_RES);
-	temp |= 0x7 | MII_M1111_HWCFG_FIBER_COPPER_AUTO;
-
-	err = phy_write(phydev, MII_M1111_PHY_EXT_SR, temp);
+	err = m88e1111_config_init_hwcfg_mode(
+		phydev,
+		MII_M1111_HWCFG_MODE_RTBI,
+		MII_M1111_HWCFG_FIBER_COPPER_AUTO);
 	if (err < 0)
 		return err;
 
@@ -772,16 +779,10 @@ static int m88e1111_config_init_rtbi(struct phy_device *phydev)
 	if (err < 0)
 		return err;
 
-	temp = phy_read(phydev, MII_M1111_PHY_EXT_SR);
-	if (temp < 0)
-		return temp;
-
-	temp &= ~(MII_M1111_HWCFG_MODE_MASK |
-		  MII_M1111_HWCFG_FIBER_COPPER_RES);
-	temp |= MII_M1111_HWCFG_MODE_COPPER_RTBI |
-		MII_M1111_HWCFG_FIBER_COPPER_AUTO;
-
-	return phy_write(phydev, MII_M1111_PHY_EXT_SR, temp);
+	return 	m88e1111_config_init_hwcfg_mode(
+		phydev,
+		MII_M1111_HWCFG_MODE_RTBI,
+		MII_M1111_HWCFG_FIBER_COPPER_AUTO);
 }
 
 static int m88e1111_config_init(struct phy_device *phydev)
@@ -989,16 +990,9 @@ static int m88e1145_config_init_rgmii(struct phy_device *phydev)
 
 static int m88e1145_config_init_sgmii(struct phy_device *phydev)
 {
-	int temp = phy_read(phydev, MII_M1145_PHY_EXT_SR);
-
-	if (temp < 0)
-		return temp;
-
-	temp &= ~MII_M1145_HWCFG_MODE_MASK;
-	temp |= MII_M1145_HWCFG_MODE_SGMII_NO_CLK;
-	temp |= MII_M1145_HWCFG_FIBER_COPPER_AUTO;
-
-	return phy_write(phydev, MII_M1145_PHY_EXT_SR, temp);
+	return m88e1111_config_init_hwcfg_mode(
+		phydev, MII_M1111_HWCFG_MODE_SGMII_NO_CLK,
+		MII_M1111_HWCFG_FIBER_COPPER_AUTO);
 }
 
 static int m88e1145_config_init(struct phy_device *phydev)
