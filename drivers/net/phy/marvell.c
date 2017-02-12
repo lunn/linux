@@ -181,7 +181,9 @@ struct marvell_driver_data {
 	const unsigned long hw_features;
 };
 
-#define MARVELL_HW_FEATURE_DOWNSHIFT	BIT(0)
+#define MARVELL_HW_FEATURE_DOWNSHIFT		BIT(0)
+#define MARVELL_HW_FEATURE_TEMPERATURE_1C	BIT(1)
+#define MARVELL_HW_FEATURE_TEMPERATURE_5C	BIT(2)
 
 static bool marvell_has_hw_feature(struct phy_device *phydev,
 				   unsigned long hw_feature)
@@ -1994,31 +1996,12 @@ static int marvell_hwmon_probe(struct phy_device *phydev,
 
 	return PTR_ERR_OR_ZERO(priv->hwmon_dev);
 }
-
-static int m88e1121_hwmon_probe(struct phy_device *phydev)
-{
-	return marvell_hwmon_probe(phydev, &m88e1121_hwmon_chip_info);
-}
-
-static int m88e1510_hwmon_probe(struct phy_device *phydev)
-{
-	return marvell_hwmon_probe(phydev, &m88e1510_hwmon_chip_info);
-}
-#else
-static int m88e1121_hwmon_probe(struct phy_device *phydev)
-{
-	return 0;
-}
-
-static int m88e1510_hwmon_probe(struct phy_device *phydev)
-{
-	return 0;
-}
 #endif
 
 static int marvell_probe(struct phy_device *phydev)
 {
 	struct marvell_priv *priv;
+	int err = 0;
 
 	priv = devm_kzalloc(&phydev->mdio.dev, sizeof(*priv), GFP_KERNEL);
 	if (!priv)
@@ -2026,29 +2009,14 @@ static int marvell_probe(struct phy_device *phydev)
 
 	phydev->priv = priv;
 
-	return 0;
-}
+#ifdef CONFIG_HWMON
+	if (marvell_has_hw_feature(phydev, MARVELL_HW_FEATURE_TEMPERATURE_1C))
+		err = marvell_hwmon_probe(phydev, &m88e1510_hwmon_chip_info);
 
-static int m88e1121_probe(struct phy_device *phydev)
-{
-	int err;
-
-	err = marvell_probe(phydev);
-	if (err)
-		return err;
-
-	return m88e1121_hwmon_probe(phydev);
-}
-
-static int m88e1510_probe(struct phy_device *phydev)
-{
-	int err;
-
-	err = marvell_probe(phydev);
-	if (err)
-		return err;
-
-	return m88e1510_hwmon_probe(phydev);
+	if (marvell_has_hw_feature(phydev, MARVELL_HW_FEATURE_TEMPERATURE_5C))
+		err = marvell_hwmon_probe(phydev, &m88e1121_hwmon_chip_info);
+#endif
+	return err;
 }
 
 static void marvell_remove(struct phy_device *phydev)
@@ -2083,7 +2051,8 @@ static const struct marvell_driver_data m88e1118_driver_data = {
 };
 
 static const struct marvell_driver_data m88e1121_driver_data = {
-	.hw_features = MARVELL_HW_FEATURE_DOWNSHIFT,
+	.hw_features = MARVELL_HW_FEATURE_DOWNSHIFT |
+			MARVELL_HW_FEATURE_TEMPERATURE_1C,
 };
 
 static const struct marvell_driver_data m88e1145_driver_data = {
@@ -2103,15 +2072,18 @@ static const struct marvell_driver_data m88e1318_driver_data = {
 };
 
 static const struct marvell_driver_data m88e1510_driver_data = {
-	.hw_features = MARVELL_HW_FEATURE_DOWNSHIFT,
+	.hw_features = MARVELL_HW_FEATURE_DOWNSHIFT |
+			MARVELL_HW_FEATURE_TEMPERATURE_1C,
 };
 
 static const struct marvell_driver_data m88e1540_driver_data = {
-	.hw_features = MARVELL_HW_FEATURE_DOWNSHIFT,
+	.hw_features = MARVELL_HW_FEATURE_DOWNSHIFT |
+			MARVELL_HW_FEATURE_TEMPERATURE_1C,
 };
 
 static const struct marvell_driver_data m88e1545_driver_data = {
-	.hw_features = MARVELL_HW_FEATURE_DOWNSHIFT,
+	.hw_features = MARVELL_HW_FEATURE_DOWNSHIFT |
+			MARVELL_HW_FEATURE_TEMPERATURE_1C,
 };
 
 static const struct marvell_driver_data m88e3016_driver_data = {
@@ -2119,7 +2091,8 @@ static const struct marvell_driver_data m88e3016_driver_data = {
 };
 
 static const struct marvell_driver_data m88e6390_driver_data = {
-	.hw_features = MARVELL_HW_FEATURE_DOWNSHIFT,
+	.hw_features = MARVELL_HW_FEATURE_DOWNSHIFT |
+			MARVELL_HW_FEATURE_TEMPERATURE_1C,
 };
 
 static struct phy_driver marvell_drivers[] = {
@@ -2213,7 +2186,7 @@ static struct phy_driver marvell_drivers[] = {
 		.name = "Marvell 88E1121R",
 		.features = PHY_GBIT_FEATURES,
 		.flags = PHY_HAS_INTERRUPT,
-		.probe = &m88e1121_probe,
+		.probe = &marvell_probe,
 		.remove = &marvell_remove,
 		.config_init = &m88e1121_config_init,
 		.config_aneg = &m88e1121_config_aneg,
@@ -2344,7 +2317,7 @@ static struct phy_driver marvell_drivers[] = {
 		.name = "Marvell 88E1510",
 		.features = PHY_GBIT_FEATURES | SUPPORTED_FIBRE,
 		.flags = PHY_HAS_INTERRUPT,
-		.probe = &m88e1510_probe,
+		.probe = &marvell_probe,
 		.remove = &marvell_remove,
 		.config_init = &m88e1510_config_init,
 		.config_aneg = &m88e1510_config_aneg,
@@ -2369,7 +2342,7 @@ static struct phy_driver marvell_drivers[] = {
 		.name = "Marvell 88E1540",
 		.features = PHY_GBIT_FEATURES,
 		.flags = PHY_HAS_INTERRUPT,
-		.probe = m88e1510_probe,
+		.probe = marvell_probe,
 		.remove = &marvell_remove,
 		.config_init = &m88e1510_config_init,
 		.config_aneg = &m88e1510_config_aneg,
@@ -2390,7 +2363,7 @@ static struct phy_driver marvell_drivers[] = {
 		.phy_id = MARVELL_PHY_ID_88E1545,
 		.phy_id_mask = MARVELL_PHY_ID_MASK,
 		.name = "Marvell 88E1545",
-		.probe = m88e1510_probe,
+		.probe = marvell_probe,
 		.remove = &marvell_remove,
 		.features = PHY_GBIT_FEATURES,
 		.flags = PHY_HAS_INTERRUPT,
@@ -2438,7 +2411,7 @@ static struct phy_driver marvell_drivers[] = {
 		.name = "Marvell 88E6390",
 		.features = PHY_GBIT_FEATURES,
 		.flags = PHY_HAS_INTERRUPT,
-		.probe = m88e1510_probe,
+		.probe = marvell_probe,
 		.config_init = &m88e1510_config_init,
 		.config_aneg = &m88e1510_config_aneg,
 		.read_status = &marvell_read_status,
