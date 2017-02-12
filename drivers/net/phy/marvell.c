@@ -348,6 +348,34 @@ static int marvell_get_downshift(struct phy_device *phydev, bool *enable,
 	return 0;
 }
 
+static int marvell_config_aneg_common(struct phy_device *phydev)
+{
+	int err;
+
+	if (marvell_has_hw_feature(phydev, MARVELL_HW_FEATURE_FAST_ETHERNET))
+		err = marvell_set_fast_polarity(phydev, phydev->mdix_ctrl);
+	else
+		err = marvell_set_polarity(phydev, phydev->mdix_ctrl);
+	if (err)
+		return err;
+
+	err = genphy_config_aneg(phydev);
+	if (err < 0)
+		return err;
+
+	if (phydev->autoneg != AUTONEG_ENABLE) {
+		/* A write to speed/duplex bits (that is performed by
+		 * genphy_config_aneg() call above) must be followed
+		 * by a software reset. Otherwise, the write has no
+		 * effect.  Also, a change in polarity also needs a
+		 * soft reset.
+		 */
+		err = genphy_soft_reset(phydev);
+	}
+
+	return err;
+}
+
 static int marvell_config_aneg(struct phy_device *phydev)
 {
 	int err;
@@ -380,30 +408,12 @@ static int marvell_config_aneg(struct phy_device *phydev)
 	if (err < 0)
 		return err;
 
-	err = marvell_set_polarity(phydev, phydev->mdix_ctrl);
-	if (err < 0)
-		return err;
-
 	err = phy_write(phydev, MII_M1111_PHY_LED_CONTROL,
 			MII_M1111_PHY_LED_DIRECT);
 	if (err < 0)
 		return err;
 
-	err = genphy_config_aneg(phydev);
-	if (err < 0)
-		return err;
-
-	if (phydev->autoneg != AUTONEG_ENABLE) {
-		/* A write to speed/duplex bits (that is performed by
-		 * genphy_config_aneg() call above) must be followed by
-		 * a software reset. Otherwise, the write has no effect.
-		 */
-		err = genphy_soft_reset(phydev);
-		if (err < 0)
-			return err;
-	}
-
-	return 0;
+	return marvell_config_aneg_common(phydev);
 }
 
 static int m88e1111_config_aneg(struct phy_device *phydev)
@@ -416,30 +426,12 @@ static int m88e1111_config_aneg(struct phy_device *phydev)
 	 */
 	err = genphy_soft_reset(phydev);
 
-	err = marvell_set_polarity(phydev, phydev->mdix_ctrl);
-	if (err < 0)
-		return err;
-
 	err = phy_write(phydev, MII_M1111_PHY_LED_CONTROL,
 			MII_M1111_PHY_LED_DIRECT);
 	if (err < 0)
 		return err;
 
-	err = genphy_config_aneg(phydev);
-	if (err < 0)
-		return err;
-
-	if (phydev->autoneg != AUTONEG_ENABLE) {
-		/* A write to speed/duplex bits (that is performed by
-		 * genphy_config_aneg() call above) must be followed by
-		 * a software reset. Otherwise, the write has no effect.
-		 */
-		err = genphy_soft_reset(phydev);
-		if (err < 0)
-			return err;
-	}
-
-	return 0;
+	return marvell_config_aneg_common(phydev);
 }
 
 #ifdef CONFIG_OF_MDIO
@@ -564,15 +556,7 @@ static int m88e1121_config_aneg(struct phy_device *phydev)
 			return err;
 	}
 
-	err = genphy_soft_reset(phydev);
-	if (err < 0)
-		return err;
-
-	err = marvell_set_polarity(phydev, phydev->mdix_ctrl);
-	if (err < 0)
-		return err;
-
-	return genphy_config_aneg(phydev);
+	return marvell_config_aneg_common(phydev);
 }
 
 static int m88e1318_config_aneg(struct phy_device *phydev)
@@ -975,12 +959,7 @@ static int m88e1118_config_aneg(struct phy_device *phydev)
 	if (err < 0)
 		return err;
 
-	err = marvell_set_polarity(phydev, phydev->mdix_ctrl);
-	if (err < 0)
-		return err;
-
-	err = genphy_config_aneg(phydev);
-	return 0;
+	return marvell_config_aneg_common(phydev);
 }
 
 static int m88e1118_config_init(struct phy_device *phydev)
@@ -2319,7 +2298,7 @@ static struct phy_driver marvell_drivers[] = {
 		.flags = PHY_HAS_INTERRUPT,
 		.probe = marvell_probe,
 		.config_init = &m88e1116r_config_init,
-		.config_aneg = &genphy_config_aneg,
+		.config_aneg = &marvell_config_aneg_common,
 		.read_status = &genphy_read_status,
 		.ack_interrupt = &marvell_ack_interrupt,
 		.config_intr = &marvell_config_intr,
@@ -2410,7 +2389,7 @@ static struct phy_driver marvell_drivers[] = {
 		.features = PHY_BASIC_FEATURES,
 		.flags = PHY_HAS_INTERRUPT,
 		.probe = marvell_probe,
-		.config_aneg = &genphy_config_aneg,
+		.config_aneg = &marvell_config_aneg_common,
 		.config_init = &m88e3016_config_init,
 		.aneg_done = &marvell_aneg_done,
 		.read_status = &marvell_read_status,
