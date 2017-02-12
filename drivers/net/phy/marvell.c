@@ -177,6 +177,10 @@ struct marvell_priv {
 	struct device *hwmon_dev;
 };
 
+struct marvell_driver_data {
+	const unsigned long hw_features;
+};
+
 static int marvell_get_page(struct phy_device *phydev)
 {
 	return phy_read(phydev, MII_MARVELL_PHY_PAGE);
@@ -1957,6 +1961,66 @@ static void marvell_remove(struct phy_device *phydev)
 #endif
 }
 
+static const struct marvell_driver_data m88e1101_driver_data = {
+	.hw_features = 0,
+};
+
+static const struct marvell_driver_data m88e1111_driver_data = {
+	.hw_features = 0,
+};
+
+static const struct marvell_driver_data m88e1112_driver_data = {
+	.hw_features = 0,
+};
+
+static const struct marvell_driver_data m88e1116_driver_data = {
+	.hw_features = 0,
+};
+
+static const struct marvell_driver_data m88e1118_driver_data = {
+	.hw_features = 0,
+};
+
+static const struct marvell_driver_data m88e1121_driver_data = {
+	.hw_features = 0,
+};
+
+static const struct marvell_driver_data m88e1145_driver_data = {
+	.hw_features = 0,
+};
+
+static const struct marvell_driver_data m88e1149_driver_data = {
+	.hw_features = 0,
+};
+
+static const struct marvell_driver_data m88e1240_driver_data = {
+	.hw_features = 0,
+};
+
+static const struct marvell_driver_data m88e1318_driver_data = {
+	.hw_features = 0,
+};
+
+static const struct marvell_driver_data m88e1510_driver_data = {
+	.hw_features = 0,
+};
+
+static const struct marvell_driver_data m88e1540_driver_data = {
+	.hw_features = 0,
+};
+
+static const struct marvell_driver_data m88e1545_driver_data = {
+	.hw_features = 0,
+};
+
+static const struct marvell_driver_data m88e3016_driver_data = {
+	.hw_features = 0,
+};
+
+static const struct marvell_driver_data m88e6390_driver_data = {
+	.hw_features = 0,
+};
+
 static struct phy_driver marvell_drivers[] = {
 	{
 		.phy_id = MARVELL_PHY_ID_88E1101,
@@ -1975,6 +2039,7 @@ static struct phy_driver marvell_drivers[] = {
 		.get_sset_count = marvell_get_sset_count,
 		.get_strings = marvell_get_strings,
 		.get_stats = marvell_get_stats,
+		.driver_data = &m88e1101_driver_data,
 	},
 	{
 		.phy_id = MARVELL_PHY_ID_88E1112,
@@ -1993,6 +2058,7 @@ static struct phy_driver marvell_drivers[] = {
 		.get_sset_count = marvell_get_sset_count,
 		.get_strings = marvell_get_strings,
 		.get_stats = marvell_get_stats,
+		.driver_data = &m88e1112_driver_data,
 	},
 	{
 		.phy_id = MARVELL_PHY_ID_88E1111,
@@ -2011,6 +2077,7 @@ static struct phy_driver marvell_drivers[] = {
 		.get_sset_count = marvell_get_sset_count,
 		.get_strings = marvell_get_strings,
 		.get_stats = marvell_get_stats,
+		.driver_data = &m88e1111_driver_data,
 	},
 	{
 		.phy_id = MARVELL_PHY_ID_88E1118,
@@ -2029,6 +2096,7 @@ static struct phy_driver marvell_drivers[] = {
 		.get_sset_count = marvell_get_sset_count,
 		.get_strings = marvell_get_strings,
 		.get_stats = marvell_get_stats,
+		.driver_data = &m88e1118_driver_data,
 	},
 	{
 		.phy_id = MARVELL_PHY_ID_88E1121R,
@@ -2049,6 +2117,7 @@ static struct phy_driver marvell_drivers[] = {
 		.get_sset_count = marvell_get_sset_count,
 		.get_strings = marvell_get_strings,
 		.get_stats = marvell_get_stats,
+		.driver_data = &m88e1121_driver_data,
 	},
 	{
 		.phy_id = MARVELL_PHY_ID_88E1318S,
@@ -2070,6 +2139,7 @@ static struct phy_driver marvell_drivers[] = {
 		.get_sset_count = marvell_get_sset_count,
 		.get_strings = marvell_get_strings,
 		.get_stats = marvell_get_stats,
+		.driver_data = &m88e1318_driver_data,
 	},
 	{
 		.phy_id = MARVELL_PHY_ID_88E1145,
@@ -2088,6 +2158,7 @@ static struct phy_driver marvell_drivers[] = {
 		.get_sset_count = marvell_get_sset_count,
 		.get_strings = marvell_get_strings,
 		.get_stats = marvell_get_stats,
+		.driver_data = &m88e1145_driver_data,
 	},
 	{
 		.phy_id = MARVELL_PHY_ID_88E1149R,
@@ -2106,6 +2177,7 @@ static struct phy_driver marvell_drivers[] = {
 		.get_sset_count = marvell_get_sset_count,
 		.get_strings = marvell_get_strings,
 		.get_stats = marvell_get_stats,
+		.driver_data = &m88e1149_driver_data,
 	},
 	{
 		.phy_id = MARVELL_PHY_ID_88E1240,
@@ -2124,6 +2196,7 @@ static struct phy_driver marvell_drivers[] = {
 		.get_sset_count = marvell_get_sset_count,
 		.get_strings = marvell_get_strings,
 		.get_stats = marvell_get_stats,
+		.driver_data = &m88e1240_driver_data,
 	},
 	{
 		.phy_id = MARVELL_PHY_ID_88E1116R,
@@ -2142,6 +2215,7 @@ static struct phy_driver marvell_drivers[] = {
 		.get_sset_count = marvell_get_sset_count,
 		.get_strings = marvell_get_strings,
 		.get_stats = marvell_get_stats,
+		.driver_data = &m88e1116_driver_data,
 	},
 	{
 		.phy_id = MARVELL_PHY_ID_88E1510,
@@ -2164,6 +2238,7 @@ static struct phy_driver marvell_drivers[] = {
 		.get_sset_count = marvell_get_sset_count,
 		.get_strings = marvell_get_strings,
 		.get_stats = marvell_get_stats,
+		.driver_data = &m88e1510_driver_data,
 	},
 	{
 		.phy_id = MARVELL_PHY_ID_88E1540,
@@ -2184,6 +2259,7 @@ static struct phy_driver marvell_drivers[] = {
 		.get_sset_count = marvell_get_sset_count,
 		.get_strings = marvell_get_strings,
 		.get_stats = marvell_get_stats,
+		.driver_data = &m88e1540_driver_data,
 	},
 	{
 		.phy_id = MARVELL_PHY_ID_88E1545,
@@ -2204,6 +2280,7 @@ static struct phy_driver marvell_drivers[] = {
 		.get_sset_count = marvell_get_sset_count,
 		.get_strings = marvell_get_strings,
 		.get_stats = marvell_get_stats,
+		.driver_data = &m88e1545_driver_data,
 	},
 	{
 		.phy_id = MARVELL_PHY_ID_88E3016,
@@ -2224,6 +2301,7 @@ static struct phy_driver marvell_drivers[] = {
 		.get_sset_count = marvell_get_sset_count,
 		.get_strings = marvell_get_strings,
 		.get_stats = marvell_get_stats,
+		.driver_data = &m88e3016_driver_data,
 	},
 	{
 		.phy_id = MARVELL_PHY_ID_88E6390,
@@ -2243,6 +2321,7 @@ static struct phy_driver marvell_drivers[] = {
 		.get_sset_count = marvell_get_sset_count,
 		.get_strings = marvell_get_strings,
 		.get_stats = marvell_get_stats,
+		.driver_data = &m88e6390_driver_data,
 	},
 };
 
