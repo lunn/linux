@@ -689,6 +689,12 @@ error:
 
 static int marvell_config_init(struct phy_device *phydev)
 {
+	int err;
+
+	err = genphy_soft_reset(phydev);
+	if (err < 0)
+		return err;
+
 	/* Set registers from marvell,reg-init DT property */
 	return marvell_of_reg_init(phydev);
 }
@@ -714,10 +720,6 @@ static int m88e1116r_config_init(struct phy_device *phydev)
 		return err;
 
 	err = m88e1121_config_aneg_rgmii_delays(phydev);
-	if (err < 0)
-		return err;
-
-	err = genphy_soft_reset(phydev);
 	if (err < 0)
 		return err;
 
@@ -872,11 +874,7 @@ static int m88e1111_config_init(struct phy_device *phydev)
 			return err;
 	}
 
-	err = marvell_of_reg_init(phydev);
-	if (err < 0)
-		return err;
-
-	return genphy_soft_reset(phydev);
+	return marvell_config_init(phydev);
 }
 
 static int m88e1121_config_init(struct phy_device *phydev)
@@ -977,16 +975,12 @@ static int m88e1118_config_init(struct phy_device *phydev)
 	if (err < 0)
 		return err;
 
-	err = marvell_of_reg_init(phydev);
-	if (err < 0)
-		return err;
-
 	/* Reset address */
 	err = marvell_set_page(phydev, MII_MARVELL_COPPER_PAGE);
 	if (err < 0)
 		return err;
 
-	return genphy_soft_reset(phydev);
+	return marvell_config_init(phydev);
 }
 
 static int m88e1149_config_init(struct phy_device *phydev)
@@ -1003,16 +997,12 @@ static int m88e1149_config_init(struct phy_device *phydev)
 	if (err < 0)
 		return err;
 
-	err = marvell_of_reg_init(phydev);
-	if (err < 0)
-		return err;
-
 	/* Reset address */
 	err = marvell_set_page(phydev, MII_MARVELL_COPPER_PAGE);
 	if (err < 0)
 		return err;
 
-	return genphy_soft_reset(phydev);
+	return marvell_config_init(phydev);
 }
 
 static int m88e1145_config_init_rgmii(struct phy_device *phydev)
@@ -1090,11 +1080,7 @@ static int m88e1145_config_init(struct phy_device *phydev)
 			return err;
 	}
 
-	err = marvell_of_reg_init(phydev);
-	if (err < 0)
-		return err;
-
-	return 0;
+	return marvell_config_init(phydev);
 }
 
 /**
