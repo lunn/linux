@@ -132,7 +132,7 @@
 
 #define MII_88E3016_PHY_SPEC_CTRL	0x10
 #define MII_88E3016_DISABLE_SCRAMBLER	0x0200
-#define MII_88E3016_AUTO_MDIX_CROSSOVER	0x0030
+#define MII_88E3016_PHY_SCR_AUTO_CROSS	(0x3 << 4)
 
 #define MII_88E1510_GEN_CTRL_REG_1		0x14
 #define MII_88E1510_GEN_CTRL_REG_1_MODE_MASK	0x7
@@ -184,6 +184,7 @@ struct marvell_driver_data {
 #define MARVELL_HW_FEATURE_DOWNSHIFT		BIT(0)
 #define MARVELL_HW_FEATURE_TEMPERATURE_1C	BIT(1)
 #define MARVELL_HW_FEATURE_TEMPERATURE_5C	BIT(2)
+#define MARVELL_HW_FEATURE_FAST_ETHERNET	BIT(3)
 
 static bool marvell_has_hw_feature(struct phy_device *phydev,
 				   unsigned long hw_feature)
@@ -249,6 +250,17 @@ static int marvell_config_intr(struct phy_device *phydev)
 	return err;
 }
 
+static int marvell_mdi_bits(int polarity)
+{
+	switch (polarity) {
+	case ETH_TP_MDI:
+		return MII_M1011_PHY_SCR_MDI;
+	case ETH_TP_MDI_X:
+		return  MII_M1011_PHY_SCR_MDI_X;
+	}
+	return MII_M1011_PHY_SCR_AUTO_CROSS;
+}
+
 static int marvell_set_polarity(struct phy_device *phydev, int polarity)
 {
 	int reg;
@@ -262,19 +274,35 @@ static int marvell_set_polarity(struct phy_device *phydev, int polarity)
 
 	val = reg;
 	val &= ~MII_M1011_PHY_SCR_AUTO_CROSS;
-	switch (polarity) {
-	case ETH_TP_MDI:
-		val |= MII_M1011_PHY_SCR_MDI;
-		break;
-	case ETH_TP_MDI_X:
-		val |= MII_M1011_PHY_SCR_MDI_X;
-		break;
-	case ETH_TP_MDI_AUTO:
-	case ETH_TP_MDI_INVALID:
-	default:
-		val |= MII_M1011_PHY_SCR_AUTO_CROSS;
-		break;
+	val |= marvell_mdi_bits(polarity);
+
+	if (val != reg) {
+		/* Set the new polarity value in the register */
+		err = phy_write(phydev, MII_M1011_PHY_SCR, val);
+		if (err)
+			return err;
 	}
+
+	return 0;
+}
+
+/* The 30xx PHYs, which are Fast Ethernet Only, has the same bits as
+ * the 1G PHYs, but shifted one place to the left.
+*/
+static int marvell_set_fast_polarity(struct phy_device *phydev, int polarity)
+{
+	int reg;
+	int err;
+	int val;
+
+	/* get the current settings */
+	reg = phy_read(phydev, MII_M1011_PHY_SCR);
+	if (reg < 0)
+		return reg;
+
+	val = reg;
+	val &= ~MII_88E3016_PHY_SCR_AUTO_CROSS;
+	val |= (marvell_mdi_bits(polarity) >> 1);
 
 	if (val != reg) {
 		/* Set the new polarity value in the register */
@@ -697,6 +725,16 @@ static int marvell_config_init(struct phy_device *phydev)
 			return err;
 	}
 
+	if (phydev->mdix_ctrl == ETH_TP_MDI_INVALID)
+		phydev->mdix_ctrl = ETH_TP_MDI_AUTO;
+
+	if (marvell_has_hw_feature(phydev, MARVELL_HW_FEATURE_FAST_ETHERNET))
+		err = marvell_set_fast_polarity(phydev, phydev->mdix_ctrl);
+	else
+		err = marvell_set_polarity(phydev, phydev->mdix_ctrl);
+	if (err)
+		return err;
+
 	err = genphy_soft_reset(phydev);
 	if (err < 0)
 		return err;
@@ -717,10 +755,6 @@ static int m88e1116r_config_init(struct phy_device *phydev)
 	if (err < 0)
 		return err;
 
-	err = marvell_set_polarity(phydev, phydev->mdix_ctrl);
-	if (err < 0)
-		return err;
-
 	err = m88e1121_config_aneg_rgmii_delays(phydev);
 	if (err < 0)
 		return err;
@@ -732,13 +766,12 @@ static int m88e3016_config_init(struct phy_device *phydev)
 {
 	int reg;
 
-	/* Enable Scrambler and Auto-Crossover */
+	/* Enable Scrambler */
 	reg = phy_read(phydev, MII_88E3016_PHY_SPEC_CTRL);
 	if (reg < 0)
 		return reg;
 
 	reg &= ~MII_88E3016_DISABLE_SCRAMBLER;
-	reg |= MII_88E3016_AUTO_MDIX_CROSSOVER;
 
 	reg = phy_write(phydev, MII_88E3016_PHY_SPEC_CTRL, reg);
 	if (reg < 0)
@@ -2075,7 +2108,7 @@ static const struct marvell_driver_data m88e1545_driver_data = {
 };
 
 static const struct marvell_driver_data m88e3016_driver_data = {
-	.hw_features = 0,
+	.hw_features = MARVELL_HW_FEATURE_FAST_ETHERNET,
 };
 
 static const struct marvell_driver_data m88e6390_driver_data = {
