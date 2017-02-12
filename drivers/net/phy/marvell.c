@@ -691,6 +691,12 @@ static int marvell_config_init(struct phy_device *phydev)
 {
 	int err;
 
+	if (marvell_has_hw_feature(phydev, MARVELL_HW_FEATURE_DOWNSHIFT)) {
+		err = marvell_set_downshift(phydev, true, 8);
+		if (err < 0)
+			return err;
+	}
+
 	err = genphy_soft_reset(phydev);
 	if (err < 0)
 		return err;
@@ -712,10 +718,6 @@ static int m88e1116r_config_init(struct phy_device *phydev)
 		return err;
 
 	err = marvell_set_polarity(phydev, phydev->mdix_ctrl);
-	if (err < 0)
-		return err;
-
-	err = marvell_set_downshift(phydev, true, 8);
 	if (err < 0)
 		return err;
 
