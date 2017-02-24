@@ -2918,12 +2918,23 @@ static int mv88e6xxx_mdio_read(struct mii_bus *bus, int phy, int reg)
 	err = chip->info->ops->phy_read(chip, bus, phy, reg, &val);
 	mutex_unlock(&chip->reg_lock);
 
-	if (reg == MII_PHYSID2) {
+	if (reg == MII_PHYSID2 && !(val & 0x3f0)) {
 		/* Some internal PHYS don't have a model number.  Use
-		 * the mv88e6390 family model number instead.
+		 * the family model number instead. We need to be able
+		 * differentiate 6390 from 6341, since at least the
+		 * temperature sensor is different, and probably other
+		 * things.
 		 */
-		if (!(val & 0x3f0))
+		switch (chip->info->family) {
+		case MV88E6XXX_FAMILY_6341:
+			val |= PORT_SWITCH_ID_PROD_NUM_6341;
+			break;
+		case MV88E6XXX_FAMILY_6390:
 			val |= PORT_SWITCH_ID_PROD_NUM_6390;
+			break;
+		default:
+			err = -ENODEV;
+		}
 	}
 
 	return err ? err : val;

@@ -20,10 +20,11 @@
 #define MARVELL_PHY_ID_88E1545		0x01410ea0
 #define MARVELL_PHY_ID_88E3016		0x01410e60
 
-/* The MV88e6390 Ethernet switch contains embedded PHYs. These PHYs do
- * not have a model ID. So the switch driver traps reads to the ID2
- * register and returns the switch family ID
+/* The MV88E6390 and MV88EE6341 Ethernet switch contains embedded
+ * PHYs. These PHYs do not have a model ID. So the switch driver traps
+ * reads to the ID2 register and returns the switch family ID
  */
+#define MARVELL_PHY_ID_88E6341		0x01410f41
 #define MARVELL_PHY_ID_88E6390		0x01410f90
 
 /* struct phy_device dev_flags definitions */
