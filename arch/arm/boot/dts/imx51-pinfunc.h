@@ -10,6 +10,106 @@
 #ifndef __DTS_IMX51_PINFUNC_H
 #define __DTS_IMX51_PINFUNC_H
 
+#define NO_PAD_CTRL			(1 << 17)
+#define PAD_CTL_DVS			(1 << 13)
+#define PAD_CTL_HVE_LOW			(1 << 13)
+#define PAD_CTL_HVE_HIGH		(0 << 13)
+#define PAD_CTL_HYS			(1 << 8)
+
+#define PAD_CTL_PKE			(1 << 7)
+#define PAD_CTL_PUE			(1 << 6 | PAD_CTL_PKE)
+#define PAD_CTL_PUS_100K_DOWN		(0 << 4 | PAD_CTL_PUE)
+#define PAD_CTL_PUS_47K_UP		(1 << 4 | PAD_CTL_PUE)
+#define PAD_CTL_PUS_100K_UP		(2 << 4 | PAD_CTL_PUE)
+#define PAD_CTL_PUS_22K_UP		(3 << 4 | PAD_CTL_PUE)
+
+#define PAD_CTL_ODE			(1 << 3)
+
+#define PAD_CTL_DSE_LOW			(0 << 1)
+#define PAD_CTL_DSE_MED			(1 << 1)
+#define PAD_CTL_DSE_HIGH		(2 << 1)
+#define PAD_CTL_DSE_MAX			(3 << 1)
+
+#define PAD_CTL_SRE_FAST		(1 << 0)
+#define PAD_CTL_SRE_SLOW		(0 << 0)
+
+#define IOMUX_CONFIG_SION		(0x1 << 4)
+
+/* Pad control groupings */
+#define MX51_UART_PAD_CTRL	(PAD_CTL_PKE | PAD_CTL_PUE | PAD_CTL_DSE_HIGH | \
+				PAD_CTL_HYS | PAD_CTL_SRE_FAST)
+#define MX51_I2C_PAD_CTRL	(PAD_CTL_SRE_FAST | PAD_CTL_ODE | \
+				PAD_CTL_DSE_HIGH | PAD_CTL_PUS_100K_UP | \
+				PAD_CTL_HYS)
+#define MX51_ESDHC_PAD_CTRL	(PAD_CTL_SRE_FAST | PAD_CTL_ODE | \
+				PAD_CTL_DSE_HIGH | PAD_CTL_PUS_100K_UP | \
+				PAD_CTL_HYS)
+#define MX51_USBH1_PAD_CTRL	(PAD_CTL_PKE | PAD_CTL_SRE_FAST | \
+				PAD_CTL_DSE_HIGH | PAD_CTL_PUS_100K_UP | \
+				PAD_CTL_HYS | PAD_CTL_PUE)
+#define MX51_ECSPI_PAD_CTRL	(PAD_CTL_PKE | PAD_CTL_HYS | \
+				PAD_CTL_DSE_HIGH | PAD_CTL_SRE_FAST)
+#define MX51_SDHCI_PAD_CTRL	(PAD_CTL_PKE | PAD_CTL_DSE_HIGH | \
+				PAD_CTL_PUS_47K_UP | PAD_CTL_PUE | \
+				PAD_CTL_SRE_FAST | PAD_CTL_DVS)
+#define MX51_GPIO_PAD_CTRL	(PAD_CTL_DSE_HIGH | PAD_CTL_PKE | PAD_CTL_SRE_FAST)
+
+#define MX51_PAD_CTRL_2		(PAD_CTL_PKE | PAD_CTL_HYS)
+#define MX51_PAD_CTRL_3		(PAD_CTL_PKE | PAD_CTL_PUS_100K_UP)
+#define MX51_PAD_CTRL_4		(PAD_CTL_PKE | PAD_CTL_DVS | PAD_CTL_HYS)
+#define MX51_PAD_CTRL_5		(PAD_CTL_DVS | PAD_CTL_DSE_HIGH)
+
+
+#define MX51_UART1_PAD_CTRL	(PAD_CTL_HYS | PAD_CTL_PKE | \
+				 PAD_CTL_PUE | PAD_CTL_DSE_HIGH)
+#define MX51_UART2_PAD_CTRL	(PAD_CTL_PKE | PAD_CTL_PUE | \
+				 PAD_CTL_DSE_HIGH | PAD_CTL_SRE_FAST)
+#define MX51_UART3_PAD_CTRL	(PAD_CTL_PKE | PAD_CTL_DSE_HIGH | \
+				 PAD_CTL_SRE_FAST)
+#undef MX51_USBH1_PAD_CTRL
+#define MX51_USBH1_PAD_CTRL	0x0
+#define MX51_USBH2_PAD_CTRL	MX51_USBH1_PAD_CTRL
+#define MX51_CSPI1_PAD_CTRL	(PAD_CTL_HYS | PAD_CTL_DSE_HIGH | \
+				 PAD_CTL_SRE_FAST)
+#define MX51_CSPI1SS_PAD_CTRL	(MX51_CSPI1_PAD_CTRL | PAD_CTL_PKE)
+#define MX51_SDHC1_PAD_CTRL 	(PAD_CTL_SRE_FAST | PAD_CTL_DSE_HIGH | \
+				 PAD_CTL_PUS_47K_UP | PAD_CTL_HVE_LOW | \
+				 PAD_CTL_DVS)
+#define MX51_SDHC2_PAD_CTRL 	(PAD_CTL_SRE_FAST | PAD_CTL_DSE_HIGH | \
+				 PAD_CTL_PUS_47K_UP | PAD_CTL_HVE_LOW | \
+				 PAD_CTL_DVS)
+#define MX51_PAD_CTRL_1		(PAD_CTL_SRE_FAST | PAD_CTL_DSE_HIGH | \
+				 PAD_CTL_PUE | PAD_CTL_PKE | \
+				 PAD_CTL_HYS)
+#define MX51_PAD_CTRL_6		(PAD_CTL_SRE_SLOW | PAD_CTL_DSE_MED | \
+				 PAD_CTL_PUS_100K_UP | PAD_CTL_HYS | \
+				 PAD_CTL_DVS)
+#define MX51_PAD_CTRL_7		MX51_UART2_PAD_CTRL
+#define MX51_PAD_CTRL_9		(PAD_CTL_HYS | PAD_CTL_PUS_100K_UP)
+#define MX51_PAD_CTRL_10	(PAD_CTL_SRE_FAST | PAD_CTL_DSE_HIGH | \
+				 PAD_CTL_PUS_100K_UP)
+#define MX51_PAD_CTRL_13	(PAD_CTL_PKE | PAD_CTL_PUE)
+#define MX51_AUD_PAD_CTRL	0x80000000
+#define MX51_DISP_CTRL		(PAD_CTL_SRE_FAST | PAD_CTL_DSE_HIGH)
+
+#define MX51_I2C2_PAD_CTRL	(PAD_CTL_SRE_FAST | PAD_CTL_DSE_HIGH | \
+				 PAD_CTL_ODE | PAD_CTL_PUS_100K_UP | \
+				 PAD_CTL_HYS | (1 << 30))
+/*
+ * The following definitions control PADS powered by NVCC_NANDF[A,B,C] and NVCC_PER[15,17].  All pads powered by those
+ * I/O voltage rails need to set their HVE bit to match the associated I/O voltage per the following table:
+ *    UHVIO_L  (1.875V), set HVE=1
+ *    UHVIO_H  (2.775V), set HVE=1
+ *    UHVIO_UH (3.3V),   set HVE=0
+ * The association between HVE and I/O voltage is not in any of the current documentation, but was reported by Freescale support.
+ */
+#define MX51_NVCC_NANDF_A_PAD_CTRL	(PAD_CTL_HVE_LOW  | PAD_CTL_HYS | PAD_CTL_DSE_MAX)
+#define MX51_NVCC_NANDF_B_PAD_CTRL	(PAD_CTL_HVE_LOW  | PAD_CTL_HYS | PAD_CTL_PKE | PAD_CTL_PUS_100K_UP | PAD_CTL_DSE_MAX)
+#define MX51_NVCC_NANDF_C_PAD_CTRL	(PAD_CTL_HVE_LOW  | PAD_CTL_HYS | PAD_CTL_PKE | PAD_CTL_PUS_100K_UP | PAD_CTL_DSE_MAX)
+#define MX51_NVCC_PER15_PAD_CTRL	(PAD_CTL_HVE_HIGH | PAD_CTL_HYS | PAD_CTL_DSE_MAX)
+#define MX51_NVCC_PER17_PAD_CTRL	(PAD_CTL_HVE_HIGH | PAD_CTL_HYS | PAD_CTL_DSE_MAX)
+
+
 /*
  * The pin function ID is a tuple of
  * <mux_reg conf_reg input_reg mux_mode input_val>
