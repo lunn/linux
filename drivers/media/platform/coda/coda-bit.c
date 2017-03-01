@@ -38,6 +38,10 @@
 #define CODA_DEFAULT_GAMMA	4096
 #define CODA9_DEFAULT_GAMMA	24576	/* 0.75 * 32768 */
 
+static int cache_pagemerge = 2;
+module_param(cache_pagemerge, int, 0644);
+MODULE_PARM_DESC(cache_pagemerge, "2D cache page merge setting");
+
 static int disable_encoder_cache = 0;
 module_param(disable_encoder_cache, int, 0644);
 MODULE_PARM_DESC(disable_encoder_cache, "Disable 2D cache for encoder");
@@ -1030,7 +1034,8 @@ static void coda9_set_frame_cache(struct coda_ctx *ctx, u32 fourcc)
 		 * artifacts in the interleaved chroma plane when decoding.
 		 */
 		cache_size = 0x02440224;
-		cache_config = 2 << CODA9_CACHE_PAGEMERGE_OFFSET;
+		cache_pagemerge &= 3;
+		cache_config = cache_pagemerge << CODA9_CACHE_PAGEMERGE_OFFSET;
 	}
 	coda_write(ctx->dev, cache_size, CODA9_CMD_SET_FRAME_CACHE_SIZE);
 	if (fourcc == V4L2_PIX_FMT_NV12 || fourcc == V4L2_PIX_FMT_YUYV) {
