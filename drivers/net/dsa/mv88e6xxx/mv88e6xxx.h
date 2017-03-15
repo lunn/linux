@@ -199,7 +199,7 @@
 #define PORT_IEEE_PRIO_MAP_TABLE_EGRESS_YELLOW_DSCP	(0x6 << 12)
 #define PORT_IEEE_PRIO_MAP_TABLE_EGRESS_AVB_DSCP	(0x7 << 12)
 #define PORT_IEEE_PRIO_MAP_TABLE_POINTER_SHIFT		9
-
+#define PORT_RESERVED_1A				0x1a
 #define GLOBAL_STATUS		0x00
 #define GLOBAL_STATUS_PPU_STATE BIT(15) /* 6351 and 6171 */
 #define GLOBAL_STATUS_PPU_STATE_MASK		(0x3 << 14) /* 6165 6185 */
@@ -799,6 +799,11 @@ struct mv88e6xxx_ops {
 
 	/* Switch Software Reset */
 	int (*reset)(struct mv88e6xxx_chip *chip);
+
+	/* Switch Setup Errata, called early in the switch setup to
+	 * allow any errata actions to be performed
+	 */
+	int (*setup_errata)(struct mv88e6xxx_chip *chip);
 
 	/* RGMII Receive/Transmit Timing Control
 	 * Add delay on PHY_INTERFACE_MODE_RGMII_*ID, no delay otherwise.

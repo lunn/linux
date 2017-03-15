@@ -2331,6 +2331,35 @@ static int mv88e6xxx_g1_setup(struct mv88e6xxx_chip *chip)
 	return 0;
 }
 
+/* The 6390 copper ports have an errata which require poking magic
+ * values into undocumented magic registers and then performing a
+ * software reset.
+ */
+static int mv88e6390_setup_errata(struct mv88e6xxx_chip *chip)
+{
+	u16 magic;
+	int port;
+	int err;
+
+	/* Set the ports into blocking mode */
+	for (port = 0; port < mv88e6xxx_num_ports(chip); port++) {
+		err = mv88e6xxx_port_set_state(chip, port,
+					       PORT_CONTROL_STATE_BLOCKING);
+		if (err)
+			return err;
+	}
+
+	mv88e6xxx_port_write(chip, 5, PORT_RESERVED_1A, 0x01c0);
+
+	for (magic = 0xFC00; magic <= 0xFD00; magic += 0x20) {
+		err = mv88e6xxx_port_write(chip, 4, PORT_RESERVED_1A, magic);
+		if (err)
+			return err;
+	}
+
+	return mv88e6xxx_software_reset(chip);
+}
+
 static int mv88e6xxx_setup(struct dsa_switch *ds)
 {
 	struct mv88e6xxx_chip *chip = ds->priv;
@@ -2341,6 +2370,12 @@ static int mv88e6xxx_setup(struct dsa_switch *ds)
 	ds->slave_mii_bus = mv88e6xxx_default_mdio_bus(chip);
 
 	mutex_lock(&chip->reg_lock);
+
+	if (chip->info->ops->setup_errata) {
+		err = chip->info->ops->setup_errata(chip);
+		if (err)
+			return err;
+	}
 
 	/* Setup Switch Port Registers */
 	for (i = 0; i < mv88e6xxx_num_ports(chip); i++) {
@@ -3003,6 +3038,7 @@ static const struct mv88e6xxx_ops mv88e6190_ops = {
 	.reset = mv88e6352_g1_reset,
 	.vtu_getnext = mv88e6390_g1_vtu_getnext,
 	.vtu_loadpurge = mv88e6390_g1_vtu_loadpurge,
+	.setup_errata = mv88e6390_setup_errata,
 };
 
 static const struct mv88e6xxx_ops mv88e6190x_ops = {
@@ -3035,6 +3071,7 @@ static const struct mv88e6xxx_ops mv88e6190x_ops = {
 	.reset = mv88e6352_g1_reset,
 	.vtu_getnext = mv88e6390_g1_vtu_getnext,
 	.vtu_loadpurge = mv88e6390_g1_vtu_loadpurge,
+	.setup_errata = mv88e6390_setup_errata,
 };
 
 static const struct mv88e6xxx_ops mv88e6191_ops = {
@@ -3067,6 +3104,7 @@ static const struct mv88e6xxx_ops mv88e6191_ops = {
 	.reset = mv88e6352_g1_reset,
 	.vtu_getnext = mv88e6390_g1_vtu_getnext,
 	.vtu_loadpurge = mv88e6390_g1_vtu_loadpurge,
+	.setup_errata = mv88e6390_setup_errata,
 };
 
 static const struct mv88e6xxx_ops mv88e6240_ops = {
@@ -3133,6 +3171,7 @@ static const struct mv88e6xxx_ops mv88e6290_ops = {
 	.reset = mv88e6352_g1_reset,
 	.vtu_getnext = mv88e6390_g1_vtu_getnext,
 	.vtu_loadpurge = mv88e6390_g1_vtu_loadpurge,
+	.setup_errata = mv88e6390_setup_errata,
 };
 
 static const struct mv88e6xxx_ops mv88e6320_ops = {
@@ -3357,6 +3396,7 @@ static const struct mv88e6xxx_ops mv88e6390_ops = {
 	.reset = mv88e6352_g1_reset,
 	.vtu_getnext = mv88e6390_g1_vtu_getnext,
 	.vtu_loadpurge = mv88e6390_g1_vtu_loadpurge,
+	.setup_errata = mv88e6390_setup_errata,
 };
 
 static const struct mv88e6xxx_ops mv88e6390x_ops = {
@@ -3391,6 +3431,7 @@ static const struct mv88e6xxx_ops mv88e6390x_ops = {
 	.reset = mv88e6352_g1_reset,
 	.vtu_getnext = mv88e6390_g1_vtu_getnext,
 	.vtu_loadpurge = mv88e6390_g1_vtu_loadpurge,
+	.setup_errata = mv88e6390_setup_errata,
 };
 
 static const struct mv88e6xxx_info mv88e6xxx_table[] = {
