@@ -417,6 +417,9 @@ static void dsa_ds_unapply(struct dsa_switch_tree *dst, struct dsa_switch *ds)
 
 	dsa_switch_unregister_notifier(ds);
 
+	if (ds->ops->release)
+		ds->ops->release(ds);
+
 	if (ds->devlink) {
 		devlink_unregister(ds->devlink);
 		devlink_free(ds->devlink);
