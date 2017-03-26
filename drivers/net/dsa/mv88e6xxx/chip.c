@@ -35,6 +35,7 @@
 #include <net/switchdev.h>
 
 #include "mv88e6xxx.h"
+#include "dpipe.h"
 #include "global1.h"
 #include "global2.h"
 #include "port.h"
@@ -2606,10 +2607,19 @@ static int mv88e6xxx_setup(struct dsa_switch *ds)
 			goto unlock;
 	}
 
+	err = mv88e6xxx_dpipe_register(chip);
+
 unlock:
 	mutex_unlock(&chip->reg_lock);
 
 	return err;
+}
+
+static void mv88e6xxx_release(struct dsa_switch *ds)
+{
+	struct mv88e6xxx_chip *chip = ds->priv;
+
+	mv88e6xxx_dpipe_unregister(chip);
 }
 
 static int mv88e6xxx_set_addr(struct dsa_switch *ds, u8 *addr)
@@ -4206,6 +4216,7 @@ static const struct dsa_switch_ops mv88e6xxx_switch_ops = {
 	.probe			= mv88e6xxx_drv_probe,
 	.get_tag_protocol	= mv88e6xxx_get_tag_protocol,
 	.setup			= mv88e6xxx_setup,
+	.release		= mv88e6xxx_release,
 	.set_addr		= mv88e6xxx_set_addr,
 	.adjust_link		= mv88e6xxx_adjust_link,
 	.get_strings		= mv88e6xxx_get_strings,
