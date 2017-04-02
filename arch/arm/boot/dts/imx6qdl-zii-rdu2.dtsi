@@ -59,6 +59,44 @@
 		pinctrl-0 = <&pinctrl_mdio1>;
 		gpios = <&gpio6 5 GPIO_ACTIVE_HIGH
 		         &gpio6 4 GPIO_ACTIVE_HIGH>;
+
+		switch0: switch@0 {
+			compatible = "marvell,mv88e6085";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0>;
+			dsa,member = <0 0>;
+
+			ports {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				port@0 {
+					reg = <0>;
+					label = "gigabit_proc";
+				};
+
+				port@1 {
+					reg = <1>;
+					label = "netaux";
+				};
+
+				port@2 {
+					reg = <2>;
+					label = "cpu";
+				};
+
+				port@3 {
+					reg = <3>;
+					label = "netright";
+				};
+
+				port@4 {
+					reg = <4>;
+					label = "netleft";
+				};
+			};
+		};
 	};
 
 	reg_28p0v: regulator-28p0v {
