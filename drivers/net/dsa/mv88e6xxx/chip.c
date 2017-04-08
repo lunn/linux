@@ -1271,7 +1271,7 @@ static int mv88e6xxx_vtu_wait(struct mv88e6xxx_chip *chip)
 	return mv88e6xxx_g1_wait(chip, GLOBAL_VTU_OP, GLOBAL_VTU_OP_BUSY);
 }
 
-static int _mv88e6xxx_vtu_cmd(struct mv88e6xxx_chip *chip, u16 op)
+static int mv88e6xxx_vtu_cmd(struct mv88e6xxx_chip *chip, u16 op)
 {
 	int err;
 
@@ -1290,7 +1290,7 @@ static int _mv88e6xxx_vtu_stu_flush(struct mv88e6xxx_chip *chip)
 	if (ret < 0)
 		return ret;
 
-	return _mv88e6xxx_vtu_cmd(chip, GLOBAL_VTU_OP_FLUSH_ALL);
+	return mv88e6xxx_vtu_cmd(chip, GLOBAL_VTU_OP_FLUSH_ALL);
 }
 
 static int _mv88e6xxx_vtu_stu_data_read(struct mv88e6xxx_chip *chip,
@@ -1384,7 +1384,7 @@ static int _mv88e6xxx_vtu_getnext(struct mv88e6xxx_chip *chip,
 	if (err)
 		return err;
 
-	err = _mv88e6xxx_vtu_cmd(chip, GLOBAL_VTU_OP_VTU_GET_NEXT);
+	err = mv88e6xxx_vtu_cmd(chip, GLOBAL_VTU_OP_VTU_GET_NEXT);
 	if (err)
 		return err;
 
@@ -1532,7 +1532,7 @@ loadpurge:
 	if (err)
 		return err;
 
-	return _mv88e6xxx_vtu_cmd(chip, op);
+	return mv88e6xxx_vtu_cmd(chip, op);
 }
 
 static int _mv88e6xxx_stu_getnext(struct mv88e6xxx_chip *chip, u8 sid,
@@ -1551,7 +1551,7 @@ static int _mv88e6xxx_stu_getnext(struct mv88e6xxx_chip *chip, u8 sid,
 	if (err)
 		return err;
 
-	err = _mv88e6xxx_vtu_cmd(chip, GLOBAL_VTU_OP_STU_GET_NEXT);
+	err = mv88e6xxx_vtu_cmd(chip, GLOBAL_VTU_OP_STU_GET_NEXT);
 	if (err)
 		return err;
 
@@ -1606,7 +1606,7 @@ loadpurge:
 	if (err)
 		return err;
 
-	return _mv88e6xxx_vtu_cmd(chip, GLOBAL_VTU_OP_STU_LOAD_PURGE);
+	return mv88e6xxx_vtu_cmd(chip, GLOBAL_VTU_OP_STU_LOAD_PURGE);
 }
 
 static int mv88e6xxx_atu_new(struct mv88e6xxx_chip *chip, u16 *fid)
