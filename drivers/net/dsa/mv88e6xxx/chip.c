@@ -1577,8 +1577,8 @@ static int mv88e6xxx_stu_getnext(struct mv88e6xxx_chip *chip, u8 sid,
 	return 0;
 }
 
-static int _mv88e6xxx_stu_loadpurge(struct mv88e6xxx_chip *chip,
-				    struct mv88e6xxx_vtu_entry *entry)
+static int mv88e6xxx_stu_loadpurge(struct mv88e6xxx_chip *chip,
+				   struct mv88e6xxx_vtu_entry *entry)
 {
 	u16 reg = 0;
 	int err;
@@ -1692,7 +1692,7 @@ static int _mv88e6xxx_vtu_new(struct mv88e6xxx_chip *chip, u16 vid,
 			vstp.valid = true;
 			vstp.sid = vlan.sid;
 
-			err = _mv88e6xxx_stu_loadpurge(chip, &vstp);
+			err = mv88e6xxx_stu_loadpurge(chip, &vstp);
 			if (err)
 				return err;
 		}
