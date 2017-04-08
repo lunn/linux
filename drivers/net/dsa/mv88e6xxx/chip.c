@@ -1330,7 +1330,7 @@ static int mv88e6xxx_stu_data_read(struct mv88e6xxx_chip *chip,
 	return mv88e6xxx_vtu_stu_data_read(chip, entry, 2);
 }
 
-static int _mv88e6xxx_vtu_stu_data_write(struct mv88e6xxx_chip *chip,
+static int mv88e6xxx_vtu_stu_data_write(struct mv88e6xxx_chip *chip,
 					 struct mv88e6xxx_vtu_entry *entry,
 					 unsigned int nibble_offset)
 {
@@ -1358,13 +1358,13 @@ static int _mv88e6xxx_vtu_stu_data_write(struct mv88e6xxx_chip *chip,
 static int mv88e6xxx_vtu_data_write(struct mv88e6xxx_chip *chip,
 				    struct mv88e6xxx_vtu_entry *entry)
 {
-	return _mv88e6xxx_vtu_stu_data_write(chip, entry, 0);
+	return mv88e6xxx_vtu_stu_data_write(chip, entry, 0);
 }
 
 static int mv88e6xxx_stu_data_write(struct mv88e6xxx_chip *chip,
 				    struct mv88e6xxx_vtu_entry *entry)
 {
-	return _mv88e6xxx_vtu_stu_data_write(chip, entry, 2);
+	return mv88e6xxx_vtu_stu_data_write(chip, entry, 2);
 }
 
 static int _mv88e6xxx_vtu_vid_write(struct mv88e6xxx_chip *chip, u16 vid)
