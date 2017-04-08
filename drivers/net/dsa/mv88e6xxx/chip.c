@@ -1282,7 +1282,7 @@ static int mv88e6xxx_vtu_cmd(struct mv88e6xxx_chip *chip, u16 op)
 	return mv88e6xxx_vtu_wait(chip);
 }
 
-static int _mv88e6xxx_vtu_stu_flush(struct mv88e6xxx_chip *chip)
+static int mv88e6xxx_vtu_stu_flush(struct mv88e6xxx_chip *chip)
 {
 	int ret;
 
@@ -2618,7 +2618,7 @@ static int mv88e6xxx_g1_setup(struct mv88e6xxx_chip *chip)
 		return err;
 
 	/* Clear all the VTU and STU entries */
-	err = _mv88e6xxx_vtu_stu_flush(chip);
+	err = mv88e6xxx_vtu_stu_flush(chip);
 	if (err < 0)
 		return err;
 
