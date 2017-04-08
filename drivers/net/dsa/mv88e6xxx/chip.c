@@ -1653,8 +1653,8 @@ static int mv88e6xxx_atu_new(struct mv88e6xxx_chip *chip, u16 *fid)
 	return mv88e6xxx_g1_atu_flush(chip, *fid, true);
 }
 
-static int _mv88e6xxx_vtu_new(struct mv88e6xxx_chip *chip, u16 vid,
-			      struct mv88e6xxx_vtu_entry *entry)
+static int mv88e6xxx_vtu_new(struct mv88e6xxx_chip *chip, u16 vid,
+			     struct mv88e6xxx_vtu_entry *entry)
 {
 	struct dsa_switch *ds = chip->ds;
 	struct mv88e6xxx_vtu_entry vlan = {
@@ -1725,7 +1725,7 @@ static int _mv88e6xxx_vtu_get(struct mv88e6xxx_chip *chip, u16 vid,
 		 * -EOPNOTSUPP to inform bridge about an eventual software VLAN.
 		 */
 
-		err = _mv88e6xxx_vtu_new(chip, vid, entry);
+		err = mv88e6xxx_vtu_new(chip, vid, entry);
 	}
 
 	return err;
