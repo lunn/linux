@@ -1535,8 +1535,8 @@ loadpurge:
 	return mv88e6xxx_vtu_cmd(chip, op);
 }
 
-static int _mv88e6xxx_stu_getnext(struct mv88e6xxx_chip *chip, u8 sid,
-				  struct mv88e6xxx_vtu_entry *entry)
+static int mv88e6xxx_stu_getnext(struct mv88e6xxx_chip *chip, u8 sid,
+				 struct mv88e6xxx_vtu_entry *entry)
 {
 	struct mv88e6xxx_vtu_entry next = { 0 };
 	u16 val;
@@ -1683,7 +1683,7 @@ static int _mv88e6xxx_vtu_new(struct mv88e6xxx_chip *chip, u16 vid,
 		 * entries. Thus, validate the SID 0.
 		 */
 		vlan.sid = 0;
-		err = _mv88e6xxx_stu_getnext(chip, GLOBAL_VTU_SID_MASK, &vstp);
+		err = mv88e6xxx_stu_getnext(chip, GLOBAL_VTU_SID_MASK, &vstp);
 		if (err)
 			return err;
 
