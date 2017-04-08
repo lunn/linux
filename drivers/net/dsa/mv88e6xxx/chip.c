@@ -1702,8 +1702,8 @@ static int mv88e6xxx_vtu_new(struct mv88e6xxx_chip *chip, u16 vid,
 	return 0;
 }
 
-static int _mv88e6xxx_vtu_get(struct mv88e6xxx_chip *chip, u16 vid,
-			      struct mv88e6xxx_vtu_entry *entry, bool creat)
+static int mv88e6xxx_vtu_get(struct mv88e6xxx_chip *chip, u16 vid,
+			     struct mv88e6xxx_vtu_entry *entry, bool creat)
 {
 	int err;
 
@@ -1840,7 +1840,7 @@ static int _mv88e6xxx_port_vlan_add(struct mv88e6xxx_chip *chip, int port,
 	struct mv88e6xxx_vtu_entry vlan;
 	int err;
 
-	err = _mv88e6xxx_vtu_get(chip, vid, &vlan, true);
+	err = mv88e6xxx_vtu_get(chip, vid, &vlan, true);
 	if (err)
 		return err;
 
@@ -1885,7 +1885,7 @@ static int _mv88e6xxx_port_vlan_del(struct mv88e6xxx_chip *chip,
 	struct mv88e6xxx_vtu_entry vlan;
 	int i, err;
 
-	err = _mv88e6xxx_vtu_get(chip, vid, &vlan, false);
+	err = mv88e6xxx_vtu_get(chip, vid, &vlan, false);
 	if (err)
 		return err;
 
@@ -1960,7 +1960,7 @@ static int mv88e6xxx_port_db_load_purge(struct mv88e6xxx_chip *chip, int port,
 	if (vid == 0)
 		err = mv88e6xxx_port_get_fid(chip, port, &vlan.fid);
 	else
-		err = _mv88e6xxx_vtu_get(chip, vid, &vlan, false);
+		err = mv88e6xxx_vtu_get(chip, vid, &vlan, false);
 	if (err)
 		return err;
 
