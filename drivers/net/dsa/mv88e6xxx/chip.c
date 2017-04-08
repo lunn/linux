@@ -1266,7 +1266,7 @@ static void mv88e6xxx_port_fast_age(struct dsa_switch *ds, int port)
 		netdev_err(ds->ports[port].netdev, "failed to flush ATU\n");
 }
 
-static int _mv88e6xxx_vtu_wait(struct mv88e6xxx_chip *chip)
+static int mv88e6xxx_vtu_wait(struct mv88e6xxx_chip *chip)
 {
 	return mv88e6xxx_g1_wait(chip, GLOBAL_VTU_OP, GLOBAL_VTU_OP_BUSY);
 }
@@ -1279,14 +1279,14 @@ static int _mv88e6xxx_vtu_cmd(struct mv88e6xxx_chip *chip, u16 op)
 	if (err)
 		return err;
 
-	return _mv88e6xxx_vtu_wait(chip);
+	return mv88e6xxx_vtu_wait(chip);
 }
 
 static int _mv88e6xxx_vtu_stu_flush(struct mv88e6xxx_chip *chip)
 {
 	int ret;
 
-	ret = _mv88e6xxx_vtu_wait(chip);
+	ret = mv88e6xxx_vtu_wait(chip);
 	if (ret < 0)
 		return ret;
 
@@ -1380,7 +1380,7 @@ static int _mv88e6xxx_vtu_getnext(struct mv88e6xxx_chip *chip,
 	u16 val;
 	int err;
 
-	err = _mv88e6xxx_vtu_wait(chip);
+	err = mv88e6xxx_vtu_wait(chip);
 	if (err)
 		return err;
 
@@ -1493,7 +1493,7 @@ static int _mv88e6xxx_vtu_loadpurge(struct mv88e6xxx_chip *chip,
 	u16 reg = 0;
 	int err;
 
-	err = _mv88e6xxx_vtu_wait(chip);
+	err = mv88e6xxx_vtu_wait(chip);
 	if (err)
 		return err;
 
@@ -1542,7 +1542,7 @@ static int _mv88e6xxx_stu_getnext(struct mv88e6xxx_chip *chip, u8 sid,
 	u16 val;
 	int err;
 
-	err = _mv88e6xxx_vtu_wait(chip);
+	err = mv88e6xxx_vtu_wait(chip);
 	if (err)
 		return err;
 
@@ -1583,7 +1583,7 @@ static int _mv88e6xxx_stu_loadpurge(struct mv88e6xxx_chip *chip,
 	u16 reg = 0;
 	int err;
 
-	err = _mv88e6xxx_vtu_wait(chip);
+	err = mv88e6xxx_vtu_wait(chip);
 	if (err)
 		return err;
 
