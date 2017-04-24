@@ -223,6 +223,40 @@
 #define MV88E6352_G2_NOEGR_POLICY	0x2000
 #define MV88E6390_G2_LAG_ID_4		0x2000
 
+/* Scratch/Misc registers accessed through MV88E6XXX_G2_SCRATCH_MISC */
+/* Offset 0x02: Misc Configuration */
+#define MV88E6352_G2_SCRATCH_MISC_CFG		0x02
+#define MV88E6352_G2_SCRATCH_MISC_CFG_NORMALSMI	0x80
+/* Offset 0x60-0x61: GPIO Configuration */
+#define MV88E6352_G2_SCRATCH_GPIO_CFG0		0x60
+#define MV88E6352_G2_SCRATCH_GPIO_CFG1		0x61
+/* Offset 0x62-0x63: GPIO Direction */
+#define MV88E6352_G2_SCRATCH_GPIO_DIR0		0x62
+#define MV88E6352_G2_SCRATCH_GPIO_DIR1		0x63
+#define MV88E6352_G2_SCRATCH_GPIO_DIR_OUT	0
+#define MV88E6352_G2_SCRATCH_GPIO_DIR_IN	1
+/* Offset 0x64-0x65: GPIO Data */
+#define MV88E6352_G2_SCRATCH_GPIO_DATA0		0x64
+#define MV88E6352_G2_SCRATCH_GPIO_DATA1		0x65
+/* Offset 0x68-0x6F: GPIO Pin Control */
+#define MV88E6352_G2_SCRATCH_GPIO_PCTL0		0x68
+#define MV88E6352_G2_SCRATCH_GPIO_PCTL1		0x69
+#define MV88E6352_G2_SCRATCH_GPIO_PCTL2		0x6A
+#define MV88E6352_G2_SCRATCH_GPIO_PCTL3		0x6B
+#define MV88E6352_G2_SCRATCH_GPIO_PCTL4		0x6C
+#define MV88E6352_G2_SCRATCH_GPIO_PCTL5		0x6D
+#define MV88E6352_G2_SCRATCH_GPIO_PCTL6		0x6E
+#define MV88E6352_G2_SCRATCH_GPIO_PCTL7		0x6F
+#define MV88E6352_G2_SCRATCH_CONFIG_DATA0	0x70
+#define MV88E6352_G2_SCRATCH_CONFIG_DATA1	0x71
+#define MV88E6352_G2_SCRATCH_CONFIG_DATA1_NO_CPU 	BIT(2)
+#define MV88E6352_G2_SCRATCH_CONFIG_DATA2	0x72
+#define MV88E6352_G2_SCRATCH_CONFIG_DATA2_P0_MODE_MASK 	0x3
+
+#define MV88E6352_G2_SCRATCH_GPIO_PCTL_GPIO	0
+#define MV88E6352_G2_SCRATCH_GPIO_PCTL_TRIG	1
+#define MV88E6352_G2_SCRATCH_GPIO_PCTL_EVREQ	2
+
 #ifdef CONFIG_NET_DSA_MV88E6XXX_GLOBAL2
 
 static inline int mv88e6xxx_g2_require(struct mv88e6xxx_chip *chip)
@@ -271,6 +305,9 @@ int mv88e6xxx_g2_pot_clear(struct mv88e6xxx_chip *chip);
 
 extern const struct mv88e6xxx_irq_ops mv88e6097_watchdog_ops;
 extern const struct mv88e6xxx_irq_ops mv88e6390_watchdog_ops;
+
+int mv88e6xxx_g2_scratch_gpio_set_ext_smi(struct mv88e6xxx_chip *chip,
+					  bool external);
 
 #else /* !CONFIG_NET_DSA_MV88E6XXX_GLOBAL2 */
 
@@ -406,6 +443,12 @@ static inline int mv88e6xxx_g2_pot_clear(struct mv88e6xxx_chip *chip)
 
 static const struct mv88e6xxx_irq_ops mv88e6097_watchdog_ops = {};
 static const struct mv88e6xxx_irq_ops mv88e6390_watchdog_ops = {};
+
+int mv88e6xxx_g2_scratch_gpio_set_ext_smi(struct mv88e6xxx_chip *chip,
+					  bool external)
+{
+	return -EOPNOTSUPP;
+}
 
 #endif /* CONFIG_NET_DSA_MV88E6XXX_GLOBAL2 */
 
