@@ -242,15 +242,21 @@ static void __init imx6q_axi_init(void)
 			IMX6Q_GPR4_IPU_RD_CACHE_CTL;
 		regmap_update_bits(gpr, IOMUXC_GPR4, mask, mask);
 
-		/* Increase IPU read QoS priority */
+		/* Increase IPU read and write QoS priority */
 		regmap_update_bits(gpr, IOMUXC_GPR6,
+				IMX6Q_GPR6_IPU1_ID00_WR_QOS_MASK |
+				IMX6Q_GPR6_IPU1_ID01_WR_QOS_MASK |
 				IMX6Q_GPR6_IPU1_ID00_RD_QOS_MASK |
 				IMX6Q_GPR6_IPU1_ID01_RD_QOS_MASK,
-				(0xf << 16) | (0x7 << 20));
+				(0x7 << 0) | (0x6 << 4) |
+				(0xf << 16) | (0x6 << 20));
 		regmap_update_bits(gpr, IOMUXC_GPR7,
+				IMX6Q_GPR7_IPU2_ID00_WR_QOS_MASK |
+				IMX6Q_GPR7_IPU2_ID01_WR_QOS_MASK |
 				IMX6Q_GPR7_IPU2_ID00_RD_QOS_MASK |
 				IMX6Q_GPR7_IPU2_ID01_RD_QOS_MASK,
-				(0xf << 16) | (0x7 << 20));
+				(0x7 << 0) | (0x6 << 4) |
+				(0xf << 16) | (0x6 << 20));
 	} else {
 		pr_warn("failed to find fsl,imx6q-iomuxc-gpr regmap\n");
 	}
