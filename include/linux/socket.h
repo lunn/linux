@@ -209,8 +209,8 @@ struct ucred {
 				 * reuses AF_INET address family
 				 */
 #define AF_XDP		44	/* XDP sockets			*/
-
-#define AF_MAX		45	/* For now.. */
+#define AF_ARINC429	45	/* ARINC429			*/
+#define AF_MAX		46	/* For now.. */
 
 /* Protocol families, same as address families. */
 #define PF_UNSPEC	AF_UNSPEC
@@ -260,6 +260,7 @@ struct ucred {
 #define PF_QIPCRTR	AF_QIPCRTR
 #define PF_SMC		AF_SMC
 #define PF_XDP		AF_XDP
+#define PF_ARINC429	AF_ARINC429
 #define PF_MAX		AF_MAX
 
 /* Maximum queue length specifiable by listen.  */

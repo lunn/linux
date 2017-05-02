@@ -37,6 +37,7 @@ obj-$(CONFIG_VSOCKMON) += vsockmon.o
 # Networking Drivers
 #
 obj-$(CONFIG_ARCNET) += arcnet/
+obj-$(CONFIG_ARINC429) += arinc429/
 obj-$(CONFIG_DEV_APPLETALK) += appletalk/
 obj-$(CONFIG_CAIF) += caif/
 obj-$(CONFIG_CAN) += can/
