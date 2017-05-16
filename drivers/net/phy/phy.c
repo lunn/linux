@@ -39,38 +39,27 @@
 
 #include <asm/irq.h>
 
-static const char *phy_speed_to_str(int speed)
+#define PHY_SPEED_LEN 32
+
+static const char *phy_speed_to_str(int speed, char string[PHY_SPEED_LEN])
 {
-	switch (speed) {
-	case SPEED_10:
-		return "10Mbps";
-	case SPEED_100:
-		return "100Mbps";
-	case SPEED_1000:
-		return "1Gbps";
-	case SPEED_2500:
-		return "2.5Gbps";
-	case SPEED_5000:
-		return "5Gbps";
-	case SPEED_10000:
-		return "10Gbps";
-	case SPEED_20000:
-		return "20Gbps";
-	case SPEED_25000:
-		return "25Gbps";
-	case SPEED_40000:
-		return "40Gbps";
-	case SPEED_50000:
-		return "50Gbps";
-	case SPEED_56000:
-		return "56Gbps";
-	case SPEED_100000:
-		return "100Gbps";
-	case SPEED_UNKNOWN:
-		return "Unknown";
-	default:
-		return "Unsupported (update phy.c)";
+	if (speed < 0) {
+		strncpy(string, "Unsupported (update phy.c)", PHY_SPEED_LEN);
+		return string;
 	}
+
+	if (speed <= 100) {
+		snprintf(string, PHY_SPEED_LEN, "%dMBps", speed);
+		return string;
+	}
+
+	if (speed % 1000)
+		snprintf(string, PHY_SPEED_LEN, "%d.%dGBps", speed / 1000,
+			 (speed % 1000) / 100);
+	else
+		snprintf(string, PHY_SPEED_LEN, "%dGBps", speed / 1000);
+
+	return string;
 }
 
 #define PHY_STATE_STR(_state)			\
@@ -104,10 +93,12 @@ static const char *phy_state_to_str(enum phy_state st)
  */
 void phy_print_status(struct phy_device *phydev)
 {
+	char speed_string[PHY_SPEED_LEN];
+
 	if (phydev->link) {
 		netdev_info(phydev->attached_dev,
 			"Link is Up - %s/%s - flow control %s\n",
-			phy_speed_to_str(phydev->speed),
+			phy_speed_to_str(phydev->speed, speed_string),
 			DUPLEX_FULL == phydev->duplex ? "Full" : "Half",
 			phydev->pause ? "rx/tx" : "off");
 	} else	{
