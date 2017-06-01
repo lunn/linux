@@ -612,10 +612,35 @@ phy_has_fixups_show(struct device *dev, struct device_attribute *attr,
 }
 static DEVICE_ATTR_RO(phy_has_fixups);
 
+static ssize_t
+phy_regs_show(struct device *dev, struct device_attribute *attr,
+		    char *buf)
+{
+	int off = 0;
+	u16 val;
+	int reg;
+
+	struct phy_device *phydev = to_phy_device(dev);
+
+	mutex_lock(&phydev->lock);
+	for (reg = 0; reg < 32; reg++) {
+		val = phy_read(phydev, reg);
+		off += sprintf(buf + off, "%04x ", val);
+		if ((reg % 8) == 7)
+			off += sprintf(buf + off, "\n");
+	}
+
+	mutex_unlock(&phydev->lock);
+
+	return off;
+}
+static DEVICE_ATTR_RO(phy_regs);
+
 static struct attribute *phy_dev_attrs[] = {
 	&dev_attr_phy_id.attr,
 	&dev_attr_phy_interface.attr,
 	&dev_attr_phy_has_fixups.attr,
+	&dev_attr_phy_regs.attr,
 	NULL,
 };
 ATTRIBUTE_GROUPS(phy_dev);
