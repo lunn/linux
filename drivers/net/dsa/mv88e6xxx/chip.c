@@ -2180,6 +2180,38 @@ static int mv88e6xxx_set_addr(struct dsa_switch *ds, u8 *addr)
 	return err;
 }
 
+static u16 mv88e6xxx_family_to_switch_id(enum mv88e6xxx_family family)
+{
+	switch (family) {
+	case MV88E6XXX_FAMILY_NONE:
+		pr_warn("mv88e6xxx_family_to_switch_id: FAMILY_NONE\n");
+		return 0;
+	case MV88E6XXX_FAMILY_6065:
+		return MV88E6XXX_FAMILY_6065;
+	case MV88E6XXX_FAMILY_6095:
+		return MV88E6XXX_PORT_SWITCH_ID_PROD_6095;
+	case MV88E6XXX_FAMILY_6097:
+		return MV88E6XXX_PORT_SWITCH_ID_PROD_6097;
+	case MV88E6XXX_FAMILY_6165:
+		return MV88E6XXX_PORT_SWITCH_ID_PROD_6165;
+	case MV88E6XXX_FAMILY_6185:
+		return MV88E6XXX_PORT_SWITCH_ID_PROD_6185;
+	case MV88E6XXX_FAMILY_6320:
+		return MV88E6XXX_PORT_SWITCH_ID_PROD_6320;
+	case MV88E6XXX_FAMILY_6341:
+		return MV88E6XXX_PORT_SWITCH_ID_PROD_6341;
+	case MV88E6XXX_FAMILY_6351:
+		return MV88E6XXX_PORT_SWITCH_ID_PROD_6351;
+	case MV88E6XXX_FAMILY_6352:
+		return MV88E6XXX_PORT_SWITCH_ID_PROD_6352;
+	case MV88E6XXX_FAMILY_6390:
+		return MV88E6XXX_PORT_SWITCH_ID_PROD_6390;
+	}
+
+	pr_warn("mv88e6xxx_family_to_switch_id: family unknown\n");
+	return 0;
+}
+
 static int mv88e6xxx_mdio_read(struct mii_bus *bus, int phy, int reg)
 {
 	struct mv88e6xxx_mdio_bus *mdio_bus = bus->priv;
@@ -2199,7 +2231,8 @@ static int mv88e6xxx_mdio_read(struct mii_bus *bus, int phy, int reg)
 		 * the mv88e6390 family model number instead.
 		 */
 		if (!(val & 0x3f0))
-			val |= MV88E6XXX_PORT_SWITCH_ID_PROD_6390 >> 4;
+			val |= mv88e6xxx_family_to_switch_id(
+				chip->info->family);
 	}
 
 	return err ? err : val;
