@@ -47,6 +47,7 @@
 #define PTP_EV_PORT 319
 #define PTP_GEN_BIT 0x08 /* indicates general message, if set in message type */
 
+#define OFF_PTP_RESERVED	16 /* PTPv2 only */
 #define OFF_PTP_SOURCE_UUID	22 /* PTPv1 only */
 #define OFF_PTP_SEQUENCE_ID	30
 #define OFF_PTP_CONTROL		32 /* PTPv1 only */
