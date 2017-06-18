@@ -4009,6 +4009,7 @@ static int et131x_pci_setup(struct pci_dev *pdev,
 	adapter->mii_bus->priv = netdev;
 	adapter->mii_bus->read = et131x_mdio_read;
 	adapter->mii_bus->write = et131x_mdio_write;
+	adapter->mii_bus->flags = MII_BUS_FLAG_C22;
 
 	rc = mdiobus_register(adapter->mii_bus);
 	if (rc < 0) {

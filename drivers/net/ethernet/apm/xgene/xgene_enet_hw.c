@@ -970,6 +970,7 @@ int xgene_enet_mdio_config(struct xgene_enet_pdata *pdata)
 	mdio_bus->name = "APM X-Gene MDIO bus";
 	mdio_bus->read = xgene_mdio_rgmii_read;
 	mdio_bus->write = xgene_mdio_rgmii_write;
+	mdio_bus->flags = MII_BUS_FLAG_C22;
 	snprintf(mdio_bus->id, MII_BUS_ID_SIZE, "%s-%s", "xgene-mii",
 		 ndev->name);
 

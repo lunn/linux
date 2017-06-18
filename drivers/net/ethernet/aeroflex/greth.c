@@ -1307,8 +1307,8 @@ static int greth_mdio_init(struct greth_private *greth)
 	snprintf(greth->mdio->id, MII_BUS_ID_SIZE, "%s-%d", greth->mdio->name, greth->irq);
 	greth->mdio->read = greth_mdio_read;
 	greth->mdio->write = greth_mdio_write;
+	greth->mdio->flags = MII_BUS_FLAG_C22;
 	greth->mdio->priv = greth;
-
 	ret = mdiobus_register(greth->mdio);
 	if (ret) {
 		goto error;

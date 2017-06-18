@@ -310,6 +310,7 @@ static int dnet_mii_init(struct dnet *bp)
 	bp->mii_bus->name = "dnet_mii_bus";
 	bp->mii_bus->read = &dnet_mdio_read;
 	bp->mii_bus->write = &dnet_mdio_write;
+	bp->mii_bus->flags = MII_BUS_FLAG_C22;
 
 	snprintf(bp->mii_bus->id, MII_BUS_ID_SIZE, "%s-%x",
 		bp->pdev->name, bp->pdev->id);

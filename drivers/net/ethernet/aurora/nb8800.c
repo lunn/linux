@@ -1423,6 +1423,7 @@ static int nb8800_probe(struct platform_device *pdev)
 	bus->name = "nb8800-mii";
 	bus->read = nb8800_mdio_read;
 	bus->write = nb8800_mdio_write;
+	bus->flags = MII_BUS_FLAG_C22;
 	bus->parent = &pdev->dev;
 	snprintf(bus->id, MII_BUS_ID_SIZE, "%lx.nb8800-mii",
 		 (unsigned long)res->start);

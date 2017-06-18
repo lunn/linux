@@ -2241,6 +2241,7 @@ static int sbmac_init(struct platform_device *pldev, long long base)
 	sc->mii_bus->priv = sc;
 	sc->mii_bus->read = sbmac_mii_read;
 	sc->mii_bus->write = sbmac_mii_write;
+	sc->mii_bus->flags = MII_BUS_FLAG_C22;
 
 	sc->mii_bus->parent = &pldev->dev;
 	/*

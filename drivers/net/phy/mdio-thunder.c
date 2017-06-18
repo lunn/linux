@@ -98,6 +98,7 @@ static int thunder_mdiobus_pci_probe(struct pci_dev *pdev,
 		bus->mii_bus->parent = &pdev->dev;
 		bus->mii_bus->read = cavium_mdiobus_read;
 		bus->mii_bus->write = cavium_mdiobus_write;
+		bus->mii_bus->flags = MII_BUS_FLAG_C45 | MII_BUS_FLAG_C22;
 
 		err = of_mdiobus_register(bus->mii_bus, node);
 		if (err)

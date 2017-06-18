@@ -2587,6 +2587,7 @@ static int emac_dt_mdio_probe(struct emac_instance *dev)
 	dev->mii_bus->read = &emac_mii_bus_read;
 	dev->mii_bus->write = &emac_mii_bus_write;
 	dev->mii_bus->reset = &emac_mii_bus_reset;
+	dev->mii_bus->flags = MII_BUS_FLAG_C22;
 	snprintf(dev->mii_bus->id, MII_BUS_ID_SIZE, "%s", dev->ofdev->name);
 	res = of_mdiobus_register(dev->mii_bus, mii_np);
 	if (res) {

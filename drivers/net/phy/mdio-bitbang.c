@@ -226,6 +226,7 @@ struct mii_bus *alloc_mdio_bitbang(struct mdiobb_ctrl *ctrl)
 	bus->read = mdiobb_read;
 	bus->write = mdiobb_write;
 	bus->reset = mdiobb_reset;
+	bus->flags = MII_BUS_FLAG_C45 | MII_BUS_FLAG_C22;
 	bus->priv = ctrl;
 
 	return bus;

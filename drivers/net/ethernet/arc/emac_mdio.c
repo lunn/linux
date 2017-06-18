@@ -145,6 +145,7 @@ int arc_mdio_probe(struct arc_emac_priv *priv)
 	bus->read = &arc_mdio_read;
 	bus->write = &arc_mdio_write;
 	bus->reset = &arc_mdio_reset;
+	bus->flags = MII_BUS_FLAG_C22;
 
 	/* optional reset-related properties */
 	data->reset_gpio = devm_gpiod_get_optional(priv->dev, "phy-reset",

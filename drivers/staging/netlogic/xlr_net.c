@@ -873,6 +873,7 @@ static int xlr_setup_mdio(struct xlr_net_priv *priv,
 	priv->mii_bus->read = xlr_mii_read;
 	priv->mii_bus->write = xlr_mii_write;
 	priv->mii_bus->parent = &pdev->dev;
+	priv->mii_bus->flags = MII_BUS_FLAG_C22;
 
 	/* Scan only the enabled address */
 	priv->mii_bus->phy_mask = ~(1 << priv->phy_addr);

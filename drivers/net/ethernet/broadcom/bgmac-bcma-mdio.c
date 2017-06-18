@@ -225,6 +225,7 @@ struct mii_bus *bcma_mdio_mii_register(struct bgmac *bgmac)
 	mii_bus->priv = bgmac;
 	mii_bus->read = bcma_mdio_mii_read;
 	mii_bus->write = bcma_mdio_mii_write;
+	mii_bus->flags = MII_BUS_FLAG_C22;
 	mii_bus->reset = bcma_mdio_phy_reset;
 	mii_bus->parent = &core->dev;
 	mii_bus->phy_mask = ~(1 << bgmac->phyaddr);
