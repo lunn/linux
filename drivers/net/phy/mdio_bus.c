@@ -500,16 +500,34 @@ EXPORT_SYMBOL(mdiobus_free);
  * MDIO devices have such registers, but PHY devices typically
  * do. Hence this function assumes anything found is a PHY, or can be
  * treated as a PHY. Other MDIO devices, such as switches, will
- * probably not be found during the scan.
+ * probably not be found during the scan. If the bus is capable of C45
+ * transactions, that is tried first. If that fails to find a PHY, C22
+ * is tried, if supported by the bus.
  */
 struct phy_device *mdiobus_scan(struct mii_bus *bus, int addr)
 {
-	struct phy_device *phydev;
+	struct phy_device *phydev = NULL;
 	int err;
 
-	phydev = get_phy_device(bus, addr, false);
-	if (IS_ERR(phydev))
-		return phydev;
+	if (mdiobus_can_c45(bus)) {
+		phydev = get_phy_device(bus, addr, true);
+		if (IS_ERR(phydev)) {
+			int err = PTR_ERR(phydev);
+
+			if (err != -ENODEV && err != -EOPNOTSUPP)
+				return phydev;
+			phydev = NULL;
+		}
+	}
+
+	if (!phydev && mdiobus_can_c22(bus)) {
+		phydev = get_phy_device(bus, addr, false);
+		if (IS_ERR(phydev))
+			return phydev;
+	}
+
+	if (!phydev)
+		return ERR_PTR(-ENODEV);
 
 	/*
 	 * For DT, see if the auto-probed phy has a correspoding child
