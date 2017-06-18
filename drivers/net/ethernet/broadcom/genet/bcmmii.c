@@ -458,6 +458,7 @@ static int bcmgenet_mii_alloc(struct bcmgenet_priv *priv)
 	bus->read = bcmgenet_mii_read;
 	bus->write = bcmgenet_mii_write;
 	bus->reset = bcmgenet_mii_bus_reset;
+	bus->flags = MII_BUS_FLAG_C22;
 	snprintf(bus->id, MII_BUS_ID_SIZE, "%s-%d",
 		 priv->pdev->name, priv->pdev->id);
 

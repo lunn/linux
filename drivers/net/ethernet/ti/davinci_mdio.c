@@ -396,6 +396,7 @@ static int davinci_mdio_probe(struct platform_device *pdev)
 	data->bus->read		= davinci_mdio_read;
 	data->bus->write	= davinci_mdio_write;
 	data->bus->reset	= davinci_mdio_reset;
+	data->bus->flags	= MII_BUS_FLAG_C22;
 	data->bus->parent	= dev;
 	data->bus->priv		= data;
 

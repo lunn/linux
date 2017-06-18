@@ -91,6 +91,7 @@ int temac_mdio_setup(struct temac_local *lp, struct device_node *np)
 	bus->name = "Xilinx TEMAC MDIO";
 	bus->read = temac_mdio_read;
 	bus->write = temac_mdio_write;
+	bus->flags = MII_BUS_FLAG_C22;
 	bus->parent = lp->dev;
 
 	lp->mii_bus = bus;

@@ -1087,6 +1087,7 @@ static int smsc911x_mii_init(struct platform_device *pdev,
 	pdata->mii_bus->priv = pdata;
 	pdata->mii_bus->read = smsc911x_mii_read;
 	pdata->mii_bus->write = smsc911x_mii_write;
+	pdata->mii_bus->flags = MII_BUS_FLAG_C22;
 
 	pdata->mii_bus->parent = &pdev->dev;
 

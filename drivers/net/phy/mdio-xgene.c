@@ -396,12 +396,14 @@ static int xgene_mdio_probe(struct platform_device *pdev)
 	if (mdio_id == XGENE_MDIO_RGMII) {
 		mdio_bus->read = xgene_mdio_rgmii_read;
 		mdio_bus->write = xgene_mdio_rgmii_write;
+		mdio_bus->flags = MII_BUS_FLAG_C22;
 		mdio_bus->priv = (void __force *)pdata;
 		snprintf(mdio_bus->id, MII_BUS_ID_SIZE, "%s",
 			 "xgene-mii-rgmii");
 	} else {
 		mdio_bus->read = xgene_xfi_mdio_read;
 		mdio_bus->write = xgene_xfi_mdio_write;
+		mdio_bus->flags = MII_BUS_FLAG_C22;
 		mdio_bus->priv = (void __force *)pdata->mdio_csr_addr;
 		snprintf(mdio_bus->id, MII_BUS_ID_SIZE, "%s",
 			 "xgene-mii-xfi");

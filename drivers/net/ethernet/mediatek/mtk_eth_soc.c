@@ -353,6 +353,7 @@ static int mtk_mdio_init(struct mtk_eth *eth)
 	eth->mii_bus->name = "mdio";
 	eth->mii_bus->read = mtk_mdio_read;
 	eth->mii_bus->write = mtk_mdio_write;
+	eth->mii_bus->flags = MII_BUS_FLAG_C22;
 	eth->mii_bus->priv = eth;
 	eth->mii_bus->parent = eth->dev;
 

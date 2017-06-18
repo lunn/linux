@@ -171,6 +171,7 @@ int mdio_mux_init(struct device *dev,
 		cb->mii_bus->parent = dev;
 		cb->mii_bus->read = mdio_mux_read;
 		cb->mii_bus->write = mdio_mux_write;
+		cb->mii_bus->flags = parent_bus->flags;
 		r = of_mdiobus_register(cb->mii_bus, child_bus_node);
 		if (r) {
 			dev_err(dev,

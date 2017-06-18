@@ -180,6 +180,7 @@ static int altera_tse_mdio_create(struct net_device *dev, unsigned int id)
 	mdio->name = ALTERA_TSE_RESOURCE_NAME;
 	mdio->read = &altera_tse_mdio_read;
 	mdio->write = &altera_tse_mdio_write;
+	mdio->flags = MII_BUS_FLAG_C22;
 	snprintf(mdio->id, MII_BUS_ID_SIZE, "%s-%u", mdio->name, id);
 
 	mdio->priv = dev;

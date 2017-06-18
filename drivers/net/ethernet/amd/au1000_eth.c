@@ -1258,6 +1258,7 @@ static int au1000_probe(struct platform_device *pdev)
 	aup->mii_bus->read = au1000_mdiobus_read;
 	aup->mii_bus->write = au1000_mdiobus_write;
 	aup->mii_bus->reset = au1000_mdiobus_reset;
+	aup->mii_bus->flags = MII_BUS_FLAG_C22;
 	aup->mii_bus->name = "au1000_eth_mii";
 	snprintf(aup->mii_bus->id, MII_BUS_ID_SIZE, "%s-%x",
 		pdev->name, aup->mac_id);

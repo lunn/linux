@@ -111,6 +111,7 @@ int emac_phy_config(struct platform_device *pdev, struct emac_adapter *adpt)
 	snprintf(mii_bus->id, MII_BUS_ID_SIZE, "%s", pdev->name);
 	mii_bus->read = emac_mdio_read;
 	mii_bus->write = emac_mdio_write;
+	mii_bus->flags = MII_BUS_FLAG_C22;
 	mii_bus->parent = &pdev->dev;
 	mii_bus->priv = adpt;
 

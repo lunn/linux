@@ -1828,6 +1828,7 @@ static int bcm_enet_probe(struct platform_device *pdev)
 		bus->priv = priv;
 		bus->read = bcm_enet_mdio_read_phylib;
 		bus->write = bcm_enet_mdio_write_phylib;
+		bus->flags = MII_BUS_FLAG_C22;
 		sprintf(bus->id, "%s-%d", pdev->name, priv->mac_id);
 
 		/* only probe bus where we think the PHY is, because

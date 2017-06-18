@@ -1509,6 +1509,7 @@ static int pxa168_eth_probe(struct platform_device *pdev)
 	pep->smi_bus->name = "pxa168_eth smi";
 	pep->smi_bus->read = pxa168_smi_read;
 	pep->smi_bus->write = pxa168_smi_write;
+	pep->smi_bus->flags = MII_BUS_FLAG_C22;
 	snprintf(pep->smi_bus->id, MII_BUS_ID_SIZE, "%s-%d",
 		pdev->name, pdev->id);
 	pep->smi_bus->parent = &pdev->dev;

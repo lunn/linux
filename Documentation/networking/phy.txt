@@ -55,11 +55,15 @@ The MDIO bus
    driver needs, setup the mii_bus structure, and register with the PAL using
    mdiobus_register.  Similarly, there's a remove function to undo all of
    that (use mdiobus_unregister).
- 
- 4) Like any driver, the device_driver structure must be configured, and init
+
+4) The flags must have at least one of MII_BUS_FLAG_C45 or MII_BUS_FLAG_C22
+   to indicate if the bus is capable of C45 transactions and/or C22
+   transactions.
+
+5) Like any driver, the device_driver structure must be configured, and init
    exit functions are used to register the driver.
 
- 5) The bus must also be declared somewhere as a device, and registered.
+ 6) The bus must also be declared somewhere as a device, and registered.
 
  As an example for how one driver implemented an mdio bus driver, see
  drivers/net/ethernet/freescale/fsl_pq_mdio.c and an associated DTS file

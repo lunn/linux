@@ -158,6 +158,7 @@ static int iproc_mdio_probe(struct platform_device *pdev)
 	bus->parent = &pdev->dev;
 	bus->read = iproc_mdio_read;
 	bus->write = iproc_mdio_write;
+	bus->flags = MII_BUS_FLAG_C22;
 
 	iproc_mdio_config_clk(priv->base);
 

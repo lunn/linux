@@ -1207,6 +1207,7 @@ static int ethoc_probe(struct platform_device *pdev)
 			priv->mdio->name, pdev->id);
 	priv->mdio->read = ethoc_mdio_read;
 	priv->mdio->write = ethoc_mdio_write;
+	priv->mdio->flags = MII_BUS_FLAG_C22;
 	priv->mdio->priv = priv;
 
 	ret = mdiobus_register(priv->mdio);

@@ -1790,6 +1790,7 @@ static int bfin_mii_bus_probe(struct platform_device *pdev)
 		goto out_err_alloc;
 	miibus->read = bfin_mdiobus_read;
 	miibus->write = bfin_mdiobus_write;
+	miibus->flags = MII_BUS_FLAG_C22;
 
 	miibus->parent = &pdev->dev;
 	miibus->name = "bfin_mii_bus";

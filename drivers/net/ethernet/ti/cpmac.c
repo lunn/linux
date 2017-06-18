@@ -1201,6 +1201,7 @@ int cpmac_init(void)
 	cpmac_mii->read = cpmac_mdio_read;
 	cpmac_mii->write = cpmac_mdio_write;
 	cpmac_mii->reset = cpmac_mdio_reset;
+	cpmac_mii->flags = MII_BUS_FLAG_C22;
 
 	cpmac_mii->priv = ioremap(AR7_REGS_MDIO, 256);
 

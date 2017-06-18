@@ -861,6 +861,7 @@ static int xemaclite_mdio_setup(struct net_local *lp, struct device *dev)
 	bus->name = "Xilinx Emaclite MDIO";
 	bus->read = xemaclite_mdio_read;
 	bus->write = xemaclite_mdio_write;
+	bus->flags = MII_BUS_FLAG_C22;
 	bus->parent = dev;
 
 	lp->mii_bus = bus;

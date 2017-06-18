@@ -81,6 +81,7 @@ static int mpc52xx_fec_mdio_probe(struct platform_device *of)
 	bus->name = "mpc52xx MII bus";
 	bus->read = mpc52xx_fec_mdio_read;
 	bus->write = mpc52xx_fec_mdio_write;
+	bus->flags = MII_BUS_FLAG_C22;
 
 	/* setup registers */
 	err = of_address_to_resource(np, 0, &res);

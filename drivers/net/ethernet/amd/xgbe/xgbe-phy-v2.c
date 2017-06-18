@@ -3002,6 +3002,7 @@ static int xgbe_phy_init(struct xgbe_prv_data *pdata)
 	mii->name = "amd-xgbe-mii";
 	mii->read = xgbe_phy_mii_read;
 	mii->write = xgbe_phy_mii_write;
+	mii->flags = MII_BUS_FLAG_C45 | MII_BUS_FLAG_C22;
 	mii->parent = pdata->dev;
 	mii->phy_mask = ~0;
 	snprintf(mii->id, sizeof(mii->id), "%s", dev_name(pdata->dev));

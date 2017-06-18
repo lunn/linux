@@ -281,6 +281,36 @@ static inline void of_mdiobus_link_mdiodev(struct mii_bus *mdio,
 }
 #endif
 
+static int mdiobus_can_c22(struct mii_bus *bus)
+{
+	return bus->flags & MII_BUS_FLAG_C22;
+}
+
+static int mdiobus_can_c45(struct mii_bus *bus)
+{
+	return bus->flags & MII_BUS_FLAG_C45;
+}
+
+/**
+ * mdiobus_valid_clause - Check if the type of access if valid
+ * @bus: mii_bus to perform operation on
+ * @regnum: register to be accessed
+ *
+ * This function determines if the bus supports the clause needed for accessing
+ * the register.
+ *
+ * Returns 0 if not valid, not 0 if supported.
+ */
+
+int mdiobus_valid_clause(struct mii_bus *bus, u32 regnum)
+{
+	if (regnum & MII_ADDR_C45)
+		return mdiobus_can_c45(bus);
+	else
+		return mdiobus_can_c22(bus);
+}
+EXPORT_SYMBOL(mdiobus_valid_clause);
+
 /**
  * mdiobus_create_device_from_board_info - create a full MDIO device given
  * a mdio_board_info structure
@@ -334,6 +364,11 @@ int __mdiobus_register(struct mii_bus *bus, struct module *owner)
 	if (NULL == bus || NULL == bus->name ||
 	    NULL == bus->read || NULL == bus->write)
 		return -EINVAL;
+
+	if (!mdiobus_can_c22(bus) && !mdiobus_can_c45(bus)) {
+		dev_err(&bus->dev, "mii_bus not c22 or c45\n");
+		return -EINVAL;
+	}
 
 	BUG_ON(bus->state != MDIOBUS_ALLOCATED &&
 	       bus->state != MDIOBUS_UNREGISTERED);

@@ -64,7 +64,7 @@ static int octeon_mdiobus_probe(struct platform_device *pdev)
 
 	bus->mii_bus->read = cavium_mdiobus_read;
 	bus->mii_bus->write = cavium_mdiobus_write;
-
+	bus->mii_bus->flags = MII_BUS_FLAG_C45 | MII_BUS_FLAG_C22;
 	platform_set_drvdata(pdev, bus);
 
 	err = of_mdiobus_register(bus->mii_bus, pdev->dev.of_node);

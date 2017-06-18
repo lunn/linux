@@ -2245,6 +2245,7 @@ static int mv88e6xxx_mdio_register(struct mv88e6xxx_chip *chip,
 	bus->read = mv88e6xxx_mdio_read;
 	bus->write = mv88e6xxx_mdio_write;
 	bus->parent = chip->dev;
+	bus->flags = MII_BUS_FLAG_C22 | MII_BUS_FLAG_C45;
 
 	if (np)
 		err = of_mdiobus_register(bus, np);

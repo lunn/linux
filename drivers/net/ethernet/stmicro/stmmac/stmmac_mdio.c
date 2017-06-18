@@ -224,6 +224,7 @@ int stmmac_mdio_register(struct net_device *ndev)
 	new_bus->name = "stmmac";
 	new_bus->read = &stmmac_mdio_read;
 	new_bus->write = &stmmac_mdio_write;
+	new_bus->flags = MII_BUS_FLAG_C22;
 
 	new_bus->reset = &stmmac_mdio_reset;
 	snprintf(new_bus->id, MII_BUS_ID_SIZE, "%s-%x",

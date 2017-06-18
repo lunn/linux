@@ -1685,6 +1685,7 @@ static int ftgmac100_setup_mdio(struct net_device *netdev)
 	priv->mii_bus->priv = priv->netdev;
 	priv->mii_bus->read = ftgmac100_mdiobus_read;
 	priv->mii_bus->write = ftgmac100_mdiobus_write;
+	priv->mii_bus->flags = MII_BUS_FLAG_C22;
 
 	for (i = 0; i < PHY_MAX_ADDR; i++)
 		priv->mii_bus->irq[i] = PHY_POLL;

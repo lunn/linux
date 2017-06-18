@@ -2267,6 +2267,7 @@ static int b44_register_phy_one(struct b44 *bp)
 	mii_bus->priv = bp;
 	mii_bus->read = b44_mdio_read_phylib;
 	mii_bus->write = b44_mdio_write_phylib;
+	mii_bus->flags = MII_BUS_FLAG_C22;
 	mii_bus->name = "b44_eth_mii";
 	mii_bus->parent = sdev->dev;
 	mii_bus->phy_mask = ~(1 << bp->phy_addr);

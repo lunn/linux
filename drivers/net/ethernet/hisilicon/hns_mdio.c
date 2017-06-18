@@ -446,6 +446,7 @@ static int hns_mdio_probe(struct platform_device *pdev)
 	new_bus->name = MDIO_BUS_NAME;
 	new_bus->read = hns_mdio_read;
 	new_bus->write = hns_mdio_write;
+	new_bus->flags = MII_BUS_FLAG_C45 | MII_BUS_FLAG_C22;
 	new_bus->reset = hns_mdio_reset;
 	new_bus->priv = mdio_dev;
 	new_bus->parent = &pdev->dev;

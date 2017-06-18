@@ -1193,6 +1193,7 @@ static int hix5hd2_dev_probe(struct platform_device *pdev)
 	bus->name = "hix5hd2_mii_bus";
 	bus->read = hix5hd2_mdio_read;
 	bus->write = hix5hd2_mdio_write;
+	bus->flags = MII_BUS_FLAG_C22;
 	bus->parent = &pdev->dev;
 	snprintf(bus->id, MII_BUS_ID_SIZE, "%s-mii", dev_name(&pdev->dev));
 	priv->bus = bus;
