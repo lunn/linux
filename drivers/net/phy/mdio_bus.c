@@ -497,6 +497,14 @@ struct phy_device *mdiobus_scan(struct mii_bus *bus, int addr)
 }
 EXPORT_SYMBOL(mdiobus_scan);
 
+static int mdiobus_valid_clause(struct mii_bus *bus, u32 regnum)
+{
+	if (regnum & MII_ADDR_C45)
+		return mdiobus_can_c45(bus);
+	else
+		return mdiobus_can_c22(bus);
+}
+
 /**
  * mdiobus_read_nested - Nested version of the mdiobus_read function
  * @bus: the mii_bus struct
@@ -515,6 +523,9 @@ int mdiobus_read_nested(struct mii_bus *bus, int addr, u32 regnum)
 	int retval;
 
 	BUG_ON(in_interrupt());
+
+	if (!mdiobus_valid_clause(bus, regnum))
+		return -EOPNOTSUPP;
 
 	mutex_lock_nested(&bus->mdio_lock, MDIO_MUTEX_NESTED);
 	retval = bus->read(bus, addr, regnum);
@@ -541,6 +552,9 @@ int mdiobus_read(struct mii_bus *bus, int addr, u32 regnum)
 	int retval;
 
 	BUG_ON(in_interrupt());
+
+	if (!mdiobus_valid_clause(bus, regnum))
+		return -EOPNOTSUPP;
 
 	mutex_lock(&bus->mdio_lock);
 	retval = bus->read(bus, addr, regnum);
@@ -572,6 +586,9 @@ int mdiobus_write_nested(struct mii_bus *bus, int addr, u32 regnum, u16 val)
 
 	BUG_ON(in_interrupt());
 
+	if (!mdiobus_valid_clause(bus, regnum))
+		return -EOPNOTSUPP;
+
 	mutex_lock_nested(&bus->mdio_lock, MDIO_MUTEX_NESTED);
 	err = bus->write(bus, addr, regnum, val);
 	mutex_unlock(&bus->mdio_lock);
@@ -598,6 +615,9 @@ int mdiobus_write(struct mii_bus *bus, int addr, u32 regnum, u16 val)
 	int err;
 
 	BUG_ON(in_interrupt());
+
+	if (!mdiobus_valid_clause(bus, regnum))
+		return -EOPNOTSUPP;
 
 	mutex_lock(&bus->mdio_lock);
 	err = bus->write(bus, addr, regnum, val);
