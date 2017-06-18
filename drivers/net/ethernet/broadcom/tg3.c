@@ -1540,6 +1540,7 @@ static int tg3_mdio_init(struct tg3 *tp)
 	tp->mdio_bus->parent   = &tp->pdev->dev;
 	tp->mdio_bus->read     = &tg3_mdio_read;
 	tp->mdio_bus->write    = &tg3_mdio_write;
+	tp->mdio_bus->flags    = MII_BUS_FLAG_C22;
 	tp->mdio_bus->phy_mask = ~(1 << tp->phy_addr);
 
 	/* The bus registration will look for all the PHYs on the mdio bus.

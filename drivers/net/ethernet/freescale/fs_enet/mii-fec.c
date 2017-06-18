@@ -122,6 +122,7 @@ static int fs_enet_mdio_probe(struct platform_device *ofdev)
 	new_bus->name = "FEC MII Bus";
 	new_bus->read = &fs_enet_fec_mii_read;
 	new_bus->write = &fs_enet_fec_mii_write;
+	new_bus->flags = MII_BUS_FLAG_C22;
 
 	ret = of_address_to_resource(ofdev->dev.of_node, 0, &res);
 	if (ret)

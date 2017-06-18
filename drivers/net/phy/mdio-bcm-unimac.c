@@ -198,6 +198,7 @@ static int unimac_mdio_probe(struct platform_device *pdev)
 	bus->read = unimac_mdio_read;
 	bus->write = unimac_mdio_write;
 	bus->reset = unimac_mdio_reset;
+	bus->flags = MII_BUS_FLAG_C22;
 	snprintf(bus->id, MII_BUS_ID_SIZE, "%s", pdev->name);
 
 	ret = of_mdiobus_register(bus, np);

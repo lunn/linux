@@ -260,6 +260,7 @@ static int xgmac_mdio_probe(struct platform_device *pdev)
 	bus->name = "Freescale XGMAC MDIO Bus";
 	bus->read = xgmac_mdio_read;
 	bus->write = xgmac_mdio_write;
+	bus->flags = MII_BUS_FLAG_C45 | MII_BUS_FLAG_C22;
 	bus->parent = &pdev->dev;
 	snprintf(bus->id, MII_BUS_ID_SIZE, "%llx", (unsigned long long)res.start);
 

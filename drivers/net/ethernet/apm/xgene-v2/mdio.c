@@ -122,6 +122,7 @@ int xge_mdio_config(struct net_device *ndev)
 	mdio_bus->name = "APM X-Gene Ethernet (v2) MDIO Bus";
 	mdio_bus->read = xge_mdio_read;
 	mdio_bus->write = xge_mdio_write;
+	mdio_bus->flags = MII_BUS_FLAG_C22;
 	mdio_bus->priv = pdata;
 	mdio_bus->parent = dev;
 	snprintf(mdio_bus->id, MII_BUS_ID_SIZE, "%s-mii", dev_name(dev));

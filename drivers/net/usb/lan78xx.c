@@ -1757,6 +1757,7 @@ static int lan78xx_mdio_init(struct lan78xx_net *dev)
 	dev->mdiobus->priv = (void *)dev;
 	dev->mdiobus->read = lan78xx_mdiobus_read;
 	dev->mdiobus->write = lan78xx_mdiobus_write;
+	dev->mdiobus->flags = MII_BUS_FLAG_C22;
 	dev->mdiobus->name = "lan78xx-mdiobus";
 
 	snprintf(dev->mdiobus->id, MII_BUS_ID_SIZE, "usb-%03d:%03d",

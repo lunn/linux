@@ -662,6 +662,7 @@ static int tc_mii_init(struct net_device *dev)
 	lp->mii_bus->name = "tc35815_mii_bus";
 	lp->mii_bus->read = tc_mdio_read;
 	lp->mii_bus->write = tc_mdio_write;
+	lp->mii_bus->flags = MII_BUS_FLAG_C22;
 	snprintf(lp->mii_bus->id, MII_BUS_ID_SIZE, "%x",
 		 (lp->pci_dev->bus->number << 8) | lp->pci_dev->devfn);
 	lp->mii_bus->priv = dev;

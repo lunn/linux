@@ -211,6 +211,7 @@ issue:
 	bus->name = "Xilinx Axi Ethernet MDIO";
 	bus->read = axienet_mdio_read;
 	bus->write = axienet_mdio_write;
+	bus->flags = MII_BUS_FLAG_C22;
 	bus->parent = lp->dev;
 	lp->mii_bus = bus;
 

@@ -1164,6 +1164,7 @@ static int smsc9420_mii_init(struct net_device *dev)
 	pd->mii_bus->priv = pd;
 	pd->mii_bus->read = smsc9420_mii_read;
 	pd->mii_bus->write = smsc9420_mii_write;
+	pd->mii_bus->flags = MII_BUS_FLAG_C22;
 
 	/* Mask all PHYs except ID 1 (internal) */
 	pd->mii_bus->phy_mask = ~(1 << 1);

@@ -335,6 +335,11 @@ int __mdiobus_register(struct mii_bus *bus, struct module *owner)
 	    NULL == bus->read || NULL == bus->write)
 		return -EINVAL;
 
+	if (!mdiobus_can_c22(bus) && !mdiobus_can_c45(bus)) {
+		dev_err(&bus->dev, "mii_bus not c22 or c45\n");
+		return -EINVAL;
+	}
+
 	BUG_ON(bus->state != MDIOBUS_ALLOCATED &&
 	       bus->state != MDIOBUS_UNREGISTERED);
 

@@ -407,6 +407,7 @@ static int fsl_pq_mdio_probe(struct platform_device *pdev)
 	new_bus->read = &fsl_pq_mdio_read;
 	new_bus->write = &fsl_pq_mdio_write;
 	new_bus->reset = &fsl_pq_mdio_reset;
+	new_bus->flags = MII_BUS_FLAG_C22;
 
 	err = of_address_to_resource(np, 0, &res);
 	if (err < 0) {

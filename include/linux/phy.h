@@ -181,6 +181,10 @@ static inline const char *phy_modes(phy_interface_t interface)
 struct device;
 struct sk_buff;
 
+/* Flag bits for the causes an MDIO bus driver supports */
+#define MII_BUS_FLAG_C22	BIT(0)
+#define MII_BUS_FLAG_C45	BIT(1)
+
 /*
  * The Bus class for PHYs.  Devices which provide access to
  * PHYs should register using this structure
@@ -193,6 +197,7 @@ struct mii_bus {
 	int (*read)(struct mii_bus *bus, int addr, int regnum);
 	int (*write)(struct mii_bus *bus, int addr, int regnum, u16 val);
 	int (*reset)(struct mii_bus *bus);
+	int flags;
 
 	/*
 	 * A lock to ensure that only one thing can read/write
@@ -230,6 +235,16 @@ struct mii_bus {
 	struct gpio_desc *reset_gpiod;
 };
 #define to_mii_bus(d) container_of(d, struct mii_bus, dev)
+
+static inline int mdiobus_can_c22(struct mii_bus *bus)
+{
+	return bus->flags & MII_BUS_FLAG_C22;
+}
+
+static inline int mdiobus_can_c45(struct mii_bus *bus)
+{
+	return bus->flags & MII_BUS_FLAG_C45;
+}
 
 struct mii_bus *mdiobus_alloc_size(size_t);
 static inline struct mii_bus *mdiobus_alloc(void)

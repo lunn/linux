@@ -394,6 +394,7 @@ ltq_etop_mdio_init(struct net_device *dev)
 	priv->mii_bus->priv = dev;
 	priv->mii_bus->read = ltq_etop_mdio_rd;
 	priv->mii_bus->write = ltq_etop_mdio_wr;
+	priv->mii_bus->flags = MII_BUS_FLAG_C22;
 	priv->mii_bus->name = "ltq_mii";
 	snprintf(priv->mii_bus->id, MII_BUS_ID_SIZE, "%s-%x",
 		priv->pdev->name, priv->pdev->id);

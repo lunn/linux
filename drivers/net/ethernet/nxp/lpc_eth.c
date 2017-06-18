@@ -835,6 +835,7 @@ static int lpc_mii_init(struct netdata_local *pldat)
 	pldat->mii_bus->read = &lpc_mdio_read;
 	pldat->mii_bus->write = &lpc_mdio_write;
 	pldat->mii_bus->reset = &lpc_mdio_reset;
+	pldat->mii_bus->flags = MII_BUS_FLAG_C22;
 	snprintf(pldat->mii_bus->id, MII_BUS_ID_SIZE, "%s-%x",
 		 pldat->pdev->name, pldat->pdev->id);
 	pldat->mii_bus->priv = pldat;
