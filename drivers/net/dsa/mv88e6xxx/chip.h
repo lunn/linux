@@ -245,6 +245,7 @@ struct mv88e6xxx_info {
 	 * operation. 0 means that the ATU Move operation is not supported.
 	 */
 	u8 atu_move_port_mask;
+	int mii_bus_flags;
 	const struct mv88e6xxx_ops *ops;
 };
 
