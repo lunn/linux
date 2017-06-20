@@ -2245,7 +2245,7 @@ static int mv88e6xxx_mdio_register(struct mv88e6xxx_chip *chip,
 	bus->read = mv88e6xxx_mdio_read;
 	bus->write = mv88e6xxx_mdio_write;
 	bus->parent = chip->dev;
-	bus->flags = MII_BUS_FLAG_C22 | MII_BUS_FLAG_C45;
+	bus->flags = chip->info->mii_bus_flags;
 
 	if (np)
 		err = of_mdiobus_register(bus, np);
@@ -3212,6 +3212,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.pvt = true,
 		.tag_protocol = DSA_TAG_PROTO_DSA,
 		.flags = MV88E6XXX_FLAGS_FAMILY_6097,
+		.mii_bus_flags = MII_BUS_FLAG_C22,
 		.ops = &mv88e6085_ops,
 	},
 
@@ -3229,6 +3230,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.atu_move_port_mask = 0xf,
 		.tag_protocol = DSA_TAG_PROTO_DSA,
 		.flags = MV88E6XXX_FLAGS_FAMILY_6095,
+		.mii_bus_flags = MII_BUS_FLAG_C22,
 		.ops = &mv88e6095_ops,
 	},
 
@@ -3247,6 +3249,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.pvt = true,
 		.tag_protocol = DSA_TAG_PROTO_EDSA,
 		.flags = MV88E6XXX_FLAGS_FAMILY_6097,
+		.mii_bus_flags = MII_BUS_FLAG_C22,
 		.ops = &mv88e6097_ops,
 	},
 
@@ -3265,6 +3268,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.pvt = true,
 		.tag_protocol = DSA_TAG_PROTO_EDSA,
 		.flags = MV88E6XXX_FLAGS_FAMILY_6165,
+		.mii_bus_flags = MII_BUS_FLAG_C22,
 		.ops = &mv88e6123_ops,
 	},
 
@@ -3282,6 +3286,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.atu_move_port_mask = 0xf,
 		.tag_protocol = DSA_TAG_PROTO_DSA,
 		.flags = MV88E6XXX_FLAGS_FAMILY_6185,
+		.mii_bus_flags = MII_BUS_FLAG_C22,
 		.ops = &mv88e6131_ops,
 	},
 
@@ -3299,6 +3304,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.pvt = true,
 		.tag_protocol = DSA_TAG_PROTO_EDSA,
 		.flags = MV88E6XXX_FLAGS_FAMILY_6341,
+		.mii_bus_flags = MII_BUS_FLAG_C22,
 		.ops = &mv88e6141_ops,
 	},
 
@@ -3317,6 +3323,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.pvt = true,
 		.tag_protocol = DSA_TAG_PROTO_EDSA,
 		.flags = MV88E6XXX_FLAGS_FAMILY_6165,
+		.mii_bus_flags = MII_BUS_FLAG_C22,
 		.ops = &mv88e6161_ops,
 	},
 
@@ -3335,6 +3342,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.pvt = true,
 		.tag_protocol = DSA_TAG_PROTO_DSA,
 		.flags = MV88E6XXX_FLAGS_FAMILY_6165,
+		.mii_bus_flags = MII_BUS_FLAG_C22,
 		.ops = &mv88e6165_ops,
 	},
 
@@ -3353,6 +3361,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.pvt = true,
 		.tag_protocol = DSA_TAG_PROTO_EDSA,
 		.flags = MV88E6XXX_FLAGS_FAMILY_6351,
+		.mii_bus_flags = MII_BUS_FLAG_C22,
 		.ops = &mv88e6171_ops,
 	},
 
@@ -3371,6 +3380,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.pvt = true,
 		.tag_protocol = DSA_TAG_PROTO_EDSA,
 		.flags = MV88E6XXX_FLAGS_FAMILY_6352,
+		.mii_bus_flags = MII_BUS_FLAG_C22,
 		.ops = &mv88e6172_ops,
 	},
 
@@ -3389,6 +3399,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.pvt = true,
 		.tag_protocol = DSA_TAG_PROTO_EDSA,
 		.flags = MV88E6XXX_FLAGS_FAMILY_6351,
+		.mii_bus_flags = MII_BUS_FLAG_C22,
 		.ops = &mv88e6175_ops,
 	},
 
@@ -3407,6 +3418,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.pvt = true,
 		.tag_protocol = DSA_TAG_PROTO_EDSA,
 		.flags = MV88E6XXX_FLAGS_FAMILY_6352,
+		.mii_bus_flags = MII_BUS_FLAG_C22,
 		.ops = &mv88e6176_ops,
 	},
 
@@ -3424,6 +3436,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.atu_move_port_mask = 0xf,
 		.tag_protocol = DSA_TAG_PROTO_EDSA,
 		.flags = MV88E6XXX_FLAGS_FAMILY_6185,
+		.mii_bus_flags = MII_BUS_FLAG_C22,
 		.ops = &mv88e6185_ops,
 	},
 
@@ -3442,6 +3455,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.pvt = true,
 		.atu_move_port_mask = 0x1f,
 		.flags = MV88E6XXX_FLAGS_FAMILY_6390,
+		.mii_bus_flags = MII_BUS_FLAG_C45 | MII_BUS_FLAG_C22,
 		.ops = &mv88e6190_ops,
 	},
 
@@ -3460,6 +3474,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.pvt = true,
 		.tag_protocol = DSA_TAG_PROTO_DSA,
 		.flags = MV88E6XXX_FLAGS_FAMILY_6390,
+		.mii_bus_flags = MII_BUS_FLAG_C45 | MII_BUS_FLAG_C22,
 		.ops = &mv88e6190x_ops,
 	},
 
@@ -3478,6 +3493,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.pvt = true,
 		.tag_protocol = DSA_TAG_PROTO_DSA,
 		.flags = MV88E6XXX_FLAGS_FAMILY_6390,
+		.mii_bus_flags = MII_BUS_FLAG_C45 | MII_BUS_FLAG_C22,
 		.ops = &mv88e6191_ops,
 	},
 
@@ -3496,6 +3512,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.pvt = true,
 		.tag_protocol = DSA_TAG_PROTO_EDSA,
 		.flags = MV88E6XXX_FLAGS_FAMILY_6352,
+		.mii_bus_flags = MII_BUS_FLAG_C45 | MII_BUS_FLAG_C22,
 		.ops = &mv88e6240_ops,
 	},
 
@@ -3514,6 +3531,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.pvt = true,
 		.tag_protocol = DSA_TAG_PROTO_DSA,
 		.flags = MV88E6XXX_FLAGS_FAMILY_6390,
+		.mii_bus_flags = MII_BUS_FLAG_C45 | MII_BUS_FLAG_C22,
 		.ops = &mv88e6290_ops,
 	},
 
@@ -3532,6 +3550,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.pvt = true,
 		.tag_protocol = DSA_TAG_PROTO_EDSA,
 		.flags = MV88E6XXX_FLAGS_FAMILY_6320,
+		.mii_bus_flags = MII_BUS_FLAG_C22,
 		.ops = &mv88e6320_ops,
 	},
 
@@ -3549,6 +3568,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.atu_move_port_mask = 0xf,
 		.tag_protocol = DSA_TAG_PROTO_EDSA,
 		.flags = MV88E6XXX_FLAGS_FAMILY_6320,
+		.mii_bus_flags = MII_BUS_FLAG_C22,
 		.ops = &mv88e6321_ops,
 	},
 
@@ -3566,6 +3586,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.pvt = true,
 		.tag_protocol = DSA_TAG_PROTO_EDSA,
 		.flags = MV88E6XXX_FLAGS_FAMILY_6341,
+		.mii_bus_flags = MII_BUS_FLAG_C22,
 		.ops = &mv88e6341_ops,
 	},
 
@@ -3584,6 +3605,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.pvt = true,
 		.tag_protocol = DSA_TAG_PROTO_EDSA,
 		.flags = MV88E6XXX_FLAGS_FAMILY_6351,
+		.mii_bus_flags = MII_BUS_FLAG_C22,
 		.ops = &mv88e6350_ops,
 	},
 
@@ -3602,6 +3624,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.pvt = true,
 		.tag_protocol = DSA_TAG_PROTO_EDSA,
 		.flags = MV88E6XXX_FLAGS_FAMILY_6351,
+		.mii_bus_flags = MII_BUS_FLAG_C22,
 		.ops = &mv88e6351_ops,
 	},
 
@@ -3620,6 +3643,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.pvt = true,
 		.tag_protocol = DSA_TAG_PROTO_EDSA,
 		.flags = MV88E6XXX_FLAGS_FAMILY_6352,
+		.mii_bus_flags = MII_BUS_FLAG_C22,
 		.ops = &mv88e6352_ops,
 	},
 	[MV88E6390] = {
@@ -3637,6 +3661,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.pvt = true,
 		.tag_protocol = DSA_TAG_PROTO_DSA,
 		.flags = MV88E6XXX_FLAGS_FAMILY_6390,
+		.mii_bus_flags = MII_BUS_FLAG_C45 | MII_BUS_FLAG_C22,
 		.ops = &mv88e6390_ops,
 	},
 	[MV88E6390X] = {
@@ -3654,6 +3679,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.pvt = true,
 		.tag_protocol = DSA_TAG_PROTO_DSA,
 		.flags = MV88E6XXX_FLAGS_FAMILY_6390,
+		.mii_bus_flags = MII_BUS_FLAG_C45 | MII_BUS_FLAG_C22,
 		.ops = &mv88e6390x_ops,
 	},
 };
