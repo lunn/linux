@@ -59,9 +59,15 @@
 #define DC_UGDE_3(evt)		(0x180 + (evt) * 16)
 #define DC_STAT			0x1c8
 
-#define WROD(lf)		(0x18 | ((lf) << 1))
-#define WRG			0x01
-#define WCLK			0xc9
+/* See table 37-26. - DC template's commands description */
+#define WRG(data, waveform, gluelogic, sync, stop) \
+	((((u64)(stop)) << 41) | (((u64)(0x1)) << 39) | \
+	 (((u64)(data)) << 15) | (((waveform) + 1) << 11) | \
+	 ((gluelogic) << 4) | (sync))
+#define WROD(data, mapping, waveform, gluelogic, sync, stop) \
+	((((u64)(stop)) << 41) | (((u64)(0x18)) << 36) | \
+	 (((u64)(data)) << 20) | (((mapping) + 1) << 15) | \
+	 (((waveform) + 1) << 11) | ((gluelogic) << 4) | (sync))
 
 #define SYNC_WAVE 0
 #define NULL_WAVE (-1)
@@ -179,24 +185,15 @@ static void dc_link_event(struct ipu_dc *dc, int event, int addr, int priority)
 	writel(reg, dc->base + DC_RL_CH(event));
 }
 
-static void dc_write_tmpl(struct ipu_dc *dc, int word, u32 opcode, u32 operand,
-		int map, int wave, int glue, int sync, int stop)
+static void dc_write_tmpl(struct ipu_dc *dc, int start, u64 *words, int count)
 {
-	struct ipu_dc_priv *priv = dc->priv;
-	u32 reg1, reg2;
+	void __iomem *tmpl_reg = dc->priv->dc_tmpl_reg + start * 8;
+	int i;
 
-	if (opcode == WCLK) {
-		reg1 = (operand << 20) & 0xfff00000;
-		reg2 = operand >> 12 | opcode << 1 | stop << 9;
-	} else if (opcode == WRG) {
-		reg1 = sync | glue << 4 | ++wave << 11 | ((operand << 15) & 0xffff8000);
-		reg2 = operand >> 17 | opcode << 7 | stop << 9;
-	} else {
-		reg1 = sync | glue << 4 | ++wave << 11 | ++map << 15 | ((operand << 20) & 0xfff00000);
-		reg2 = operand >> 12 | opcode << 4 | stop << 9;
+	for (i = 0; i < count; i++, tmpl_reg += 8) {
+		writel(words[i] & 0xffffffff, tmpl_reg);
+		writel(words[i] >> 32, tmpl_reg + 4);
 	}
-	writel(reg1, priv->dc_tmpl_reg + word * 8);
-	writel(reg2, priv->dc_tmpl_reg + word * 8 + 4);
 }
 
 static int ipu_bus_format_to_map(u32 fmt)
@@ -226,13 +223,9 @@ int ipu_dc_init_sync(struct ipu_dc *dc, struct ipu_di *di, bool interlaced,
 		u32 bus_format, u32 width)
 {
 	struct ipu_dc_priv *priv = dc->priv;
-	int addr, sync;
+	int addr;
 	u32 reg = 0;
-	int map;
-
-	dc->di = ipu_di_get_num(di);
-
-	map = ipu_bus_format_to_map(bus_format);
+	int map = ipu_bus_format_to_map(bus_format);
 
 	/*
 	 * In interlaced mode we need more counters to create the asymmetric
@@ -240,21 +233,34 @@ int ipu_dc_init_sync(struct ipu_dc *dc, struct ipu_di *di, bool interlaced,
 	 * to DI moves to signal generator #6 (see ipu-di.c). In progressive
 	 * mode counter #5 is used.
 	 */
-	sync = interlaced ? 6 : 5;
+	int sync = interlaced ? 6 : 5;
 
-	/* Reserve 5 microcode template words for each DI */
+	u64 microcode[] = {
+		/* interlaced */
+		WROD(0x0000, map, SYNC_WAVE, 0, sync, 1),
+		/* progressive */
+		WROD(0x0000, map, SYNC_WAVE, 0, sync, 1), /* NEW_DATA */
+		WROD(0x0000, map, SYNC_WAVE, 8, sync, 1), /* NL */
+		WROD(0x0000, map, SYNC_WAVE, 4, sync, 0), /* EOL */
+		WRG(0x000000, NULL_WAVE, 0, 0, 1),
+		/* odd pixel handling for YUYV variants */
+		WROD(0x0000, map + 1, SYNC_WAVE, 0, sync, 1),
+	};
+
+	/* Separate microcode for each DI */
+	dc->di = ipu_di_get_num(di);
 	if (dc->di)
-		addr = 6;
+		addr = ARRAY_SIZE(microcode);
 	else
 		addr = 0;
+
+	/* Init template microcode */
+	dc_write_tmpl(dc, addr, microcode, ARRAY_SIZE(microcode));
 
 	if (interlaced) {
 		dc_link_event(dc, DC_EVT_NL, addr, 3);
 		dc_link_event(dc, DC_EVT_EOL, addr, 2);
 		dc_link_event(dc, DC_EVT_NEW_DATA, addr, 1);
-
-		/* Init template microcode */
-		dc_write_tmpl(dc, addr, WROD(0), 0, map, SYNC_WAVE, 0, sync, 1);
 	} else {
 		dc_link_event(dc, DC_EVT_NL, addr + 2, 3);
 		dc_link_event(dc, DC_EVT_EOL, addr + 3, 2);
@@ -273,14 +279,6 @@ int ipu_dc_init_sync(struct ipu_dc *dc, struct ipu_di *di, bool interlaced,
 							addr + 5, addr + 1, 5,
 							width - 1);
 		}
-
-		/* Init template microcode */
-		dc_write_tmpl(dc, addr + 2, WROD(0), 0, map, SYNC_WAVE, 8, sync, 1);
-		dc_write_tmpl(dc, addr + 3, WROD(0), 0, map, SYNC_WAVE, 4, sync, 0);
-		dc_write_tmpl(dc, addr + 4, WRG, 0, map, NULL_WAVE, 0, 0, 1);
-		dc_write_tmpl(dc, addr + 1, WROD(0), 0, map, SYNC_WAVE, 0, sync, 1);
-		/* odd pixel handling for YUYV variants */
-		dc_write_tmpl(dc, addr + 5, WROD(0), 0, map + 1, SYNC_WAVE, 0, sync, 1);
 	}
 
 	dc_link_event(dc, DC_EVT_NF, 0, 0);
