@@ -41,6 +41,11 @@
 #define DC_EVT_NEW_DATA_R_0	10
 #define DC_EVT_NEW_DATA_R_1	11
 
+#define DC_EVT_UGDE0		0
+#define DC_EVT_UGDE1		1
+#define DC_EVT_UGDE2		2
+#define DC_EVT_UGDE3    	3
+
 #define DC_WR_CH_CONF		0x0
 #define DC_WR_CH_ADDR		0x4
 #define DC_RL_CH(evt)		(8 + ((evt) & ~0x1) * 2)
@@ -48,6 +53,10 @@
 #define DC_GEN			0xd4
 #define DC_DISP_CONF1(disp)	(0xd8 + (disp) * 4)
 #define DC_DISP_CONF2(disp)	(0xe8 + (disp) * 4)
+#define DC_UGDE_0(evt)		(0x174 + (evt) * 16)
+#define DC_UGDE_1(evt)		(0x178 + (evt) * 16)
+#define DC_UGDE_2(evt)		(0x17c + (evt) * 16)
+#define DC_UGDE_3(evt)		(0x180 + (evt) * 16)
 #define DC_STAT			0x1c8
 
 #define WROD(lf)		(0x18 | ((lf) << 1))
@@ -72,6 +81,9 @@
 #define DC_WR_CH_CONF_PROG_TYPE_MASK		(7 << 5)
 #define DC_WR_CH_CONF_PROG_DI_ID		(1 << 2)
 #define DC_WR_CH_CONF_PROG_DISP_ID(i)		(((i) & 0x1) << 3)
+#define DC_WR_CH_CONF_CHAN_MASK_DEFAULT		(1 << 8)
+
+#define DC_UGDE_0_ODD_EN			(1 << 25)
 
 #define IPU_DC_NUM_CHANNELS	10
 
@@ -84,6 +96,8 @@ enum ipu_dc_map {
 	IPU_DC_MAP_BGR666,
 	IPU_DC_MAP_LVDS666,
 	IPU_DC_MAP_BGR24,
+	IPU_DC_MAP_YUYV_EVEN,
+	IPU_DC_MAP_YUYV_ODD,
 };
 
 struct ipu_dc {
@@ -105,6 +119,55 @@ struct ipu_dc_priv {
 	struct completion	comp;
 	int			use_count;
 };
+
+static void dc_link_user_general_data_event(struct ipu_dc *dc, int event,
+					    int trigger, int even_addr,
+					    int odd_addr, int priority,
+					    int step_repeat)
+{
+	struct ipu_dc_priv *priv = dc->priv;
+	int chno;
+	u32 address_shift;
+	u32 reg;
+
+	switch (trigger) {
+	case DC_EVT_NL:
+		trigger = 0;
+		break;
+	case DC_EVT_NF:
+		trigger = 1;
+		break;
+	case DC_EVT_NFIELD:
+		trigger = 2;
+		break;
+	default:
+		return;
+	}
+
+	switch (dc->chno) {
+	case 0 ... 2:
+		chno = dc->chno;
+		break;
+	case 5:
+		chno = 3;
+		break;
+	case 6:
+		chno = 4;
+		break;
+	default: return;
+	}
+
+	address_shift = event ? 7 : 8;
+	reg = (trigger << 27) |
+	      (odd_addr << 16) |
+	      (even_addr << address_shift) |
+	      (priority << 3) |
+	      chno;
+	if (odd_addr != even_addr)
+		reg |= DC_UGDE_0_ODD_EN;
+	writel(reg, priv->dc_reg + DC_UGDE_0(event));
+	writel(step_repeat, priv->dc_reg + DC_UGDE_3(event));
+}
 
 static void dc_link_event(struct ipu_dc *dc, int event, int addr, int priority)
 {
@@ -154,6 +217,8 @@ static int ipu_bus_format_to_map(u32 fmt)
 		return IPU_DC_MAP_LVDS666;
 	case MEDIA_BUS_FMT_BGR888_1X24:
 		return IPU_DC_MAP_BGR24;
+	case MEDIA_BUS_FMT_YUYV8_1X16:
+		return IPU_DC_MAP_YUYV_EVEN;
 	}
 }
 
@@ -179,7 +244,7 @@ int ipu_dc_init_sync(struct ipu_dc *dc, struct ipu_di *di, bool interlaced,
 
 	/* Reserve 5 microcode template words for each DI */
 	if (dc->di)
-		addr = 5;
+		addr = 6;
 	else
 		addr = 0;
 
@@ -195,11 +260,27 @@ int ipu_dc_init_sync(struct ipu_dc *dc, struct ipu_di *di, bool interlaced,
 		dc_link_event(dc, DC_EVT_EOL, addr + 3, 2);
 		dc_link_event(dc, DC_EVT_NEW_DATA, addr + 1, 1);
 
+		if (map == IPU_DC_MAP_YUYV_EVEN) {
+			/*
+			 * Since the UGDE counters start on the pixel after the
+			 * trigger event, "even" events are actually odd pixels,
+			 * and the other way around.
+			 */
+			dc_link_user_general_data_event(dc,
+							dc->di ? DC_EVT_UGDE1 :
+								 DC_EVT_UGDE0,
+							DC_EVT_NL,
+							addr + 5, addr + 1, 5,
+							width - 1);
+		}
+
 		/* Init template microcode */
 		dc_write_tmpl(dc, addr + 2, WROD(0), 0, map, SYNC_WAVE, 8, sync, 1);
 		dc_write_tmpl(dc, addr + 3, WROD(0), 0, map, SYNC_WAVE, 4, sync, 0);
 		dc_write_tmpl(dc, addr + 4, WRG, 0, map, NULL_WAVE, 0, 0, 1);
 		dc_write_tmpl(dc, addr + 1, WROD(0), 0, map, SYNC_WAVE, 0, sync, 1);
+		/* odd pixel handling for YUYV variants */
+		dc_write_tmpl(dc, addr + 5, WROD(0), 0, map + 1, SYNC_WAVE, 0, sync, 1);
 	}
 
 	dc_link_event(dc, DC_EVT_NF, 0, 0);
@@ -411,6 +492,16 @@ int ipu_dc_init(struct ipu_soc *ipu, struct device *dev,
 	ipu_dc_map_config(priv, IPU_DC_MAP_BGR24, 2, 7, 0xff); /* red */
 	ipu_dc_map_config(priv, IPU_DC_MAP_BGR24, 1, 15, 0xff); /* green */
 	ipu_dc_map_config(priv, IPU_DC_MAP_BGR24, 0, 23, 0xff); /* blue */
+
+	/* yuyv */
+	ipu_dc_map_clear(priv, IPU_DC_MAP_YUYV_EVEN);
+	ipu_dc_map_config(priv, IPU_DC_MAP_YUYV_EVEN, 0, 0, 0);
+	ipu_dc_map_config(priv, IPU_DC_MAP_YUYV_EVEN, 1, 7, 0xff); /* U */
+	ipu_dc_map_config(priv, IPU_DC_MAP_YUYV_EVEN, 2, 15, 0xff); /* Y */
+	ipu_dc_map_clear(priv, IPU_DC_MAP_YUYV_ODD);
+	ipu_dc_map_config(priv, IPU_DC_MAP_YUYV_ODD, 0, 7, 0xff); /* V */
+	ipu_dc_map_config(priv, IPU_DC_MAP_YUYV_ODD, 1, 0, 0);
+	ipu_dc_map_config(priv, IPU_DC_MAP_YUYV_ODD, 2, 15, 0xff); /* Y */
 
 	return 0;
 }
