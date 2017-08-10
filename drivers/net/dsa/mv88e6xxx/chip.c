@@ -1380,7 +1380,7 @@ static int mv88e6xxx_port_fdb_del(struct dsa_switch *ds, int port,
 }
 
 static int mv88e6xxx_port_db_dump_fid(struct mv88e6xxx_chip *chip,
-				      u16 fid, u16 vid, int port,
+				      u16 fid, u16 vid, int port, bool mc,
 				      dsa_fdb_dump_cb_t *cb, void *data)
 {
 	struct mv88e6xxx_atu_entry addr;
@@ -1401,11 +1401,14 @@ static int mv88e6xxx_port_db_dump_fid(struct mv88e6xxx_chip *chip,
 		if (addr.trunk || (addr.portvec & BIT(port)) == 0)
 			continue;
 
-		if (!is_unicast_ether_addr(addr.mac))
+		if ((is_unicast_ether_addr(addr.mac) && mc) ||
+		    (is_multicast_ether_addr(addr.mac) && !mc))
 			continue;
 
-		is_static = (addr.state ==
-			     MV88E6XXX_G1_ATU_DATA_STATE_UC_STATIC);
+		is_static = addr.state == mc ?
+			MV88E6XXX_G1_ATU_DATA_STATE_MC_STATIC :
+			MV88E6XXX_G1_ATU_DATA_STATE_UC_STATIC;
+
 		err = cb(addr.mac, vid, is_static, data);
 		if (err)
 			return err;
@@ -1415,7 +1418,7 @@ static int mv88e6xxx_port_db_dump_fid(struct mv88e6xxx_chip *chip,
 }
 
 static int mv88e6xxx_port_db_dump(struct mv88e6xxx_chip *chip, int port,
-				  dsa_fdb_dump_cb_t *cb, void *data)
+				  bool mc, dsa_fdb_dump_cb_t *cb, void *data)
 {
 	struct mv88e6xxx_vtu_entry vlan = {
 		.vid = chip->info->max_vid,
@@ -1428,7 +1431,7 @@ static int mv88e6xxx_port_db_dump(struct mv88e6xxx_chip *chip, int port,
 	if (err)
 		return err;
 
-	err = mv88e6xxx_port_db_dump_fid(chip, fid, 0, port, cb, data);
+	err = mv88e6xxx_port_db_dump_fid(chip, fid, 0, port, mc, cb, data);
 	if (err)
 		return err;
 
@@ -1442,7 +1445,7 @@ static int mv88e6xxx_port_db_dump(struct mv88e6xxx_chip *chip, int port,
 			break;
 
 		err = mv88e6xxx_port_db_dump_fid(chip, vlan.fid, vlan.vid, port,
-						 cb, data);
+						 mc, cb, data);
 		if (err)
 			return err;
 	} while (vlan.vid < chip->info->max_vid);
@@ -1457,7 +1460,7 @@ static int mv88e6xxx_port_fdb_dump(struct dsa_switch *ds, int port,
 	int err;
 
 	mutex_lock(&chip->reg_lock);
-	err = mv88e6xxx_port_db_dump(chip, port, cb, data);
+	err = mv88e6xxx_port_db_dump(chip, port, false, cb, data);
 	mutex_unlock(&chip->reg_lock);
 
 	return err;
@@ -3777,6 +3780,19 @@ static int mv88e6xxx_port_mdb_del(struct dsa_switch *ds, int port,
 	return err;
 }
 
+static int mv88e6xxx_port_mdb_dump(struct dsa_switch *ds, int port,
+				   dsa_fdb_dump_cb_t *cb, void *data)
+{
+	struct mv88e6xxx_chip *chip = ds->priv;
+	int err;
+
+	mutex_lock(&chip->reg_lock);
+	err = mv88e6xxx_port_db_dump(chip, port, true, cb, data);
+	mutex_unlock(&chip->reg_lock);
+
+	return err;
+}
+
 static const struct dsa_switch_ops mv88e6xxx_switch_ops = {
 	.probe			= mv88e6xxx_drv_probe,
 	.get_tag_protocol	= mv88e6xxx_get_tag_protocol,
@@ -3810,6 +3826,7 @@ static const struct dsa_switch_ops mv88e6xxx_switch_ops = {
 	.port_mdb_prepare       = mv88e6xxx_port_mdb_prepare,
 	.port_mdb_add           = mv88e6xxx_port_mdb_add,
 	.port_mdb_del           = mv88e6xxx_port_mdb_del,
+	.port_mdb_dump          = mv88e6xxx_port_mdb_dump,
 	.crosschip_bridge_join	= mv88e6xxx_crosschip_bridge_join,
 	.crosschip_bridge_leave	= mv88e6xxx_crosschip_bridge_leave,
 };
