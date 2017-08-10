@@ -638,6 +638,46 @@ static int ksz_port_vlan_del(struct dsa_switch *ds, int port,
 	return 0;
 }
 
+static int ksz_port_vlan_dump(struct dsa_switch *ds, int port,
+			      dsa_vlan_dump_cb_t *cb, void *data)
+{
+	struct ksz_device *dev = ds->priv;
+	struct vlan_table *vlan_cache;
+	bool pvid, untagged;
+	u16 val;
+	int vid;
+	int err = 0;
+
+	mutex_lock(&dev->vlan_mutex);
+
+	/* use dev->vlan_cache due to lack of searching valid vlan entry */
+	for (vid = 0; vid < dev->num_vlans; vid++) {
+		vlan_cache = &dev->vlan_cache[vid];
+
+		if (!(vlan_cache->table[0] & VLAN_VALID))
+			continue;
+
+		untagged = false;
+		pvid = false;
+
+		if (vlan_cache->table[2] & BIT(port)) {
+			if (vlan_cache->table[1] & BIT(port))
+				untagged = true;
+			ksz_pread16(dev, port, REG_PORT_DEFAULT_VID, &val);
+			if (vid == (val & 0xFFFFF))
+				pvid = true;
+
+			err = cb(vid, pvid, untagged, data);
+			if (err)
+				break;
+		}
+	}
+
+	mutex_unlock(&dev->vlan_mutex);
+
+	return err;
+}
+
 struct alu_struct {
 	/* entry 1 */
 	u8	is_static:1;
@@ -1068,6 +1108,7 @@ static const struct dsa_switch_ops ksz_switch_ops = {
 	.port_vlan_prepare	= ksz_port_vlan_prepare,
 	.port_vlan_add		= ksz_port_vlan_add,
 	.port_vlan_del		= ksz_port_vlan_del,
+	.port_vlan_dump		= ksz_port_vlan_dump,
 	.port_fdb_dump		= ksz_port_fdb_dump,
 	.port_fdb_add		= ksz_port_fdb_add,
 	.port_fdb_del		= ksz_port_fdb_del,
