@@ -315,6 +315,7 @@ static inline u8 dsa_upstream_port(struct dsa_switch *ds)
 		return ds->rtable[dst->cpu_dp->ds->index];
 }
 
+/* FDB (and MDB) dump callback */
 typedef int dsa_fdb_dump_cb_t(const unsigned char *addr, u16 vid,
 			      bool is_static, void *data);
 struct dsa_switch_ops {
@@ -444,6 +445,8 @@ struct dsa_switch_ops {
 				struct switchdev_trans *trans);
 	int	(*port_mdb_del)(struct dsa_switch *ds, int port,
 				const struct switchdev_obj_port_mdb *mdb);
+	int	(*port_mdb_dump)(struct dsa_switch *ds, int port,
+				 dsa_fdb_dump_cb_t *cb, void *data);
 	/*
 	 * RXNFC
 	 */
