@@ -446,6 +446,8 @@ static int dsa_dst_apply(struct dsa_switch_tree *dst)
 
 	dst->applied = true;
 
+	dsa_debugfs_create_tree(dst);
+
 	return 0;
 }
 
@@ -456,6 +458,8 @@ static void dsa_dst_unapply(struct dsa_switch_tree *dst)
 
 	if (!dst->applied)
 		return;
+
+	dsa_debugfs_destroy_tree(dst);
 
 	dsa_master_ethtool_restore(dst->cpu_dp->netdev);
 

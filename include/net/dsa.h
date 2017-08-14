@@ -209,6 +209,13 @@ struct dsa_switch {
 	 */
 	void *priv;
 
+#ifdef CONFIG_NET_DSA_DEBUGFS
+	/*
+	 * Debugfs interface.
+	 */
+	struct dentry *debugfs_dir;
+#endif
+
 	/*
 	 * Configuration data for this switch.
 	 */

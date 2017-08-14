@@ -93,6 +93,19 @@ struct dsa_slave_priv {
 	struct list_head	mall_tc_list;
 };
 
+/* debugfs.c */
+#ifdef CONFIG_NET_DSA_DEBUGFS
+void dsa_debugfs_create_module(void);
+void dsa_debugfs_destroy_module(void);
+void dsa_debugfs_create_tree(struct dsa_switch_tree *dst);
+void dsa_debugfs_destroy_tree(struct dsa_switch_tree *dst);
+#else
+static inline void dsa_debugfs_create_module(void) { }
+static inline void dsa_debugfs_destroy_module(void) { }
+static inline void dsa_debugfs_create_tree(struct dsa_switch_tree *dst) { }
+static inline void dsa_debugfs_destroy_tree(struct dsa_switch_tree *dst) { }
+#endif
+
 /* dsa.c */
 int dsa_cpu_dsa_setup(struct dsa_port *port);
 void dsa_cpu_dsa_destroy(struct dsa_port *dport);

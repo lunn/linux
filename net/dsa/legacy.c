@@ -602,6 +602,8 @@ static int dsa_setup_dst(struct dsa_switch_tree *dst, struct net_device *dev,
 	wmb();
 	dev->dsa_ptr = dst;
 
+	dsa_debugfs_create_tree(dst);
+
 	return dsa_master_ethtool_setup(dst->cpu_dp->netdev);
 }
 
@@ -666,6 +668,8 @@ out:
 static void dsa_remove_dst(struct dsa_switch_tree *dst)
 {
 	int i;
+
+	dsa_debugfs_destroy_tree(dst);
 
 	dsa_master_ethtool_restore(dst->cpu_dp->netdev);
 
