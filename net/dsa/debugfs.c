@@ -250,6 +250,30 @@ static const struct dsa_debugfs_ops dsa_debugfs_tree_ops = {
 	.read = dsa_debugfs_tree_read,
 };
 
+static int dsa_debugfs_vlan_dump_cb(u16 vid, bool pvid, bool untagged,
+				    void *data)
+{
+	struct seq_file *seq = data;
+
+	seq_printf(seq, "vid %d  %s  %s\n", vid,
+		   untagged ? "untagged" : "tagged", pvid ? "pvid" : "");
+
+	return 0;
+}
+
+static int dsa_debugfs_vlan_read(struct dsa_switch *ds, int id,
+				 struct seq_file *seq)
+{
+	if (!ds->ops->port_vlan_dump)
+		return -EOPNOTSUPP;
+
+	return ds->ops->port_vlan_dump(ds, id, dsa_debugfs_vlan_dump_cb, seq);
+}
+
+static const struct dsa_debugfs_ops dsa_debugfs_vlan_ops = {
+	.read = dsa_debugfs_vlan_read,
+};
+
 static int dsa_debugfs_create_port(struct dsa_switch *ds, int port)
 {
 	struct dentry *dir;
@@ -279,6 +303,11 @@ static int dsa_debugfs_create_port(struct dsa_switch *ds, int port)
 
 	err = dsa_debugfs_create_file(ds, dir, "stats", port,
 				      &dsa_debugfs_stats_ops);
+	if (err)
+		return err;
+
+	err = dsa_debugfs_create_file(ds, dir, "vlan", port,
+				      &dsa_debugfs_vlan_ops);
 	if (err)
 		return err;
 
