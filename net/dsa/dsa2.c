@@ -408,6 +408,8 @@ static int dsa_switch_setup(struct dsa_switch *ds)
 			goto unregister_notifier;
 	}
 
+	dsa_debugfs_create_switch(ds);
+
 	ds->setup = true;
 
 	return 0;
@@ -441,6 +443,8 @@ static void dsa_switch_teardown(struct dsa_switch *ds)
 		devlink_free(ds->devlink);
 		ds->devlink = NULL;
 	}
+
+	dsa_debugfs_destroy_switch(ds);
 
 	ds->setup = false;
 }
