@@ -112,6 +112,46 @@ static int dsa_debugfs_create_file(struct dsa_switch *ds, struct dentry *dir,
 	return 0;
 }
 
+static void dsa_debugfs_regs_read_count(struct dsa_switch *ds, int id,
+					struct seq_file *seq, int count)
+{
+	struct ethtool_regs regs;
+	u16 *data;
+	int i;
+
+	data = kcalloc(ETH_GSTRING_LEN, count, GFP_KERNEL);
+	if (!data)
+		return;
+
+	ds->ops->get_regs(ds, id, &regs, data);
+
+	for (i = 0; i < count / 2; i++)
+		seq_printf(seq, "%2d: %04x\n", i, data[i]);
+
+	kfree(data);
+}
+
+static int dsa_debugfs_regs_read(struct dsa_switch *ds, int id,
+				 struct seq_file *seq)
+{
+	int count;
+
+	if (!ds->ops->get_regs_len || !ds->ops->get_regs)
+		return -EOPNOTSUPP;
+
+	count = ds->ops->get_regs_len(ds, id);
+	if (count < 0)
+		return count;
+
+	dsa_debugfs_regs_read_count(ds, id, seq, count);
+
+	return 0;
+}
+
+static const struct dsa_debugfs_ops dsa_debugfs_regs_ops = {
+	.read = dsa_debugfs_regs_read,
+};
+
 static void dsa_debugfs_stats_read_count(struct dsa_switch *ds, int id,
 					 struct seq_file *seq, int count)
 {
@@ -185,6 +225,11 @@ static int dsa_debugfs_create_port(struct dsa_switch *ds, int port)
 	dir = debugfs_create_dir(name, ds->debugfs_dir);
 	if (IS_ERR_OR_NULL(dir))
 		return -EFAULT;
+
+	err = dsa_debugfs_create_file(ds, dir, "regs", port,
+				      &dsa_debugfs_regs_ops);
+	if (err)
+		return err;
 
 	err = dsa_debugfs_create_file(ds, dir, "stats", port,
 				      &dsa_debugfs_stats_ops);
