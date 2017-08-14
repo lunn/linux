@@ -568,6 +568,7 @@ static int dsa_setup_dst(struct dsa_switch_tree *dst, struct net_device *dev,
 {
 	int i;
 	unsigned configured = 0;
+	int err;
 
 	dst->pd = pd;
 
@@ -592,7 +593,13 @@ static int dsa_setup_dst(struct dsa_switch_tree *dst, struct net_device *dev,
 	if (!configured)
 		return -EPROBE_DEFER;
 
-	return dsa_master_setup(dst->cpu_dp->master, dst->cpu_dp);
+	err = dsa_master_setup(dst->cpu_dp->master, dst->cpu_dp);
+	if (err)
+		return err;
+
+	dsa_debugfs_create_tree(dst);
+
+	return 0;
 }
 
 static int dsa_probe(struct platform_device *pdev)
@@ -656,6 +663,8 @@ out:
 static void dsa_remove_dst(struct dsa_switch_tree *dst)
 {
 	int i;
+
+	dsa_debugfs_destroy_tree(dst);
 
 	dsa_master_teardown(dst->cpu_dp->master);
 

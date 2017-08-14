@@ -38,6 +38,7 @@
 #include "chip.h"
 #include "global1.h"
 #include "global2.h"
+#include "global3.h"
 #include "hwtstamp.h"
 #include "phy.h"
 #include "port.h"
@@ -1424,6 +1425,54 @@ static int mv88e6xxx_vtu_loadpurge(struct mv88e6xxx_chip *chip,
 	return chip->info->ops->vtu_loadpurge(chip, entry);
 }
 
+static int mv88e6xxx_port_vlan_dump(struct dsa_switch *ds, int port,
+				    dsa_vlan_dump_cb_t *cb, void *data)
+{
+	struct mv88e6xxx_chip *chip = ds->priv;
+	struct mv88e6xxx_vtu_entry next = {
+		.vid = chip->info->max_vid,
+	};
+	bool untagged;
+	u16 pvid;
+	int err;
+
+	if (!chip->info->max_vid)
+		return -EOPNOTSUPP;
+
+	mutex_lock(&chip->reg_lock);
+
+	err = mv88e6xxx_port_get_pvid(chip, port, &pvid);
+	if (err)
+		goto unlock;
+
+	do {
+		err = mv88e6xxx_vtu_getnext(chip, &next);
+		if (err)
+			break;
+
+		if (!next.valid)
+			break;
+
+		if (next.member[port] ==
+		    MV88E6XXX_G1_VTU_DATA_MEMBER_TAG_NON_MEMBER)
+			continue;
+
+		untagged = false;
+		if (next.member[port] ==
+		    MV88E6XXX_G1_VTU_DATA_MEMBER_TAG_UNTAGGED)
+			untagged = true;
+
+		err = cb(next.vid, next.vid == pvid, untagged, data);
+		if (err)
+			break;
+	} while (next.vid < chip->info->max_vid);
+
+unlock:
+	mutex_unlock(&chip->reg_lock);
+
+	return err;
+}
+
 static int mv88e6xxx_atu_new(struct mv88e6xxx_chip *chip, u16 *fid)
 {
 	DECLARE_BITMAP(fid_bitmap, MV88E6XXX_N_FID);
@@ -1822,7 +1871,7 @@ static int mv88e6xxx_port_fdb_del(struct dsa_switch *ds, int port,
 }
 
 static int mv88e6xxx_port_db_dump_fid(struct mv88e6xxx_chip *chip,
-				      u16 fid, u16 vid, int port,
+				      u16 fid, u16 vid, int port, bool mc,
 				      dsa_fdb_dump_cb_t *cb, void *data)
 {
 	struct mv88e6xxx_atu_entry addr;
@@ -1845,11 +1894,14 @@ static int mv88e6xxx_port_db_dump_fid(struct mv88e6xxx_chip *chip,
 		if (addr.trunk || (addr.portvec & BIT(port)) == 0)
 			continue;
 
-		if (!is_unicast_ether_addr(addr.mac))
+		if ((is_unicast_ether_addr(addr.mac) && mc) ||
+		    (is_multicast_ether_addr(addr.mac) && !mc))
 			continue;
 
-		is_static = (addr.state ==
-			     MV88E6XXX_G1_ATU_DATA_STATE_UC_STATIC);
+		is_static = addr.state == mc ?
+			MV88E6XXX_G1_ATU_DATA_STATE_MC_STATIC :
+			MV88E6XXX_G1_ATU_DATA_STATE_UC_STATIC;
+
 		err = cb(addr.mac, vid, is_static, data);
 		if (err)
 			return err;
@@ -1859,7 +1911,7 @@ static int mv88e6xxx_port_db_dump_fid(struct mv88e6xxx_chip *chip,
 }
 
 static int mv88e6xxx_port_db_dump(struct mv88e6xxx_chip *chip, int port,
-				  dsa_fdb_dump_cb_t *cb, void *data)
+				  bool mc, dsa_fdb_dump_cb_t *cb, void *data)
 {
 	struct mv88e6xxx_vtu_entry vlan = {
 		.vid = chip->info->max_vid,
@@ -1875,7 +1927,7 @@ static int mv88e6xxx_port_db_dump(struct mv88e6xxx_chip *chip, int port,
 	if (err)
 		return err;
 
-	err = mv88e6xxx_port_db_dump_fid(chip, fid, 0, port, cb, data);
+	err = mv88e6xxx_port_db_dump_fid(chip, fid, 0, port, mc, cb, data);
 	if (err)
 		return err;
 
@@ -1891,7 +1943,7 @@ static int mv88e6xxx_port_db_dump(struct mv88e6xxx_chip *chip, int port,
 			break;
 
 		err = mv88e6xxx_port_db_dump_fid(chip, vlan.fid, vlan.vid, port,
-						 cb, data);
+						 mc, cb, data);
 		if (err)
 			return err;
 	} while (vlan.vid < chip->info->max_vid);
@@ -1903,8 +1955,13 @@ static int mv88e6xxx_port_fdb_dump(struct dsa_switch *ds, int port,
 				   dsa_fdb_dump_cb_t *cb, void *data)
 {
 	struct mv88e6xxx_chip *chip = ds->priv;
+	int err;
 
-	return mv88e6xxx_port_db_dump(chip, port, cb, data);
+	mutex_lock(&chip->reg_lock);
+	err = mv88e6xxx_port_db_dump(chip, port, false, cb, data);
+	mutex_unlock(&chip->reg_lock);
+
+	return err;
 }
 
 static int mv88e6xxx_bridge_map(struct mv88e6xxx_chip *chip,
@@ -2403,6 +2460,8 @@ static int mv88e6xxx_stats_setup(struct mv88e6xxx_chip *chip)
 	return mv88e6xxx_g1_stats_clear(chip);
 }
 
+#include "debugfs.c"
+
 static int mv88e6xxx_setup(struct dsa_switch *ds)
 {
 	struct mv88e6xxx_chip *chip = ds->priv;
@@ -2500,6 +2559,10 @@ static int mv88e6xxx_setup(struct dsa_switch *ds)
 	}
 
 	err = mv88e6xxx_stats_setup(chip);
+	if (err)
+		goto unlock;
+
+	err = mv88e6xxx_dbg_init_chip(chip);
 	if (err)
 		goto unlock;
 
@@ -3862,6 +3925,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.phy_base_addr = 0x0,
 		.global1_addr = 0x1b,
 		.global2_addr = 0x1c,
+		.global3_addr = 0x1d,
 		.age_time_coeff = 15000,
 		.g1_irqs = 9,
 		.g2_irqs = 10,
@@ -3927,6 +3991,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.phy_base_addr = 0x0,
 		.global1_addr = 0x1b,
 		.global2_addr = 0x1c,
+		.global3_addr = 0x1d,
 		.age_time_coeff = 15000,
 		.g1_irqs = 9,
 		.g2_irqs = 10,
@@ -4545,6 +4610,19 @@ static int mv88e6xxx_port_mdb_del(struct dsa_switch *ds, int port,
 	return err;
 }
 
+static int mv88e6xxx_port_mdb_dump(struct dsa_switch *ds, int port,
+				   dsa_fdb_dump_cb_t *cb, void *data)
+{
+	struct mv88e6xxx_chip *chip = ds->priv;
+	int err;
+
+	mutex_lock(&chip->reg_lock);
+	err = mv88e6xxx_port_db_dump(chip, port, true, cb, data);
+	mutex_unlock(&chip->reg_lock);
+
+	return err;
+}
+
 static const struct dsa_switch_ops mv88e6xxx_switch_ops = {
 #if IS_ENABLED(CONFIG_NET_DSA_LEGACY)
 	.probe			= mv88e6xxx_drv_probe,
@@ -4578,12 +4656,14 @@ static const struct dsa_switch_ops mv88e6xxx_switch_ops = {
 	.port_vlan_prepare	= mv88e6xxx_port_vlan_prepare,
 	.port_vlan_add		= mv88e6xxx_port_vlan_add,
 	.port_vlan_del		= mv88e6xxx_port_vlan_del,
+	.port_vlan_dump		= mv88e6xxx_port_vlan_dump,
 	.port_fdb_add           = mv88e6xxx_port_fdb_add,
 	.port_fdb_del           = mv88e6xxx_port_fdb_del,
 	.port_fdb_dump          = mv88e6xxx_port_fdb_dump,
 	.port_mdb_prepare       = mv88e6xxx_port_mdb_prepare,
 	.port_mdb_add           = mv88e6xxx_port_mdb_add,
 	.port_mdb_del           = mv88e6xxx_port_mdb_del,
+	.port_mdb_dump          = mv88e6xxx_port_mdb_dump,
 	.crosschip_bridge_join	= mv88e6xxx_crosschip_bridge_join,
 	.crosschip_bridge_leave	= mv88e6xxx_crosschip_bridge_leave,
 	.port_hwtstamp_set	= mv88e6xxx_port_hwtstamp_set,
@@ -4778,6 +4858,8 @@ static void mv88e6xxx_remove(struct mdio_device *mdiodev)
 	struct dsa_switch *ds = dev_get_drvdata(&mdiodev->dev);
 	struct mv88e6xxx_chip *chip = ds->priv;
 
+	mv88e6xxx_dbg_destroy_chip(chip);
+
 	if (chip->info->ptp_support) {
 		mv88e6xxx_hwtstamp_free(chip);
 		mv88e6xxx_ptp_free(chip);
@@ -4824,13 +4906,21 @@ static struct mdio_driver mv88e6xxx_driver = {
 
 static int __init mv88e6xxx_init(void)
 {
+	int err;
+
+	err = mv88e6xxx_dbg_init_module();
+	if (err)
+		return err;
+
 	register_switch_driver(&mv88e6xxx_switch_drv);
+
 	return mdio_driver_register(&mv88e6xxx_driver);
 }
 module_init(mv88e6xxx_init);
 
 static void __exit mv88e6xxx_cleanup(void)
 {
+	mv88e6xxx_dbg_destroy_module();
 	mdio_driver_unregister(&mv88e6xxx_driver);
 	unregister_switch_driver(&mv88e6xxx_switch_drv);
 }
