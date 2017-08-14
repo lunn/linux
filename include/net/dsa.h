@@ -39,6 +39,32 @@ enum dsa_tag_protocol {
 	DSA_TAG_LAST,		/* MUST BE LAST */
 };
 
+static inline const char *dsa_tag_protocol_name(enum dsa_tag_protocol proto)
+{
+	switch (proto) {
+	case DSA_TAG_PROTO_NONE:
+		return "none";
+	case DSA_TAG_PROTO_BRCM:
+		return "BRCM";
+	case DSA_TAG_PROTO_DSA:
+		return "DSA";
+	case DSA_TAG_PROTO_EDSA:
+		return "EDSA";
+	case DSA_TAG_PROTO_KSZ:
+		return "KSZ";
+	case DSA_TAG_PROTO_LAN9303:
+		return "LAN9303";
+	case DSA_TAG_PROTO_MTK:
+		return "MTK";
+	case DSA_TAG_PROTO_QCA:
+		return "QCA";
+	case DSA_TAG_PROTO_TRAILER:
+		return "TRAILER";
+	default:
+		return "unknown";
+	}
+}
+
 #define DSA_MAX_SWITCHES	4
 #define DSA_MAX_PORTS		12
 
