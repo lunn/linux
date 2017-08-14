@@ -109,6 +109,43 @@ static int dsa_debugfs_create_file(struct dsa_switch *ds, struct dentry *dir,
 	return 0;
 }
 
+static void dsa_debugfs_stats_read_count(struct dsa_switch *ds, int id,
+					 struct seq_file *seq, int count)
+{
+	u8 strings[count * ETH_GSTRING_LEN];
+	u64 stats[count];
+	int i;
+
+	ds->ops->get_strings(ds, id, strings);
+	ds->ops->get_ethtool_stats(ds, id, stats);
+
+	for (i = 0; i < count; i++)
+		seq_printf(seq, "%-20s: %lld\n", strings + i * ETH_GSTRING_LEN,
+			   stats[i]);
+}
+
+static int dsa_debugfs_stats_read(struct dsa_switch *ds, int id,
+				  struct seq_file *seq)
+{
+	int count;
+
+	if (!ds->ops->get_sset_count || !ds->ops->get_strings ||
+	    !ds->ops->get_ethtool_stats)
+		return -EOPNOTSUPP;
+
+	count = ds->ops->get_sset_count(ds);
+	if (count < 0)
+		return count;
+
+	dsa_debugfs_stats_read_count(ds, id, seq, count);
+
+	return 0;
+}
+
+static const struct dsa_debugfs_ops dsa_debugfs_stats_ops = {
+	.read = dsa_debugfs_stats_read,
+};
+
 static int dsa_debugfs_tag_protocol_read(struct dsa_switch *ds, int id,
 					 struct seq_file *seq)
 {
@@ -143,12 +180,18 @@ static int dsa_debugfs_create_port(struct dsa_switch *ds, int port)
 {
 	struct dentry *dir;
 	char name[32];
+	int err;
 
 	snprintf(name, sizeof(name), DSA_PORT_FMT, port);
 
 	dir = debugfs_create_dir(name, ds->debugfs_dir);
 	if (IS_ERR_OR_NULL(dir))
 		return -EFAULT;
+
+	err = dsa_debugfs_create_file(ds, dir, "stats", port,
+				      &dsa_debugfs_stats_ops);
+	if (err)
+		return err;
 
 	return 0;
 }
