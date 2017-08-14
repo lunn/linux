@@ -79,6 +79,19 @@ struct dsa_slave_priv {
 	struct list_head	mall_tc_list;
 };
 
+/* debugfs.c */
+#ifdef CONFIG_NET_DSA_DEBUGFS
+void dsa_debugfs_create_module(void);
+void dsa_debugfs_destroy_module(void);
+void dsa_debugfs_create_tree(struct dsa_switch_tree *dst);
+void dsa_debugfs_destroy_tree(struct dsa_switch_tree *dst);
+#else
+static inline void dsa_debugfs_create_module(void) { }
+static inline void dsa_debugfs_destroy_module(void) { }
+static inline void dsa_debugfs_create_tree(struct dsa_switch_tree *dst) { }
+static inline void dsa_debugfs_destroy_tree(struct dsa_switch_tree *dst) { }
+#endif
+
 /* dsa.c */
 const struct dsa_device_ops *dsa_tag_driver_get(int tag_protocol);
 void dsa_tag_driver_put(const struct dsa_device_ops *ops);

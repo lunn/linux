@@ -563,6 +563,8 @@ static int dsa_tree_setup(struct dsa_switch_tree *dst)
 
 	dst->setup = true;
 
+	dsa_debugfs_create_tree(dst);
+
 	pr_info("DSA: tree %d setup\n", dst->index);
 
 	return 0;
@@ -579,6 +581,8 @@ static void dsa_tree_teardown(struct dsa_switch_tree *dst)
 {
 	if (!dst->setup)
 		return;
+
+	dsa_debugfs_destroy_tree(dst);
 
 	dsa_tree_teardown_master(dst);
 
