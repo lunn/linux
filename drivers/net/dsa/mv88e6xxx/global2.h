@@ -117,7 +117,13 @@
 #define MV88E6XXX_G2_SWITCH_MAC_DATA_MASK	0x00ff
 
 /* Offset 0x0E: ATU Stats Register */
-#define MV88E6XXX_G2_ATU_STATS		0x0e
+#define MV88E6XXX_G2_ATU_STATS			0x0e
+#define MV88E6XXX_G2_ATU_STATS_BIN_SHIFT	14
+#define MV88E6XXX_G2_ATU_STATS_ALL		0x0000
+#define MV88E6XXX_G2_ATU_STATS_DYNAMIC		0x1000
+#define MV88E6XXX_G2_ATU_STATS_ALL_FID		0x2000
+#define MV88E6XXX_G2_ATU_STATS_DYNAMIC_FID	0x3000
+#define MV88E6XXX_G2_ATU_STATS_MASK		0x0fff
 
 /* Offset 0x0F: Priority Override Table */
 #define MV88E6XXX_G2_PRIO_OVERRIDE		0x0f
@@ -479,6 +485,18 @@ static inline int mv88e6352_g2_mgmt_rsvd2cpu(struct mv88e6xxx_chip *chip)
 }
 
 static inline int mv88e6xxx_g2_pot_clear(struct mv88e6xxx_chip *chip)
+{
+	return -EOPNOTSUPP;
+}
+
+static inline int mv88e6xxx_g2_read(struct mv88e6xxx_chip *chip,
+				    int reg, u16 *val)
+{
+	return -EOPNOTSUPP;
+}
+
+static inline int mv88e6xxx_g2_write(struct mv88e6xxx_chip *chip, int reg,
+				     u16 val)
 {
 	return -EOPNOTSUPP;
 }
