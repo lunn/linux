@@ -316,7 +316,7 @@ static void __br_mdb_notify(struct net_device *dev, struct net_bridge_port *p,
 #endif
 
 	mdb.obj.orig_dev = port_dev;
-	if (port_dev && type == RTM_NEWMDB) {
+	if (p && port_dev && type == RTM_NEWMDB) {
 		complete_info = kmalloc(sizeof(*complete_info), GFP_ATOMIC);
 		if (complete_info) {
 			complete_info->port = p;
@@ -326,7 +326,7 @@ static void __br_mdb_notify(struct net_device *dev, struct net_bridge_port *p,
 			if (switchdev_port_obj_add(port_dev, &mdb.obj))
 				kfree(complete_info);
 		}
-	} else if (port_dev && type == RTM_DELMDB) {
+	} else if (p && port_dev && type == RTM_DELMDB) {
 		switchdev_port_obj_del(port_dev, &mdb.obj);
 	}
 
@@ -352,7 +352,10 @@ void br_mdb_notify(struct net_device *dev, struct net_bridge_port *port,
 	struct br_mdb_entry entry;
 
 	memset(&entry, 0, sizeof(entry));
-	entry.ifindex = port->dev->ifindex;
+	if (port)
+		entry.ifindex = port->dev->ifindex;
+	else
+		entry.ifindex = dev->ifindex;
 	entry.addr.proto = group->proto;
 	entry.addr.u.ip4 = group->u.ip4;
 #if IS_ENABLED(CONFIG_IPV6)
