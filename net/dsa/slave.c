@@ -363,13 +363,16 @@ static int dsa_slave_port_attr_get(struct net_device *dev,
 				   struct switchdev_attr *attr)
 {
 	struct dsa_slave_priv *p = netdev_priv(dev);
-	struct dsa_switch *ds = p->dp->ds;
 
 	switch (attr->id) {
-	case SWITCHDEV_ATTR_ID_PORT_PARENT_ID:
-		attr->u.ppid.id_len = sizeof(ds->index);
-		memcpy(&attr->u.ppid.id, &ds->index, attr->u.ppid.id_len);
+	case SWITCHDEV_ATTR_ID_PORT_PARENT_ID: {
+		struct dsa_switch *ds = p->dp->ds;
+		struct dsa_switch_tree *dst = ds->dst;
+
+		attr->u.ppid.id_len = sizeof(dst->tree);
+		memcpy(&attr->u.ppid.id, &dst->tree, sizeof(dst->tree));
 		break;
+	}
 	case SWITCHDEV_ATTR_ID_PORT_BRIDGE_FLAGS_SUPPORT:
 		attr->u.brport_flags_support = 0;
 		break;
