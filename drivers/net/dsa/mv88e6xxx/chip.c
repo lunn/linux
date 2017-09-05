@@ -1955,6 +1955,29 @@ static int mv88e6xxx_set_ageing_time(struct dsa_switch *ds,
 	return err;
 }
 
+static int mv88e6xxx_port_add_broadcast(struct mv88e6xxx_chip *chip, int port)
+{
+	const char broadcast[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+
+	return mv88e6xxx_port_db_load_purge(
+		chip, port, broadcast, 0,
+		MV88E6XXX_G1_ATU_DATA_STATE_MC_STATIC);
+}
+
+static int mv88e6xxx_broadcast_setup(struct mv88e6xxx_chip *chip)
+{
+	int port;
+	int err;
+
+	for (port = 0; port < mv88e6xxx_num_ports(chip); ++port) {
+		err = mv88e6xxx_port_add_broadcast(chip, port);
+		if (err)
+			return err;
+	}
+
+	return 0;
+}
+
 static int mv88e6xxx_g1_setup(struct mv88e6xxx_chip *chip)
 {
 	struct dsa_switch *ds = chip->ds;
@@ -2080,6 +2103,10 @@ static int mv88e6xxx_setup(struct dsa_switch *ds)
 		goto unlock;
 
 	err = mv88e6xxx_atu_setup(chip);
+	if (err)
+		goto unlock;
+
+	err = mv88e6xxx_broadcast_setup(chip);
 	if (err)
 		goto unlock;
 
