@@ -492,6 +492,7 @@ bool br_allowed_ingress(const struct net_bridge *br,
 	 */
 	if (!br->vlan_enabled) {
 		BR_INPUT_SKB_CB(skb)->vlan_filtered = false;
+		*vid = br_get_pvid(vg);
 		return true;
 	}
 
