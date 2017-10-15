@@ -154,6 +154,10 @@ struct mv88e6xxx_irq {
 	unsigned int nirqs;
 };
 
+struct mv88e6xxx_port {
+	u64 serdes_stats[2];
+};
+
 struct mv88e6xxx_chip {
 	const struct mv88e6xxx_info *info;
 
@@ -207,6 +211,9 @@ struct mv88e6xxx_chip {
 	int irq;
 	int device_irq;
 	int watchdog_irq;
+
+	/* Array of port structures. */
+	struct mv88e6xxx_port ports[DSA_MAX_PORTS];
 };
 
 struct mv88e6xxx_bus_ops {
