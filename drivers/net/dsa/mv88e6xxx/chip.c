@@ -662,8 +662,12 @@ static void mv88e6xxx_get_strings(struct dsa_switch *ds, int port,
 {
 	struct mv88e6xxx_chip *chip = ds->priv;
 
+	mutex_lock(&chip->reg_lock);
+
 	if (chip->info->ops->stats_get_strings)
 		chip->info->ops->stats_get_strings(chip, data);
+
+	mutex_unlock(&chip->reg_lock);
 }
 
 static int mv88e6xxx_stats_get_sset_count(struct mv88e6xxx_chip *chip,
@@ -692,7 +696,7 @@ static int mv88e6320_stats_get_sset_count(struct mv88e6xxx_chip *chip)
 					      STATS_TYPE_BANK1);
 }
 
-static int mv88e6xxx_get_sset_count(struct dsa_switch *ds, int port)
+static int _mv88e6xxx_get_sset_count(struct dsa_switch *ds, int port)
 {
 	struct mv88e6xxx_chip *chip = ds->priv;
 
@@ -701,6 +705,19 @@ static int mv88e6xxx_get_sset_count(struct dsa_switch *ds, int port)
 
 	return 0;
 }
+
+static int mv88e6xxx_get_sset_count(struct dsa_switch *ds, int port)
+{
+	struct mv88e6xxx_chip *chip = ds->priv;
+	int ret;
+
+	mutex_lock(&chip->reg_lock);
+	ret = _mv88e6xxx_get_sset_count(ds, port);
+	mutex_unlock(&chip->reg_lock);
+
+	return ret;
+}
+
 
 static void mv88e6xxx_stats_get_stats(struct mv88e6xxx_chip *chip, int port,
 				      uint64_t *data, int types,
