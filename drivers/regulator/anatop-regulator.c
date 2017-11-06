@@ -11,10 +11,12 @@
 #include <linux/platform_device.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
+#include <linux/of_irq.h>
 #include <linux/regmap.h>
 #include <linux/regulator/driver.h>
 #include <linux/regulator/of_regulator.h>
 #include <linux/regulator/machine.h>
+#include <linux/interrupt.h>
 
 #define LDO_RAMP_UP_UNIT_IN_CYCLES      64 /* 64 cycles per step */
 #define LDO_RAMP_UP_FREQ_IN_MHZ         24 /* cycle based on 24M OSC */
@@ -22,10 +24,15 @@
 #define LDO_POWER_GATE			0x00
 #define LDO_FET_FULL_ON			0x1f
 
+#define REGX_ENABLE_BO			0x20
+#define REGX_BO_OFFSET_MASK		0x7
+
 struct anatop_regulator {
 	u32 delay_reg;
 	int delay_bit_shift;
 	int delay_bit_width;
+	int bo_shift;
+	int bo_offset_voltage;
 	struct regulator_desc rdesc;
 	bool bypass;
 	int sel;
@@ -238,6 +245,10 @@ static int anatop_regulator_probe(struct platform_device *pdev)
 			     &sreg->delay_bit_width);
 	of_property_read_u32(np, "anatop-delay-bit-shift",
 			     &sreg->delay_bit_shift);
+	sreg->bo_shift = -1;
+	of_property_read_u32(np, "anatop-bo-shift", &sreg->bo_shift);
+	of_property_read_u32(np, "anatop-bo-offset-microvolt",
+			     &sreg->bo_offset_voltage);
 
 	rdesc->n_voltages = (max_voltage - min_voltage) / 25000 + 1
 			    + min_bit_val;
@@ -285,6 +296,20 @@ static int anatop_regulator_probe(struct platform_device *pdev)
 		if (!sreg->bypass && !sreg->sel) {
 			dev_err(&pdev->dev, "Failed to read a valid default voltage selector.\n");
 			return -EINVAL;
+		}
+
+		if (sreg->bo_shift >= 0 && sreg->bo_offset_voltage) {
+			u32 val = REGX_ENABLE_BO;
+
+			dev_info(dev, "configuring brownout detection with %dmV offset\n",
+				 sreg->bo_offset_voltage / 1000);
+
+			val |= (sreg->bo_offset_voltage / 25000) &
+			       REGX_BO_OFFSET_MASK;
+			regmap_update_bits(regmap, sreg->delay_reg,
+				(REGX_ENABLE_BO | REGX_BO_OFFSET_MASK) <<
+				sreg->bo_shift,
+				val << sreg->bo_shift);
 		}
 	} else {
 		u32 enable_bit;
