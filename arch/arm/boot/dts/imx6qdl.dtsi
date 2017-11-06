@@ -761,9 +761,11 @@
 					anatop-delay-reg-offset = <0x170>;
 					anatop-delay-bit-shift = <24>;
 					anatop-delay-bit-width = <2>;
+					anatop-bo-shift = <0>;
 					anatop-min-bit-val = <1>;
 					anatop-min-voltage = <725000>;
 					anatop-max-voltage = <1450000>;
+					anatop-bo-offset-microvolt = <50000>;
 				};
 
 				reg_pu: regulator-vddpu {
@@ -778,9 +780,11 @@
 					anatop-delay-reg-offset = <0x170>;
 					anatop-delay-bit-shift = <26>;
 					anatop-delay-bit-width = <2>;
+					anatop-bo-shift = <8>;
 					anatop-min-bit-val = <1>;
 					anatop-min-voltage = <725000>;
 					anatop-max-voltage = <1450000>;
+					anatop-bo-offset-microvolt = <50000>;
 				};
 
 				reg_soc: regulator-vddsoc {
@@ -795,9 +799,11 @@
 					anatop-delay-reg-offset = <0x170>;
 					anatop-delay-bit-shift = <28>;
 					anatop-delay-bit-width = <2>;
+					anatop-bo-shift = <16>;
 					anatop-min-bit-val = <1>;
 					anatop-min-voltage = <725000>;
 					anatop-max-voltage = <1450000>;
+					anatop-bo-offset-microvolt = <50000>;
 				};
 			};
 
