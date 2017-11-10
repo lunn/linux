@@ -1,0 +1,168 @@
+                        Netlink interface for ethtool
+                        =============================
+
+
+Basic information
+-----------------
+
+Netlink interface for ethtool uses generic netlink family "ethtool" (userspace
+application should use macros ETHTOOL_GENL_NAME and ETHTOOL_GENL_VERSION
+defined in <linux/ethtool_netlink.h> uapi header). This family does not use
+a specific header, all information in requests and replies is passed using
+netlink attributes.
+
+In requests, device can be identified by ifindex or by name; if both are used,
+they must match. In replies, kernel fills both. The meaning of flags,
+info_mask and index fields depends on request type.
+
+The ethtool netlink interface uses extended ACK for error and warning
+reporting, userspace application developers are encouraged to make these
+messages available to user in a suitable way.
+
+Requests can be divided into three categories: "get" (retrieving information),
+"set" (setting parameters) and "action" (invoking an action).
+
+All "set" and "action" type requests require admin privileges (CAP_NET_ADMIN
+in the namespace). Most "get" type request are allowed for anyone but there
+are exceptions (where the response contains sensitive information). In some
+cases, the request as such is allowed for anyone but unprivileged users have
+attributes with sensitive information (e.g. wake-on-lan password) omitted.
+
+
+Conventions
+-----------
+
+Attributes which represent a boolean value usually use u8 type so that we can
+distinguish three states: "on", "off" and "not present" (meaning the
+information is not available in "get" requests or value is not to be changed
+in "set" requests). For these attributes, the "true" value should be passed as
+number 1 but any non-zero value should be understood as "true" by recipient.
+
+Some request types allow passing an attribute named ETHA_*_INFOMASK with
+a bitmask telling kernel that we are only interested in some parts of the
+information. If info mask is omitted, all available information is returned.
+Meaning of info mask bits depends on request type and is listed below.
+
+
+Device identification
+---------------------
+
+When appropriate, network device is identified by a nested attribute named
+ETHA_*_DEV. This attribute can contain
+
+    ETHA_DEV_INDEX	(u32)		device ifindex
+    ETHA_DEV_NAME	(string)	device name
+
+In device related requests, one of these is sufficient; if both are used, they
+must match (i.e. identify the same device). In device related replies both are
+provided by kernel. In dump requests, device is not specified and kernel
+replies with one message per network device (only those for which the request
+is supported).
+
+
+List of message types
+---------------------
+
+All constants use ETHNL_CMD_ prefix, usually followed by "GET", "SET" or "ACT"
+to indicate the type.
+
+Messages of type "get" are used by userspace to request information and
+usually do not contain any attributes (that may be added later for dump
+filtering). Kernel response is in the form of corresponding "set" message;
+the same message can be also used to set (some of) the parameters, except for
+messages marked as "response only" in the table above. "Get" messages with
+NLM_F_DUMP flags and no device identification dump the information for all
+devices supporting the request.
+
+Later sections describe the format and semantics of these request messages.
+
+
+Request translation
+-------------------
+
+The following table maps iosctl commands to netlink commands providing their
+functionality. Entries with "n/a" in right column are commands which do not
+have their netlink replacement yet.
+
+ioctl command			netlink command
+---------------------------------------------------------------------
+ETHTOOL_GSET			n/a
+ETHTOOL_SSET			n/a
+ETHTOOL_GDRVINFO		n/a
+ETHTOOL_GREGS			n/a
+ETHTOOL_GWOL			n/a
+ETHTOOL_SWOL			n/a
+ETHTOOL_GMSGLVL			n/a
+ETHTOOL_SMSGLVL			n/a
+ETHTOOL_NWAY_RST		n/a
+ETHTOOL_GLINK			n/a
+ETHTOOL_GEEPROM			n/a
+ETHTOOL_SEEPROM			n/a
+ETHTOOL_GCOALESCE		n/a
+ETHTOOL_SCOALESCE		n/a
+ETHTOOL_GRINGPARAM		n/a
+ETHTOOL_SRINGPARAM		n/a
+ETHTOOL_GPAUSEPARAM		n/a
+ETHTOOL_SPAUSEPARAM		n/a
+ETHTOOL_GRXCSUM			n/a
+ETHTOOL_SRXCSUM			n/a
+ETHTOOL_GTXCSUM			n/a
+ETHTOOL_STXCSUM			n/a
+ETHTOOL_GSG			n/a
+ETHTOOL_SSG			n/a
+ETHTOOL_TEST			n/a
+ETHTOOL_GSTRINGS		n/a
+ETHTOOL_PHYS_ID			n/a
+ETHTOOL_GSTATS			n/a
+ETHTOOL_GTSO			n/a
+ETHTOOL_STSO			n/a
+ETHTOOL_GPERMADDR		rtnetlink RTM_GETLINK
+ETHTOOL_GUFO			n/a
+ETHTOOL_SUFO			n/a
+ETHTOOL_GGSO			n/a
+ETHTOOL_SGSO			n/a
+ETHTOOL_GFLAGS			n/a
+ETHTOOL_SFLAGS			n/a
+ETHTOOL_GPFLAGS			n/a
+ETHTOOL_SPFLAGS			n/a
+ETHTOOL_GRXFH			n/a
+ETHTOOL_SRXFH			n/a
+ETHTOOL_GGRO			n/a
+ETHTOOL_SGRO			n/a
+ETHTOOL_GRXRINGS		n/a
+ETHTOOL_GRXCLSRLCNT		n/a
+ETHTOOL_GRXCLSRULE		n/a
+ETHTOOL_GRXCLSRLALL		n/a
+ETHTOOL_SRXCLSRLDEL		n/a
+ETHTOOL_SRXCLSRLINS		n/a
+ETHTOOL_FLASHDEV		n/a
+ETHTOOL_RESET			n/a
+ETHTOOL_SRXNTUPLE		n/a
+ETHTOOL_GRXNTUPLE		n/a
+ETHTOOL_GSSET_INFO		n/a
+ETHTOOL_GRXFHINDIR		n/a
+ETHTOOL_SRXFHINDIR		n/a
+ETHTOOL_GFEATURES		n/a
+ETHTOOL_SFEATURES		n/a
+ETHTOOL_GCHANNELS		n/a
+ETHTOOL_SCHANNELS		n/a
+ETHTOOL_SET_DUMP		n/a
+ETHTOOL_GET_DUMP_FLAG		n/a
+ETHTOOL_GET_DUMP_DATA		n/a
+ETHTOOL_GET_TS_INFO		n/a
+ETHTOOL_GMODULEINFO		n/a
+ETHTOOL_GMODULEEEPROM		n/a
+ETHTOOL_GEEE			n/a
+ETHTOOL_SEEE			n/a
+ETHTOOL_GRSSH			n/a
+ETHTOOL_SRSSH			n/a
+ETHTOOL_GTUNABLE		n/a
+ETHTOOL_STUNABLE		n/a
+ETHTOOL_GPHYSTATS		n/a
+ETHTOOL_PERQUEUE		n/a
+ETHTOOL_GLINKSETTINGS		n/a
+ETHTOOL_SLINKSETTINGS		n/a
+ETHTOOL_PHY_GTUNABLE		n/a
+ETHTOOL_PHY_STUNABLE		n/a
+ETHTOOL_GFECPARAM		n/a
+ETHTOOL_SFECPARAM		n/a
