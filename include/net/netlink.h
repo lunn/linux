@@ -1212,6 +1212,21 @@ static inline int nla_put_in6_addr(struct sk_buff *skb, int attrtype,
 }
 
 /**
+ * nla_put_bitfield32 - Add a bitfield32 value/selector attribute to
+ * a socket buffer
+ * @skb: socket buffer to add attribute to
+ * @value: 32-bit value bitmap
+ * @selector: 32-bit selector bitmap
+ */
+static inline int nla_put_bitfield32(struct sk_buff *skb, int attrtype,
+				     u32 value, u32 selector)
+{
+	struct nla_bitfield32 tmp = { .value = value, .selector = selector };
+
+	return nla_put(skb, attrtype, sizeof(tmp), &tmp);
+}
+
+/**
  * nla_get_u32 - return payload of u32 attribute
  * @nla: u32 netlink attribute
  */
