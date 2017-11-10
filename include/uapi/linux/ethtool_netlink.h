@@ -18,6 +18,17 @@ enum {
 	ETHNL_CMD_MAX = (__ETHNL_CMD_CNT - 1)
 };
 
+/* device specification */
+
+enum {
+	ETHTOOL_A_DEV_UNSPEC,
+	ETHTOOL_A_DEV_INDEX,			/* u32 */
+	ETHTOOL_A_DEV_NAME,			/* string */
+
+	__ETHTOOL_A_DEV_CNT,
+	ETHTOOL_A_DEV_MAX = (__ETHTOOL_A_DEV_CNT - 1)
+};
+
 /* generic netlink info */
 #define ETHTOOL_GENL_NAME "ethtool"
 #define ETHTOOL_GENL_VERSION 1
