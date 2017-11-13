@@ -29,6 +29,38 @@ enum {
 	ETHTOOL_A_DEV_MAX = (__ETHTOOL_A_DEV_CNT - 1)
 };
 
+/* bit sets */
+
+enum {
+	ETHTOOL_A_BIT_UNSPEC,
+	ETHTOOL_A_BIT_INDEX,			/* u32 */
+	ETHTOOL_A_BIT_NAME,			/* string */
+	ETHTOOL_A_BIT_VALUE,			/* flag */
+
+	__ETHTOOL_A_BIT_CNT,
+	ETHTOOL_A_BIT_MAX = (__ETHTOOL_A_BIT_CNT - 1)
+};
+
+enum {
+	ETHTOOL_A_BITS_UNSPEC,
+	ETHTOOL_A_BITS_BIT,
+
+	__ETHTOOL_A_BITS_CNT,
+	ETHTOOL_A_BITS_MAX = (__ETHTOOL_A_BITS_CNT - 1)
+};
+
+enum {
+	ETHTOOL_A_BITSET_UNSPEC,
+	ETHTOOL_A_BITSET_LIST,			/* flag */
+	ETHTOOL_A_BITSET_SIZE,			/* u32 */
+	ETHTOOL_A_BITSET_BITS,			/* nest - ETHTOOL_A_BITS_* */
+	ETHTOOL_A_BITSET_VALUE,			/* binary */
+	ETHTOOL_A_BITSET_MASK,			/* binary */
+
+	__ETHTOOL_A_BITSET_CNT,
+	ETHTOOL_A_BITSET_MAX = (__ETHTOOL_A_BITSET_CNT - 1)
+};
+
 /* generic netlink info */
 #define ETHTOOL_GENL_NAME "ethtool"
 #define ETHTOOL_GENL_VERSION 1
