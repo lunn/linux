@@ -20,6 +20,15 @@ struct sk_buff *ethnl_reply_init(size_t payload, struct net_device *dev, u8 cmd,
 				 u16 dev_attrtype, struct genl_info *info,
 				 void **ehdrp);
 
+#if BITS_PER_LONG == 64 && defined(__BIG_ENDIAN)
+void ethnl_bitmap_to_u32(unsigned long *bitmap, unsigned int nwords);
+#else
+static inline void ethnl_bitmap_to_u32(unsigned long *bitmap,
+				       unsigned int nwords)
+{
+}
+#endif
+
 static inline int ethnl_str_size(const char *s)
 {
 	return nla_total_size(strlen(s) + 1);

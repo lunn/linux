@@ -60,6 +60,69 @@ replies with one message per network device (only those for which the request
 is supported).
 
 
+Bit sets
+--------
+
+For short bitmaps of (reasonably) fixed length, standard NLA_BITFIELD32 type
+is used. For arbitrary length bitmaps, ethtool netlink uses a nested attribute
+with contents of one of two forms: compact (two binary bitmaps representing
+bit values and mask of affected bits) and bit-by-bit (list of bits identified
+by either index or name).
+
+Compact form: nested (bitset) atrribute contents:
+
+    ETHA_BITSET_LIST	(flag)		no mask, only a list
+    ETHA_BITSET_SIZE	(u32)		number of significant bits
+    ETHA_BITSET_VALUE	(binary)	bitmap of bit values
+    ETHA_BITSET_MASK	(binary)	bitmap of valid bits
+
+Value and mask must have length at least ETHA_BITSET_SIZE bits rounded up to
+a multiple of 32 bits. They consist of 32-bit words in host byte order, words
+ordered from least significant to most significant (i.e. the same way as
+bitmaps are passed with ioctl interface).
+
+For compact form, ETHA_BITSET_SIZE and ETHA_BITSET_VALUE are mandatory.
+Similar to BITFIELD32, a compact form bit set requests to set bits in the mask
+to 1 (if the bit is set in value) or 0 (if not) and preserve the rest. If
+ETHA_BITSET_LIST is present, there is no mask and bitset represents a simple
+list of bits.
+
+Kernel bit set length may differ from userspace length if older application is
+used on newer kernel or vice versa. If userspace bitmap is longer, an error is
+issued only if the request actually tries to set values of some bits not
+recognized by kernel.
+
+Bit-by-bit form: nested (bitset) attribute contents:
+
+    ETHA_BITSET_LIST	(flag)		no mask, only a list
+    ETHA_BITSET_SIZE	(u32)		number of significant bits (optional)
+    ETHA_BITSET_BITS	(nested)	array of bits
+	ETHA_BITSET_BIT
+	    ETHA_BIT_INDEX	(u32)		bit index (0 for LSB)
+            ETHA_BIT_NAME	(string)	bit name
+	    ETHA_BIT_VALUE	(flag)		present if bit is set
+        ETHA_BITSET_BIT
+	...
+
+Bit size is optional for bit-by-bit form. ETHA_BITSET_BITS nest can only
+contain ETHA_BITS_BIT attributes but there can be an arbitrary number of them.
+A bit may be identified by its index or by its name. When used in requests,
+listed bits are set to 0 or 1 according to ETHA_BIT_VALUE, the rest is
+preserved. A request fails if index exceeds kernel bit length or if name is
+not recognized.
+
+When ETHA_BITSET_LIST flag is present, bitset is interpreted as a simple bit
+list. ETHA_BIT_VALUE attributes are not used in such case. Bit list represents
+a bitmap with listed bits set and the rest zero.
+
+In requests, application can use either form. Form used by kernel in reply is
+determined by a flag in flags field of request header. Semantics of value and
+mask depends on the attribute. General idea is that flags control request
+processing, info_mask control which parts of the information are returned in
+"get" request and index identifies a particular subcommand or an object to
+which the request applies.
+
+
 List of message types
 ---------------------
 
