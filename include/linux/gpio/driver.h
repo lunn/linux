@@ -98,6 +98,7 @@ struct module;
  * @irq_valid_mask: If not %NULL holds bitmask of GPIOs which are valid to
  *	be included in IRQ domain of the chip
  * @lock_key: per GPIO IRQ chip lockdep class
+ * @request_key: per GPIO IRQ chip request lockdep class
  *
  * A gpio_chip can help platforms abstract various sources of GPIOs so
  * they can all be accessed through a common programing interface.
@@ -174,6 +175,7 @@ struct gpio_chip {
 	bool			irq_need_valid_mask;
 	unsigned long		*irq_valid_mask;
 	struct lock_class_key	*lock_key;
+	struct lock_class_key	*request_key;
 #endif
 
 #if defined(CONFIG_OF_GPIO)
@@ -280,7 +282,8 @@ int gpiochip_irqchip_add_key(struct gpio_chip *gpiochip,
 			     irq_flow_handler_t handler,
 			     unsigned int type,
 			     bool nested,
-			     struct lock_class_key *lock_key);
+			     struct lock_class_key *lock_key,
+			     struct lock_class_key *request_key);
 
 #ifdef CONFIG_LOCKDEP
 
@@ -296,10 +299,12 @@ static inline int gpiochip_irqchip_add(struct gpio_chip *gpiochip,
 				       irq_flow_handler_t handler,
 				       unsigned int type)
 {
-	static struct lock_class_key key;
+	static struct lock_class_key lock_key;
+	static struct lock_class_key request_key;
 
 	return gpiochip_irqchip_add_key(gpiochip, irqchip, first_irq,
-					handler, type, false, &key);
+					handler, type, false,
+					&lock_key, &request_key);
 }
 
 static inline int gpiochip_irqchip_add_nested(struct gpio_chip *gpiochip,
@@ -309,10 +314,12 @@ static inline int gpiochip_irqchip_add_nested(struct gpio_chip *gpiochip,
 			  unsigned int type)
 {
 
-	static struct lock_class_key key;
+	static struct lock_class_key lock_key;
+	static struct lock_class_key request_key;
 
 	return gpiochip_irqchip_add_key(gpiochip, irqchip, first_irq,
-					handler, type, true, &key);
+					handler, type, true,
+					&lock_key, &request_key);
 }
 #else
 static inline int gpiochip_irqchip_add(struct gpio_chip *gpiochip,
@@ -322,7 +329,7 @@ static inline int gpiochip_irqchip_add(struct gpio_chip *gpiochip,
 				       unsigned int type)
 {
 	return gpiochip_irqchip_add_key(gpiochip, irqchip, first_irq,
-					handler, type, false, NULL);
+					handler, type, false, NULL, NULL);
 }
 
 static inline int gpiochip_irqchip_add_nested(struct gpio_chip *gpiochip,
@@ -332,7 +339,7 @@ static inline int gpiochip_irqchip_add_nested(struct gpio_chip *gpiochip,
 			  unsigned int type)
 {
 	return gpiochip_irqchip_add_key(gpiochip, irqchip, first_irq,
-					handler, type, true, NULL);
+					handler, type, true, NULL, NULL);
 }
 #endif /* CONFIG_LOCKDEP */
 

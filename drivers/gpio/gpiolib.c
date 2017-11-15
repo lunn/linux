@@ -1639,7 +1639,7 @@ static int gpiochip_irq_map(struct irq_domain *d, unsigned int irq,
 	 * This lock class tells lockdep that GPIO irqs are in a different
 	 * category than their parents, so it won't report false recursion.
 	 */
-	irq_set_lockdep_class(irq, chip->lock_key);
+	irq_set_lockdep_class(irq, chip->lock_key, chip->request_key);
 	irq_set_chip_and_handler(irq, chip->irqchip, chip->irq_handler);
 	/* Chips that use nested thread handlers have them marked */
 	if (chip->irq_nested)
@@ -1753,7 +1753,8 @@ static void gpiochip_irqchip_remove(struct gpio_chip *gpiochip)
  * to have the core avoid setting up any default type in the hardware.
  * @nested: whether this is a nested irqchip calling handle_nested_irq()
  * in its IRQ handler
- * @lock_key: lockdep class
+ * @lock_key: lockdep class for irq lock
+ * @request_key: lockdep class for irq request
  *
  * This function closely associates a certain irqchip with a certain
  * gpiochip, providing an irq domain to translate the local IRQs to
@@ -1775,7 +1776,8 @@ int gpiochip_irqchip_add_key(struct gpio_chip *gpiochip,
 			     irq_flow_handler_t handler,
 			     unsigned int type,
 			     bool nested,
-			     struct lock_class_key *lock_key)
+			     struct lock_class_key *lock_key,
+			     struct lock_class_key *request_key)
 {
 	struct device_node *of_node;
 
@@ -1816,6 +1818,7 @@ int gpiochip_irqchip_add_key(struct gpio_chip *gpiochip,
 	gpiochip->irq_default_type = type;
 	gpiochip->to_irq = gpiochip_to_irq;
 	gpiochip->lock_key = lock_key;
+	gpiochip->request_key = request_key;
 	gpiochip->irqdomain = irq_domain_add_simple(of_node,
 					gpiochip->ngpio, first_irq,
 					&gpiochip_domain_ops, gpiochip);
