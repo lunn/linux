@@ -157,7 +157,7 @@ config CRYPTO_DEV_FSL_CAAM_SM
 config CRYPTO_DEV_FSL_CAAM_SM_SLOTSIZE
 	int "Size of each keystore slot in Secure Memory"
 	depends on CRYPTO_DEV_FSL_CAAM_SM
-	range 5 9
+	range 5 11
 	default 7
 	help
 	  Select size of allocation units to divide Secure Memory pages into
@@ -169,6 +169,16 @@ config CRYPTO_DEV_FSL_CAAM_SM_SLOTSIZE
 		7 => 128 bytes
 		8 => 256 bytes
 		9 => 512 bytes
+		10 => 1024 bytes
+		11 => 2048 bytes
+
+config CRYPTO_DEV_FSL_CAAM_BLOB
+	tristate "CAAM Secure Memory - Blob management (EXPERIMENTAL)"
+	depends on CRYPTO_DEV_FSL_CAAM_SM
+	default n
+	help
+	  Support for encapsulation and decapsulation of blobs using a misc
+	  device.
 
 endif # CRYPTO_DEV_FSL_CAAM_JR
 
