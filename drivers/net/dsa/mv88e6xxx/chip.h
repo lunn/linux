@@ -15,6 +15,7 @@
 #include <linux/if_vlan.h>
 #include <linux/irq.h>
 #include <linux/gpio/consumer.h>
+#include <linux/gpio/driver.h>
 #include <linux/phy.h>
 #include <linux/ptp_clock_kernel.h>
 #include <linux/timecounter.h>
@@ -102,6 +103,7 @@ enum mv88e6xxx_family {
 };
 
 struct mv88e6xxx_ops;
+struct mv88e6xxx_pinctrl_info;
 
 struct mv88e6xxx_info {
 	enum mv88e6xxx_family family;
@@ -134,6 +136,8 @@ struct mv88e6xxx_info {
 
 	/* Supports PTP */
 	bool ptp_support;
+
+	const struct mv88e6xxx_pinctrl_info *pinctrl_info;
 };
 
 struct mv88e6xxx_atu_entry {
@@ -243,6 +247,10 @@ struct mv88e6xxx_chip {
 
 	/* GPIO resources */
 	u8 gpio_data[2];
+	struct gpio_chip gpio_chip;
+	struct pinctrl_dev *pinctrl;
+	struct pinctrl_desc pinctrl_desc;
+	struct pinctrl_gpio_range pinctrl_range;
 
 	/* This cyclecounter abstracts the switch PTP time.
 	 * reg_lock must be held for any operation that read()s.
