@@ -109,6 +109,7 @@ struct mv88e6xxx_info {
 	unsigned int port_base_addr;
 	unsigned int global1_addr;
 	unsigned int global2_addr;
+	unsigned int global3_addr;
 	unsigned int age_time_coeff;
 	unsigned int g1_irqs;
 	unsigned int g2_irqs;
@@ -155,6 +156,8 @@ struct mv88e6xxx_irq {
 };
 
 struct mv88e6xxx_chip {
+	struct dentry *debugfs_dir;
+
 	const struct mv88e6xxx_info *info;
 
 	/* The dsa_switch this private structure is related to */
@@ -300,6 +303,10 @@ struct mv88e6xxx_ops {
 				u8 out);
 	int (*port_disable_learn_limit)(struct mv88e6xxx_chip *chip, int port);
 	int (*port_disable_pri_override)(struct mv88e6xxx_chip *chip, int port);
+
+	/* TCAM operations */
+	int (*port_enable_tcam)(struct mv88e6xxx_chip *chip, int port);
+	int (*port_disable_tcam)(struct mv88e6xxx_chip *chip, int port);
 
 	/* CMODE control what PHY mode the MAC will use, eg. SGMII, RGMII, etc.
 	 * Some chips allow this to be configured on specific ports.

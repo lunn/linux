@@ -257,6 +257,43 @@ static int dsa_loop_port_vlan_del(struct dsa_switch *ds, int port,
 	return 0;
 }
 
+static int dsa_loop_port_vlan_dump(struct dsa_switch *ds, int port,
+				   dsa_vlan_dump_cb_t *cb, void *data)
+{
+	struct dsa_loop_priv *ps = ds->priv;
+	struct mii_bus *bus = ps->bus;
+	struct dsa_loop_vlan *vl;
+	u16 vid, vid_start = 0;
+	bool pvid, untagged;
+	int err = 0;
+
+	dev_dbg(ds->dev, "%s\n", __func__);
+
+	/* Just do a sleeping operation to make lockdep checks effective */
+	mdiobus_read(bus, ps->port_base + port, MII_BMSR);
+
+	for (vid = vid_start; vid < DSA_LOOP_VLANS; vid++) {
+		vl = &ps->vlans[vid];
+
+		if (!(vl->members & BIT(port)))
+			continue;
+
+		untagged = false;
+		pvid = false;
+
+		if (vl->untagged & BIT(port))
+			untagged = true;
+		if (ps->pvid == vid)
+			pvid = true;
+
+		err = cb(vid, pvid, untagged, data);
+		if (err)
+			break;
+	}
+
+	return err;
+}
+
 static const struct dsa_switch_ops dsa_loop_driver = {
 	.get_tag_protocol	= dsa_loop_get_protocol,
 	.setup			= dsa_loop_setup,
@@ -273,6 +310,7 @@ static const struct dsa_switch_ops dsa_loop_driver = {
 	.port_vlan_prepare	= dsa_loop_port_vlan_prepare,
 	.port_vlan_add		= dsa_loop_port_vlan_add,
 	.port_vlan_del		= dsa_loop_port_vlan_del,
+	.port_vlan_dump		= dsa_loop_port_vlan_dump,
 };
 
 static int dsa_loop_drv_probe(struct mdio_device *mdiodev)
