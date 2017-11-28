@@ -28,3 +28,11 @@ config NET_DSA_MV88E6XXX_PTP
 	help
 	  Say Y to enable PTP hardware timestamping on Marvell 88E6xxx switch
 	  chips that support it.
+
+config NET_DSA_MV88E6XXX_GLOBAL3
+	bool "Switch Global 3 Registers (TCAM) support"
+	default y
+	depends on NET_DSA_MV88E6XXX
+	help
+	  Enable support for the Global 3 set of registers which some switch
+	  chips have. It provides TCAM, useable to accelerate frame filtering.
