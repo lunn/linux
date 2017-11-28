@@ -36,6 +36,7 @@
 #include "chip.h"
 #include "global1.h"
 #include "global2.h"
+#include "gpio.h"
 #include "hwtstamp.h"
 #include "phy.h"
 #include "port.h"
@@ -2078,6 +2079,12 @@ static int mv88e6xxx_setup(struct dsa_switch *ds)
 	if (err)
 		goto unlock;
 
+	if (mv88e6xxx_num_gpio(chip) > 0) {
+		err = mv88e6xxx_gpio_setup(chip);
+		if (err)
+			goto unlock;
+	}
+
 	/* Setup PTP Hardware Clock and timestamping */
 	if (chip->info->ptp_support) {
 		err = mv88e6xxx_ptp_setup(chip);
@@ -3295,6 +3302,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.pvt = true,
 		.multi_chip = true,
 		.tag_protocol = DSA_TAG_PROTO_EDSA,
+		.pinctrl_info = &mv88e6341_pinctrl_info,
 		.ops = &mv88e6141_ops,
 	},
 
@@ -3376,6 +3384,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.pvt = true,
 		.multi_chip = true,
 		.tag_protocol = DSA_TAG_PROTO_EDSA,
+		.pinctrl_info = &mv88e6352_pinctrl_info,
 		.ops = &mv88e6172_ops,
 	},
 
@@ -3417,6 +3426,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.pvt = true,
 		.multi_chip = true,
 		.tag_protocol = DSA_TAG_PROTO_EDSA,
+		.pinctrl_info = &mv88e6352_pinctrl_info,
 		.ops = &mv88e6176_ops,
 	},
 
@@ -3456,6 +3466,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.pvt = true,
 		.multi_chip = true,
 		.atu_move_port_mask = 0x1f,
+		.pinctrl_info = &mv88e6390_pinctrl_info,
 		.ops = &mv88e6190_ops,
 	},
 
@@ -3477,6 +3488,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.pvt = true,
 		.multi_chip = true,
 		.tag_protocol = DSA_TAG_PROTO_DSA,
+		.pinctrl_info = &mv88e6390_pinctrl_info,
 		.ops = &mv88e6190x_ops,
 	},
 
@@ -3498,6 +3510,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.multi_chip = true,
 		.tag_protocol = DSA_TAG_PROTO_DSA,
 		.ptp_support = true,
+		.pinctrl_info = &mv88e6390_pinctrl_info,
 		.ops = &mv88e6191_ops,
 	},
 
@@ -3520,6 +3533,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.multi_chip = true,
 		.tag_protocol = DSA_TAG_PROTO_EDSA,
 		.ptp_support = true,
+		.pinctrl_info = &mv88e6352_pinctrl_info,
 		.ops = &mv88e6240_ops,
 	},
 
@@ -3542,6 +3556,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.multi_chip = true,
 		.tag_protocol = DSA_TAG_PROTO_DSA,
 		.ptp_support = true,
+		.pinctrl_info = &mv88e6390_pinctrl_info,
 		.ops = &mv88e6290_ops,
 	},
 
@@ -3563,6 +3578,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.multi_chip = true,
 		.tag_protocol = DSA_TAG_PROTO_EDSA,
 		.ptp_support = true,
+		.pinctrl_info = &mv88e6320_pinctrl_info,
 		.ops = &mv88e6320_ops,
 	},
 
@@ -3583,6 +3599,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.multi_chip = true,
 		.tag_protocol = DSA_TAG_PROTO_EDSA,
 		.ptp_support = true,
+		.pinctrl_info = &mv88e6320_pinctrl_info,
 		.ops = &mv88e6321_ops,
 	},
 
@@ -3604,6 +3621,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.multi_chip = true,
 		.tag_protocol = DSA_TAG_PROTO_EDSA,
 		.ptp_support = true,
+		.pinctrl_info = &mv88e6341_pinctrl_info,
 		.ops = &mv88e6341_ops,
 	},
 
@@ -3666,6 +3684,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.multi_chip = true,
 		.tag_protocol = DSA_TAG_PROTO_EDSA,
 		.ptp_support = true,
+		.pinctrl_info = &mv88e6341_pinctrl_info,
 		.ops = &mv88e6352_ops,
 	},
 	[MV88E6390] = {
@@ -3687,6 +3706,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.multi_chip = true,
 		.tag_protocol = DSA_TAG_PROTO_DSA,
 		.ptp_support = true,
+		.pinctrl_info = &mv88e6390_pinctrl_info,
 		.ops = &mv88e6390_ops,
 	},
 	[MV88E6390X] = {
@@ -3708,6 +3728,7 @@ static const struct mv88e6xxx_info mv88e6xxx_table[] = {
 		.multi_chip = true,
 		.tag_protocol = DSA_TAG_PROTO_DSA,
 		.ptp_support = true,
+		.pinctrl_info = &mv88e6390_pinctrl_info,
 		.ops = &mv88e6390x_ops,
 	},
 };
