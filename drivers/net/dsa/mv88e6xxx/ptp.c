@@ -18,6 +18,12 @@
 #include "global2.h"
 #include "ptp.h"
 
+/* Raw timestamps are in units of 8-ns clock periods. */
+#define CC_SHIFT	28
+#define CC_MULT		(8 << CC_SHIFT)
+#define CC_MULT_NUM	(1 << 9)
+#define CC_MULT_DEM	15625ULL
+
 #define TAI_EVENT_WORK_INTERVAL msecs_to_jiffies(100)
 
 #define cc_to_chip(cc) container_of(cc, struct mv88e6xxx_chip, tstamp_cc)
@@ -214,10 +220,28 @@ static void mv88e6xxx_tai_event_work(struct work_struct *ugly)
 
 static int mv88e6xxx_ptp_adjfine(struct ptp_clock_info *ptp, long scaled_ppm)
 {
-	if (scaled_ppm == 0)
-		return 0;
+	struct mv88e6xxx_chip *chip =
+		container_of(ptp, struct mv88e6xxx_chip, ptp_clock_info);
+	int neg_adj = 0;
+	u32 diff, mult;
+	u64 adj;
 
-	return -EOPNOTSUPP;
+	if (scaled_ppm < 0) {
+		neg_adj = 1;
+		scaled_ppm = -scaled_ppm;
+	}
+	mult = CC_MULT;
+	adj = scaled_ppm * CC_MULT_NUM;
+	diff = div_u64(adj, CC_MULT_DEM);
+
+	mutex_lock(&chip->reg_lock);
+
+	timecounter_read(&chip->tstamp_tc);
+	chip->tstamp_cc.mult = neg_adj ? mult - diff : mult + diff;
+
+	mutex_unlock(&chip->reg_lock);
+
+	return 0;
 }
 
 static int mv88e6xxx_ptp_adjtime(struct ptp_clock_info *ptp, s64 delta)
@@ -447,9 +471,8 @@ int mv88e6xxx_ptp_setup(struct mv88e6xxx_chip *chip)
 	memset(&chip->tstamp_cc, 0, sizeof(chip->tstamp_cc));
 	chip->tstamp_cc.read	= mv88e6xxx_ptp_clock_read;
 	chip->tstamp_cc.mask	= CYCLECOUNTER_MASK(32);
-	/* Raw timestamps are in units of 8-ns clock periods. */
-	chip->tstamp_cc.mult	= 8;
-	chip->tstamp_cc.shift	= 0;
+	chip->tstamp_cc.mult	= CC_MULT;
+	chip->tstamp_cc.shift	= CC_SHIFT;
 
 	timecounter_init(&chip->tstamp_tc, &chip->tstamp_cc,
 			 ktime_to_ns(ktime_get_real()));
@@ -460,7 +483,7 @@ int mv88e6xxx_ptp_setup(struct mv88e6xxx_chip *chip)
 	chip->ptp_clock_info.owner = THIS_MODULE;
 	snprintf(chip->ptp_clock_info.name, sizeof(chip->ptp_clock_info.name),
 		 dev_name(chip->dev));
-	chip->ptp_clock_info.max_adj	= 0;
+	chip->ptp_clock_info.max_adj	= 1000000;
 
 	chip->ptp_clock_info.n_ext_ts	= 1;
 	chip->ptp_clock_info.n_per_out	= 1;
