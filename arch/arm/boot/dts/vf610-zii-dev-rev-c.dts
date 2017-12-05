@@ -118,6 +118,13 @@
 						phy-handle = <&switch0phy4>;
 					};
 
+					port@9 {
+						reg = <9>;
+						label = "10g";
+						phy-handle = <&switch0phy9>;
+						phy-mode = "rxaui";
+					};
+
 					switch0port10: port@10 {
 						reg = <10>;
 						label = "dsa";
@@ -152,6 +159,17 @@
 						reg = <4>;
 						interrupt-parent = <&switch0>;
 						interrupts = <4 IRQ_TYPE_LEVEL_HIGH>;
+					};
+				};
+
+				mdio1 {
+					compatible = "marvell,mv88e6xxx-mdio-external";
+					#address-cells = <1>;
+					#size-cells = <0>;
+
+					switch0phy9: switch0phy0@9 {
+						compatible = "ethernet-phy-ieee802.3-c45";
+						reg = <9>;
 					};
 				};
 			};
