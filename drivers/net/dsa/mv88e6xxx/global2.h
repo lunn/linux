@@ -306,6 +306,9 @@ int mv88e6xxx_g2_pot_clear(struct mv88e6xxx_chip *chip);
 extern const struct mv88e6xxx_irq_ops mv88e6097_watchdog_ops;
 extern const struct mv88e6xxx_irq_ops mv88e6390_watchdog_ops;
 
+int mv88e6xxx_g2_scratch_gpio_set_ext_smi(struct mv88e6xxx_chip *chip,
+					  bool external);
+
 #else /* !CONFIG_NET_DSA_MV88E6XXX_GLOBAL2 */
 
 static inline int mv88e6xxx_g2_require(struct mv88e6xxx_chip *chip)
@@ -440,6 +443,12 @@ static inline int mv88e6xxx_g2_pot_clear(struct mv88e6xxx_chip *chip)
 
 static const struct mv88e6xxx_irq_ops mv88e6097_watchdog_ops = {};
 static const struct mv88e6xxx_irq_ops mv88e6390_watchdog_ops = {};
+
+int mv88e6xxx_g2_scratch_gpio_set_ext_smi(struct mv88e6xxx_chip *chip,
+					  bool external)
+{
+	return -EOPNOTSUPP;
+}
 
 #endif /* CONFIG_NET_DSA_MV88E6XXX_GLOBAL2 */
 
