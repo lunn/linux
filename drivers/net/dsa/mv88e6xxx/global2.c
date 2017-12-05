@@ -735,7 +735,11 @@ static int mv88e6xxx_g2_smi_phy_read_data_c45(struct mv88e6xxx_chip *chip,
 	if (err)
 		return err;
 
-	return mv88e6xxx_g2_read(chip, MV88E6XXX_G2_SMI_PHY_DATA, data);
+	err = mv88e6xxx_g2_read(chip, MV88E6XXX_G2_SMI_PHY_DATA, data);
+
+	dev_info(chip->dev, "read_c45 %d %x %x\n", port, dev, *data);
+
+	return err;
 }
 
 static int mv88e6xxx_g2_smi_phy_read_c45(struct mv88e6xxx_chip *chip,
