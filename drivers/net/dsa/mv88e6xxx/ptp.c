@@ -81,55 +81,6 @@ static u64 mv88e6xxx_ptp_clock_read(const struct cyclecounter *cc)
 		return ((u32)phc_time[1] << 16) | phc_time[0];
 }
 
-static int mv88e6xxx_disable_trig(struct mv88e6xxx_chip *chip)
-{
-	u16 global_config;
-	int err;
-
-	chip->trig_config = 0;
-	global_config = (chip->evcap_config | chip->trig_config);
-	err = mv88e6xxx_tai_write(chip, MV88E6XXX_TAI_CFG, global_config);
-
-	return err;
-}
-
-static int mv88e6xxx_config_periodic_trig(struct mv88e6xxx_chip *chip,
-					  u32 ns, u16 picos)
-{
-	u16 global_config;
-	int err;
-
-	if (picos >= 1000)
-		return -ERANGE;
-
-	/* TRIG generation is in units of 8 ns clock periods. Convert ns
-	 * and ps into 8 ns clock periods and up to 8000 additional ps
-	 */
-	picos += (ns & 0x7) * 1000;
-	ns = ns >> 3;
-
-	err = mv88e6xxx_tai_write(chip, MV88E6XXX_TAI_TRIG_GEN_AMOUNT_LO,
-				  ns & 0xffff);
-	if (err)
-		return err;
-
-	err = mv88e6xxx_tai_write(chip, MV88E6XXX_TAI_TRIG_GEN_AMOUNT_HI,
-				  ns >> 16);
-	if (err)
-		return err;
-
-	err = mv88e6xxx_tai_write(chip, MV88E6XXX_TAI_TRIG_CLOCK_COMP,
-				  picos);
-	if (err)
-		return err;
-
-	chip->trig_config = MV88E6XXX_TAI_CFG_TRIG_ENABLE;
-	global_config = (chip->evcap_config | chip->trig_config);
-	err = mv88e6xxx_tai_write(chip, MV88E6XXX_TAI_CFG, global_config);
-
-	return err;
-}
-
 /* mv88e6xxx_config_eventcap - configure TAI event capture
  * @event: PTP_CLOCK_PPS (internal) or PTP_CLOCK_EXTTS (external)
  * @rising: zero for falling-edge trigger, else rising-edge trigger
@@ -326,96 +277,6 @@ out:
 	return err;
 }
 
-static int mv88e6xxx_ptp_enable_perout(struct mv88e6xxx_chip *chip,
-				       struct ptp_clock_request *rq, int on)
-{
-	struct timespec ts;
-	int func;
-	int pin;
-	int err;
-	u64 ns;
-
-	pin = ptp_find_pin(chip->ptp_clock, PTP_PF_PEROUT, rq->extts.index);
-
-	if (pin < 0)
-		return -EBUSY;
-
-	ts.tv_sec = rq->perout.period.sec;
-	ts.tv_nsec = rq->perout.period.nsec;
-	ns = timespec_to_ns(&ts);
-
-	if (ns > U32_MAX)
-		return -ERANGE;
-
-	mutex_lock(&chip->reg_lock);
-
-	err = mv88e6xxx_config_periodic_trig(chip, (u32)ns, 0);
-	if (err)
-		goto out;
-
-	if (on) {
-		func = MV88E6352_G2_SCRATCH_GPIO_PCTL_TRIG;
-
-		err = mv88e6xxx_set_gpio_func(chip, pin, func, false);
-	} else {
-		func = MV88E6352_G2_SCRATCH_GPIO_PCTL_GPIO;
-
-		err = mv88e6xxx_set_gpio_func(chip, pin, func, true);
-	}
-
-out:
-	mutex_unlock(&chip->reg_lock);
-
-	return err;
-}
-
-static int mv88e6xxx_ptp_enable_pps(struct mv88e6xxx_chip *chip,
-				    struct ptp_clock_request *rq, int on)
-{
-	int func;
-	int pin;
-	int err;
-
-	pin = ptp_find_pin(chip->ptp_clock, PTP_PF_PEROUT, rq->extts.index);
-
-	if (pin < 0)
-		return -EBUSY;
-
-	mutex_lock(&chip->reg_lock);
-
-	if (on) {
-		func = MV88E6352_G2_SCRATCH_GPIO_PCTL_TRIG;
-
-		err = mv88e6xxx_set_gpio_func(chip, pin, func, false);
-		if (err)
-			goto out;
-
-		err = mv88e6xxx_config_periodic_trig(chip,
-						     NSEC_PER_SEC, 0);
-		if (err)
-			goto out;
-
-		schedule_delayed_work(&chip->tai_event_work, 0);
-
-		err = mv88e6xxx_config_eventcap(chip, PTP_CLOCK_PPS, 1);
-	} else {
-		func = MV88E6352_G2_SCRATCH_GPIO_PCTL_GPIO;
-
-		err = mv88e6xxx_set_gpio_func(chip, pin, func, true);
-		if (err)
-			goto out;
-
-		err = mv88e6xxx_disable_trig(chip);
-
-		cancel_delayed_work_sync(&chip->tai_event_work);
-	}
-
-out:
-	mutex_unlock(&chip->reg_lock);
-
-	return err;
-}
-
 static int mv88e6xxx_ptp_enable(struct ptp_clock_info *ptp,
 				struct ptp_clock_request *rq, int on)
 {
@@ -424,10 +285,6 @@ static int mv88e6xxx_ptp_enable(struct ptp_clock_info *ptp,
 	switch (rq->type) {
 	case PTP_CLK_REQ_EXTTS:
 		return mv88e6xxx_ptp_enable_extts(chip, rq, on);
-	case PTP_CLK_REQ_PEROUT:
-		return mv88e6xxx_ptp_enable_perout(chip, rq, on);
-	case PTP_CLK_REQ_PPS:
-		return mv88e6xxx_ptp_enable_pps(chip, rq, on);
 	default:
 		return -EOPNOTSUPP;
 	}
@@ -439,8 +296,8 @@ static int mv88e6xxx_ptp_verify(struct ptp_clock_info *ptp, unsigned int pin,
 	switch (func) {
 	case PTP_PF_NONE:
 	case PTP_PF_EXTTS:
-	case PTP_PF_PEROUT:
 		break;
+	case PTP_PF_PEROUT:
 	case PTP_PF_PHYSYNC:
 		return -EOPNOTSUPP;
 	}
@@ -486,9 +343,9 @@ int mv88e6xxx_ptp_setup(struct mv88e6xxx_chip *chip)
 	chip->ptp_clock_info.max_adj	= 1000000;
 
 	chip->ptp_clock_info.n_ext_ts	= 1;
-	chip->ptp_clock_info.n_per_out	= 1;
+	chip->ptp_clock_info.n_per_out	= 0;
 	chip->ptp_clock_info.n_pins	= mv88e6xxx_num_gpio(chip);
-	chip->ptp_clock_info.pps	= 1;
+	chip->ptp_clock_info.pps	= 0;
 
 	for (i = 0; i < chip->ptp_clock_info.n_pins; ++i) {
 		struct ptp_pin_desc *ppd = &chip->pin_config[i];
