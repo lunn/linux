@@ -124,48 +124,43 @@ static void mv88e6xxx_tai_event_work(struct work_struct *ugly)
 {
 	struct delayed_work *dw = to_delayed_work(ugly);
 	struct mv88e6xxx_chip *chip = dw_tai_event_to_chip(dw);
-	u16 ev_status[4];
+	struct ptp_clock_event ev;
+	u16 status[4];
+	u32 raw_ts;
 	int err;
 
 	mutex_lock(&chip->reg_lock);
-
 	err = mv88e6xxx_tai_read(chip, MV88E6XXX_TAI_EVENT_STATUS,
-				 ev_status, ARRAY_SIZE(ev_status));
-	if (err) {
-		mutex_unlock(&chip->reg_lock);
-		return;
-	}
-
-	if (ev_status[0] & MV88E6XXX_TAI_EVENT_STATUS_ERROR)
-		dev_warn(chip->dev, "missed event capture\n");
-
-	if (ev_status[0] & MV88E6XXX_TAI_EVENT_STATUS_VALID) {
-		struct ptp_clock_event ev;
-		u32 raw_ts = ((u32)ev_status[2] << 16) | ev_status[1];
-
-		/* Clear the valid bit so the next timestamp can come in */
-		ev_status[0] &= ~MV88E6XXX_TAI_EVENT_STATUS_VALID;
-		err = mv88e6xxx_tai_write(chip, MV88E6XXX_TAI_EVENT_STATUS,
-					  ev_status[0]);
-
-		if (ev_status[0] & MV88E6XXX_TAI_EVENT_STATUS_CAP_TRIG) {
-			/* TAI is configured to timestamp internal events.
-			 * This will be a PPS event.
-			 */
-			ev.type = PTP_CLOCK_PPS;
-		} else {
-			/* Otherwise this is an external timestamp */
-			ev.type = PTP_CLOCK_EXTTS;
-		}
-		/* We only have one timestamping channel. */
-		ev.index = 0;
-		ev.timestamp = timecounter_cyc2time(&chip->tstamp_tc, raw_ts);
-
-		ptp_clock_event(chip->ptp_clock, &ev);
-	}
-
+				 status, ARRAY_SIZE(status));
 	mutex_unlock(&chip->reg_lock);
 
+	if (err) {
+		dev_err(chip->dev, "failed to read TAI status register\n");
+		return;
+	} else if (status[0] & MV88E6XXX_TAI_EVENT_STATUS_ERROR) {
+		dev_warn(chip->dev, "missed event capture\n");
+		return;
+	} else if (!(status[0] & MV88E6XXX_TAI_EVENT_STATUS_VALID)) {
+		goto out;
+	}
+
+	raw_ts = ((u32) status[2] << 16) | status[1];
+
+	/* Clear the valid bit so the next timestamp can come in */
+	status[0] &= ~MV88E6XXX_TAI_EVENT_STATUS_VALID;
+	mutex_lock(&chip->reg_lock);
+	err = mv88e6xxx_tai_write(chip, MV88E6XXX_TAI_EVENT_STATUS, status[0]);
+	mutex_unlock(&chip->reg_lock);
+
+	/* This is an external timestamp */
+	ev.type = PTP_CLOCK_EXTTS;
+
+	/* We only have one timestamping channel. */
+	ev.index = 0;
+	ev.timestamp = timecounter_cyc2time(&chip->tstamp_tc, raw_ts);
+
+	ptp_clock_event(chip->ptp_clock, &ev);
+out:
 	schedule_delayed_work(&chip->tai_event_work, TAI_EVENT_WORK_INTERVAL);
 }
 
