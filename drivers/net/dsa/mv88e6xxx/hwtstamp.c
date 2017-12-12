@@ -420,14 +420,14 @@ free_and_clear_skb:
 	dev_kfree_skb_any(tmp_skb);
 }
 
-void mv88e6xxx_port_txtstamp(struct dsa_switch *ds, int port,
+bool mv88e6xxx_port_txtstamp(struct dsa_switch *ds, int port,
 			     struct sk_buff *clone, unsigned int type)
 {
 	struct mv88e6xxx_chip *chip = ds->priv;
 	struct mv88e6xxx_port_hwtstamp *ps = &chip->port_hwtstamp[port];
 
 	if (!chip->info->ptp_support)
-		return;
+		return false;
 
 	if (port < 0 || port >= mv88e6xxx_num_ports(chip))
 		goto out;
@@ -451,7 +451,7 @@ void mv88e6xxx_port_txtstamp(struct dsa_switch *ds, int port,
 			 * waiting to exit)
 			 */
 			queue_work(system_highpri_wq, &ps->tx_tstamp_work);
-			return;
+			return true;
 		}
 
 		/* Otherwise we're already in progress... */
@@ -461,8 +461,7 @@ void mv88e6xxx_port_txtstamp(struct dsa_switch *ds, int port,
 	}
 
 out:
-	/* We don't need it after all. */
-	kfree_skb(clone);
+	return false;
 }
 
 static int mv88e6xxx_hwtstamp_port_setup(struct mv88e6xxx_chip *chip, int port)
