@@ -247,6 +247,9 @@ static bool mv88e6xxx_should_tstamp(struct mv88e6xxx_chip *chip, int port,
 	u8 *ptp_hdr, *msgtype;
 	bool ret;
 
+	if (!chip->info->ptp_support)
+		return false;
+
 	if (port < 0 || port >= mv88e6xxx_num_ports(chip))
 		return false;
 
@@ -280,12 +283,6 @@ bool mv88e6xxx_port_rxtstamp(struct dsa_switch *ds, int port,
 	u8 *ptp_hdr;
 	u32 raw_ts;
 	u64 ns;
-
-	if (!chip->info->ptp_support)
-		return false;
-
-	if (port < 0 || port >= mv88e6xxx_num_ports(chip))
-		return false;
 
 	if (!mv88e6xxx_should_tstamp(chip, port, skb, type))
 		return false;
