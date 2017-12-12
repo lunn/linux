@@ -521,7 +521,7 @@ struct dsa_switch_ops {
 				     struct ifreq *ifr);
 	int	(*port_hwtstamp_set)(struct dsa_switch *ds, int port,
 				     struct ifreq *ifr);
-	void	(*port_txtstamp)(struct dsa_switch *ds, int port,
+	bool	(*port_txtstamp)(struct dsa_switch *ds, int port,
 				 struct sk_buff *clone, unsigned int type);
 	bool	(*port_rxtstamp)(struct dsa_switch *ds, int port,
 				 struct sk_buff *skb, unsigned int type);

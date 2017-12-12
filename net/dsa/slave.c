@@ -414,12 +414,17 @@ static void dsa_skb_tx_timestamp(struct dsa_slave_priv *p,
 	if (type == PTP_CLASS_NONE)
 		return;
 
-	if (ds->ops->port_txtstamp) {
-		clone = skb_clone_sk(skb);
-		if (!clone)
-			return;
-		ds->ops->port_txtstamp(ds, p->dp->index, clone, type);
-	}
+	if (!ds->ops->port_txtstamp)
+		return;
+
+	clone = skb_clone_sk(skb);
+	if (!clone)
+		return;
+
+	if (ds->ops->port_txtstamp(ds, p->dp->index, clone, type))
+		return;
+
+	kfree_skb(clone);
 }
 
 static netdev_tx_t dsa_slave_xmit(struct sk_buff *skb, struct net_device *dev)
