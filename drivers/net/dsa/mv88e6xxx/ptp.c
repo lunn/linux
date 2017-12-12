@@ -261,8 +261,7 @@ static int mv88e6xxx_ptp_enable_extts(struct mv88e6xxx_chip *chip,
 		schedule_delayed_work(&chip->tai_event_work,
 				      TAI_EVENT_WORK_INTERVAL);
 
-		err = mv88e6xxx_config_eventcap(chip, PTP_CLOCK_EXTTS,
-						rising);
+		err = mv88e6xxx_config_eventcap(chip, PTP_CLOCK_EXTTS, rising);
 	} else {
 		func = MV88E6352_G2_SCRATCH_GPIO_PCTL_GPIO;
 
