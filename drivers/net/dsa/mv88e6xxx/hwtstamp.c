@@ -311,19 +311,14 @@ bool mv88e6xxx_port_rxtstamp(struct dsa_switch *ds, int port,
 static int mv88e6xxx_txtstamp_work(struct mv88e6xxx_chip *chip,
 				   struct mv88e6xxx_port_hwtstamp *ps)
 {
-	u16 departure_block[4], tmp_seq_id, status;
 	struct skb_shared_hwtstamps shhwtstamps;
-	unsigned long tmp_tstamp_start;
+	u16 departure_block[4], status;
 	struct sk_buff *tmp_skb;
 	u32 time_raw;
 	int err;
 	u64 ns;
 
-	tmp_skb = ps->tx_skb;
-	tmp_seq_id = ps->tx_seq_id;
-	tmp_tstamp_start = ps->tx_tstamp_start;
-
-	if (!tmp_skb)
+	if (!ps->tx_skb)
 		return 0;
 
 	mutex_lock(&chip->reg_lock);
@@ -337,7 +332,8 @@ static int mv88e6xxx_txtstamp_work(struct mv88e6xxx_chip *chip,
 		goto free_and_clear_skb;
 
 	if (!(departure_block[0] & MV88E6XXX_PTP_TS_VALID)) {
-		if (time_is_before_jiffies(tmp_tstamp_start + TX_TSTAMP_TIMEOUT)) {
+		if (time_is_before_jiffies(ps->tx_tstamp_start +
+					   TX_TSTAMP_TIMEOUT)) {
 			dev_warn(chip->dev, "p%d: clearing tx timestamp hang\n",
 				 ps->port_id);
 			goto free_and_clear_skb;
@@ -361,7 +357,7 @@ static int mv88e6xxx_txtstamp_work(struct mv88e6xxx_chip *chip,
 		goto free_and_clear_skb;
 	}
 
-	if (departure_block[3] != tmp_seq_id) {
+	if (departure_block[3] != ps->tx_seq_id) {
 		dev_warn(chip->dev, "p%d: unexpected seq. id\n", ps->port_id);
 		goto free_and_clear_skb;
 	}
@@ -376,13 +372,14 @@ static int mv88e6xxx_txtstamp_work(struct mv88e6xxx_chip *chip,
 	dev_dbg(chip->dev,
 		"p%d: txtstamp %llx status 0x%04x skb ID 0x%04x hw ID 0x%04x\n",
 		ps->port_id, ktime_to_ns(shhwtstamps.hwtstamp),
-		departure_block[0], tmp_seq_id, departure_block[3]);
+		departure_block[0], ps->tx_seq_id, departure_block[3]);
 
 	/* skb_complete_tx_timestamp() will free up the client to make
 	 * another timestamp-able transmit. We have to be ready for it
 	 * -- by clearing the ps->tx_skb "flag" -- beforehand.
 	 */
 
+	tmp_skb = ps->tx_skb;
 	ps->tx_skb = NULL;
 	clear_bit_unlock(MV88E6XXX_HWTSTAMP_TX_IN_PROGRESS, &ps->state);
 	skb_complete_tx_timestamp(tmp_skb, &shhwtstamps);
@@ -390,9 +387,9 @@ static int mv88e6xxx_txtstamp_work(struct mv88e6xxx_chip *chip,
 	return 0;
 
 free_and_clear_skb:
+	dev_kfree_skb_any(ps->tx_skb);
 	ps->tx_skb = NULL;
 	clear_bit_unlock(MV88E6XXX_HWTSTAMP_TX_IN_PROGRESS, &ps->state);
-	dev_kfree_skb_any(tmp_skb);
 
 	return 0;
 }
