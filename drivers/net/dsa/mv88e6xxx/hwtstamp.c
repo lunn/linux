@@ -240,35 +240,39 @@ static u8 *_get_ptp_header(struct sk_buff *skb, unsigned int type)
 	return data + offset;
 }
 
-static bool mv88e6xxx_should_tstamp(struct mv88e6xxx_chip *chip, int port,
-				    struct sk_buff *skb, unsigned int type)
+/*
+ * Returns a pointer to the PTP header if the caller should time stamp,
+ * or NULL if the caller should not.
+ */
+static u8 *mv88e6xxx_should_tstamp(struct mv88e6xxx_chip *chip, int port,
+				   struct sk_buff *skb, unsigned int type)
 {
 	struct mv88e6xxx_port_hwtstamp *ps = &chip->port_hwtstamp[port];
 	u8 *ptp_hdr, *msgtype;
-	bool ret;
 
 	if (!chip->info->ptp_support)
-		return false;
+		return NULL;
 
 	if (port < 0 || port >= mv88e6xxx_num_ports(chip))
-		return false;
+		return NULL;
 
 	ptp_hdr = _get_ptp_header(skb, type);
 	if (IS_ERR(ptp_hdr))
-		return false;
+		return NULL;
 
 	if (unlikely(type & PTP_CLASS_V1))
 		msgtype = ptp_hdr + OFF_PTP_CONTROL;
 	else
 		msgtype = ptp_hdr;
 
-	ret = test_bit(MV88E6XXX_HWTSTAMP_ENABLED, &ps->state);
+	if (!test_bit(MV88E6XXX_HWTSTAMP_ENABLED, &ps->state))
+		return NULL;
 
 	dev_dbg(chip->dev,
-		"p%d: PTP message classification 0x%x type 0x%x, tstamp? %d",
-		port, type, *msgtype, (int)ret);
+		"p%d: PTP message classification 0x%x type 0x%x, tstamp? %p",
+		port, type, *msgtype, ptp_hdr);
 
-	return ret;
+	return ptp_hdr;
 }
 
 /* rxtstamp will be called in interrupt context so we don't to do
@@ -284,7 +288,8 @@ bool mv88e6xxx_port_rxtstamp(struct dsa_switch *ds, int port,
 	u32 raw_ts;
 	u64 ns;
 
-	if (!mv88e6xxx_should_tstamp(chip, port, skb, type))
+	ptp_hdr = mv88e6xxx_should_tstamp(chip, port, skb, type);
+	if (!ptp_hdr)
 		return false;
 
 	shhwtstamps = skb_hwtstamps(skb);
@@ -295,9 +300,6 @@ bool mv88e6xxx_port_rxtstamp(struct dsa_switch *ds, int port,
 	 * the value from the packet directly instead of having to retrieve it
 	 * via SMI.
 	 */
-	ptp_hdr = _get_ptp_header(skb, type);
-	if (IS_ERR(ptp_hdr))
-		return false;
 	ptp_rx_ts = (__be32 *)(ptp_hdr + OFF_PTP_RESERVED);
 	raw_ts = __be32_to_cpu(*ptp_rx_ts);
 	ns = timecounter_cyc2time(&chip->tstamp_tc, raw_ts);
@@ -417,14 +419,16 @@ bool mv88e6xxx_port_txtstamp(struct dsa_switch *ds, int port,
 	struct mv88e6xxx_chip *chip = ds->priv;
 	struct mv88e6xxx_port_hwtstamp *ps = &chip->port_hwtstamp[port];
 	__be16 *seq_ptr;
+	u8 *ptp_hdr;
 
 	if (!(skb_shinfo(clone)->tx_flags & SKBTX_HW_TSTAMP))
 		return false;
 
-	if (!mv88e6xxx_should_tstamp(chip, port, clone, type))
+	ptp_hdr = mv88e6xxx_should_tstamp(chip, port, clone, type);
+	if (!ptp_hdr)
 		return false;
 
-	seq_ptr = (__be16 *)(_get_ptp_header(clone, type) + OFF_PTP_SEQUENCE_ID);
+	seq_ptr = (__be16 *)(ptp_hdr + OFF_PTP_SEQUENCE_ID);
 
 	if (test_and_set_bit_lock(MV88E6XXX_HWTSTAMP_TX_IN_PROGRESS, &ps->state))
 		return false;
