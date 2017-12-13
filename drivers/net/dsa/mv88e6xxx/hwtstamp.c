@@ -311,11 +311,13 @@ bool mv88e6xxx_port_rxtstamp(struct dsa_switch *ds, int port,
 static int mv88e6xxx_txtstamp_work(struct mv88e6xxx_chip *chip,
 				   struct mv88e6xxx_port_hwtstamp *ps)
 {
+	u16 departure_block[4], tmp_seq_id, status;
+	struct skb_shared_hwtstamps shhwtstamps;
 	unsigned long tmp_tstamp_start;
 	struct sk_buff *tmp_skb;
-	u16 departure_block[4];
-	u16 tmp_seq_id;
+	u32 time_raw;
 	int err;
+	u64 ns;
 
 	tmp_skb = ps->tx_skb;
 	tmp_seq_id = ps->tx_seq_id;
@@ -334,63 +336,12 @@ static int mv88e6xxx_txtstamp_work(struct mv88e6xxx_chip *chip,
 	if (err)
 		goto free_and_clear_skb;
 
-	if (departure_block[0] & MV88E6XXX_PTP_TS_VALID) {
-		struct skb_shared_hwtstamps shhwtstamps;
-		u64 ns;
-		u32 time_raw;
-		u16 status;
-
-		/* We have the timestamp; go ahead and clear valid now */
-		mutex_lock(&chip->reg_lock);
-		mv88e6xxx_port_ptp_write(chip, ps->port_id,
-					 MV88E6XXX_PORT_PTP_DEP_STS, 0);
-		mutex_unlock(&chip->reg_lock);
-
-		status = departure_block[0] &
-				MV88E6XXX_PTP_TS_STATUS_MASK;
-		if (status != MV88E6XXX_PTP_TS_STATUS_NORMAL) {
-			dev_warn(chip->dev, "p%d: tx timestamp overrun\n",
+	if (!(departure_block[0] & MV88E6XXX_PTP_TS_VALID)) {
+		if (time_is_before_jiffies(tmp_tstamp_start + TX_TSTAMP_TIMEOUT)) {
+			dev_warn(chip->dev, "p%d: clearing tx timestamp hang\n",
 				 ps->port_id);
 			goto free_and_clear_skb;
 		}
-
-		if (departure_block[3] != tmp_seq_id) {
-			dev_warn(chip->dev, "p%d: unexpected sequence id\n",
-				 ps->port_id);
-			goto free_and_clear_skb;
-		}
-
-		memset(&shhwtstamps, 0, sizeof(shhwtstamps));
-		time_raw = ((u32)departure_block[2] << 16) |
-			   departure_block[1];
-		ns = timecounter_cyc2time(&chip->tstamp_tc, time_raw);
-		shhwtstamps.hwtstamp = ns_to_ktime(ns);
-
-		dev_dbg(chip->dev,
-			"p%d: txtstamp %llx status 0x%04x skb ID 0x%04x hw ID 0x%04x\n",
-			ps->port_id, ktime_to_ns(shhwtstamps.hwtstamp),
-			departure_block[0], tmp_seq_id, departure_block[3]);
-
-		/* skb_complete_tx_timestamp() will free up the client to make
-		 * another timestamp-able transmit. We have to be ready for it
-		 * -- by clearing the ps->tx_skb "flag" -- beforehand.
-		 */
-
-		ps->tx_skb = NULL;
-		clear_bit_unlock(MV88E6XXX_HWTSTAMP_TX_IN_PROGRESS,
-				 &ps->state);
-
-		skb_complete_tx_timestamp(tmp_skb, &shhwtstamps);
-
-	} else {
-		if (time_is_before_jiffies(tmp_tstamp_start +
-					   TX_TSTAMP_TIMEOUT)) {
-			dev_warn(chip->dev,
-				 "p%d: clearing tx timestamp hang\n",
-				 ps->port_id);
-			goto free_and_clear_skb;
-		}
-
 		/* The timestamp should be available quickly, while getting it
 		 * is high priority and time bounded to only 10ms. A poll is
 		 * warranted so restart the work.
@@ -398,13 +349,49 @@ static int mv88e6xxx_txtstamp_work(struct mv88e6xxx_chip *chip,
 		return 1;
 	}
 
+	/* We have the timestamp; go ahead and clear valid now */
+	mutex_lock(&chip->reg_lock);
+	mv88e6xxx_port_ptp_write(chip, ps->port_id,
+				 MV88E6XXX_PORT_PTP_DEP_STS, 0);
+	mutex_unlock(&chip->reg_lock);
+
+	status = departure_block[0] & MV88E6XXX_PTP_TS_STATUS_MASK;
+	if (status != MV88E6XXX_PTP_TS_STATUS_NORMAL) {
+		dev_warn(chip->dev, "p%d: tx timestamp overrun\n", ps->port_id);
+		goto free_and_clear_skb;
+	}
+
+	if (departure_block[3] != tmp_seq_id) {
+		dev_warn(chip->dev, "p%d: unexpected seq. id\n", ps->port_id);
+		goto free_and_clear_skb;
+	}
+
+	memset(&shhwtstamps, 0, sizeof(shhwtstamps));
+	time_raw = ((u32)departure_block[2] << 16) | departure_block[1];
+	ns = timecounter_cyc2time(&chip->tstamp_tc, time_raw);
+	shhwtstamps.hwtstamp = ns_to_ktime(ns);
+
+	dev_dbg(chip->dev,
+		"p%d: txtstamp %llx status 0x%04x skb ID 0x%04x hw ID 0x%04x\n",
+		ps->port_id, ktime_to_ns(shhwtstamps.hwtstamp),
+		departure_block[0], tmp_seq_id, departure_block[3]);
+
+	/* skb_complete_tx_timestamp() will free up the client to make
+	 * another timestamp-able transmit. We have to be ready for it
+	 * -- by clearing the ps->tx_skb "flag" -- beforehand.
+	 */
+
+	ps->tx_skb = NULL;
+	clear_bit_unlock(MV88E6XXX_HWTSTAMP_TX_IN_PROGRESS, &ps->state);
+	skb_complete_tx_timestamp(tmp_skb, &shhwtstamps);
+
 	return 0;
 
 free_and_clear_skb:
 	ps->tx_skb = NULL;
 	clear_bit_unlock(MV88E6XXX_HWTSTAMP_TX_IN_PROGRESS, &ps->state);
-
 	dev_kfree_skb_any(tmp_skb);
+
 	return 0;
 }
 
