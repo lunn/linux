@@ -183,7 +183,6 @@ struct mv88e6xxx_port_hwtstamp {
 	unsigned long state;
 
 	/* Resources for transmit timestamping */
-	struct work_struct tx_tstamp_work;
 	unsigned long tx_tstamp_start;
 	struct sk_buff *tx_skb;
 	u16 tx_seq_id;

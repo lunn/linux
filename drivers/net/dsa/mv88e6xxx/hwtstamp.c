@@ -308,29 +308,21 @@ bool mv88e6xxx_port_rxtstamp(struct dsa_switch *ds, int port,
 	return false;
 }
 
-static void mv88e6xxx_txtstamp_work(struct work_struct *ugly)
+static int mv88e6xxx_txtstamp_work(struct mv88e6xxx_chip *chip,
+				   struct mv88e6xxx_port_hwtstamp *ps)
 {
-	struct mv88e6xxx_port_hwtstamp *ps;
-	struct mv88e6xxx_chip *chip = chip;
 	unsigned long tmp_tstamp_start;
 	struct sk_buff *tmp_skb;
 	u16 departure_block[4];
 	u16 tmp_seq_id;
 	int err;
 
-	ps = container_of(ugly, struct mv88e6xxx_port_hwtstamp,
-			  tx_tstamp_work);
-	chip = container_of(ps, struct mv88e6xxx_chip,
-			    port_hwtstamp[ps->port_id]);
-	if (!test_bit(MV88E6XXX_HWTSTAMP_TX_IN_PROGRESS, &ps->state))
-		return;
-
 	tmp_skb = ps->tx_skb;
 	tmp_seq_id = ps->tx_seq_id;
 	tmp_tstamp_start = ps->tx_tstamp_start;
 
 	if (!tmp_skb)
-		return;
+		return 0;
 
 	mutex_lock(&chip->reg_lock);
 	err = mv88e6xxx_port_ptp_read(chip, ps->port_id,
@@ -401,20 +393,36 @@ static void mv88e6xxx_txtstamp_work(struct work_struct *ugly)
 
 		/* The timestamp should be available quickly, while getting it
 		 * is high priority and time bounded to only 10ms. A poll is
-		 * warranted and this is the nicest way to realize it in a work
-		 * item.
+		 * warranted so restart the work.
 		 */
-
-		queue_work(system_highpri_wq, &ps->tx_tstamp_work);
+		return 1;
 	}
 
-	return;
+	return 0;
 
 free_and_clear_skb:
 	ps->tx_skb = NULL;
 	clear_bit_unlock(MV88E6XXX_HWTSTAMP_TX_IN_PROGRESS, &ps->state);
 
 	dev_kfree_skb_any(tmp_skb);
+	return 0;
+}
+
+long mv88e6xxx_hwtstamp_work(struct ptp_clock_info *ptp)
+{
+	struct mv88e6xxx_chip *chip =
+		container_of(ptp, struct mv88e6xxx_chip, ptp_clock_info);
+	struct mv88e6xxx_port_hwtstamp *ps;
+	int i, restart = 0;
+
+	for (i = 0; i < DSA_MAX_PORTS; i++) {
+		ps = &chip->port_hwtstamp[i];
+		if (test_bit(MV88E6XXX_HWTSTAMP_TX_IN_PROGRESS, &ps->state)) {
+			restart |= mv88e6xxx_txtstamp_work(chip, ps);
+		}
+	}
+
+	return restart ? 1 : -1;
 }
 
 bool mv88e6xxx_port_txtstamp(struct dsa_switch *ds, int port,
@@ -439,7 +447,7 @@ bool mv88e6xxx_port_txtstamp(struct dsa_switch *ds, int port,
 	ps->tx_tstamp_start = jiffies;
 	ps->tx_seq_id = be16_to_cpup(seq_ptr);
 
-	queue_work(system_highpri_wq, &ps->tx_tstamp_work);
+	ptp_schedule_worker(chip->ptp_clock, 0);
 	return true;
 }
 
@@ -448,17 +456,9 @@ static int mv88e6xxx_hwtstamp_port_setup(struct mv88e6xxx_chip *chip, int port)
 	struct mv88e6xxx_port_hwtstamp *ps = &chip->port_hwtstamp[port];
 
 	ps->port_id = port;
-	INIT_WORK(&ps->tx_tstamp_work, mv88e6xxx_txtstamp_work);
 
 	return mv88e6xxx_port_ptp_write(chip, port, MV88E6XXX_PORT_PTP_CFG0,
 					MV88E6XXX_PORT_PTP_CFG0_DISABLE_PTP);
-}
-
-static void mv88e6xxx_hwtstamp_port_free(struct mv88e6xxx_chip *chip, int port)
-{
-	struct mv88e6xxx_port_hwtstamp *ps = &chip->port_hwtstamp[port];
-
-	cancel_work_sync(&ps->tx_tstamp_work);
 }
 
 int mv88e6xxx_hwtstamp_setup(struct mv88e6xxx_chip *chip)
@@ -523,8 +523,4 @@ int mv88e6xxx_hwtstamp_setup(struct mv88e6xxx_chip *chip)
 
 void mv88e6xxx_hwtstamp_free(struct mv88e6xxx_chip *chip)
 {
-	int i;
-
-	for (i = 0; i < mv88e6xxx_num_ports(chip); ++i)
-		mv88e6xxx_hwtstamp_port_free(chip, i);
 }
