@@ -422,43 +422,25 @@ bool mv88e6xxx_port_txtstamp(struct dsa_switch *ds, int port,
 {
 	struct mv88e6xxx_chip *chip = ds->priv;
 	struct mv88e6xxx_port_hwtstamp *ps = &chip->port_hwtstamp[port];
+	__be16 *seq_ptr;
 
-	if (!chip->info->ptp_support)
+	if (!(skb_shinfo(clone)->tx_flags & SKBTX_HW_TSTAMP))
 		return false;
 
-	if (port < 0 || port >= mv88e6xxx_num_ports(chip))
-		goto out;
+	if (!mv88e6xxx_should_tstamp(chip, port, clone, type))
+		return false;
 
-	if (unlikely(skb_shinfo(clone)->tx_flags & SKBTX_HW_TSTAMP) &&
-	    mv88e6xxx_should_tstamp(chip, port, clone, type)) {
-		__be16 *seq_ptr = (__be16 *)(_get_ptp_header(clone, type) +
-					     OFF_PTP_SEQUENCE_ID);
+	seq_ptr = (__be16 *)(_get_ptp_header(clone, type) + OFF_PTP_SEQUENCE_ID);
 
-		if (!test_and_set_bit_lock(MV88E6XXX_HWTSTAMP_TX_IN_PROGRESS,
-					   &ps->state)) {
-			ps->tx_skb = clone;
-			ps->tx_tstamp_start = jiffies;
-			ps->tx_seq_id = be16_to_cpup(seq_ptr);
+	if (test_and_set_bit_lock(MV88E6XXX_HWTSTAMP_TX_IN_PROGRESS, &ps->state))
+		return false;
 
-			/* Fetching the timestamp is high-priority work because
-			 * 802.1AS bounds the time for a response.
-			 *
-			 * No need to check result of queue_work(). ps->tx_skb
-			 * check ensures work item is not pending (it may be
-			 * waiting to exit)
-			 */
-			queue_work(system_highpri_wq, &ps->tx_tstamp_work);
-			return true;
-		}
+	ps->tx_skb = clone;
+	ps->tx_tstamp_start = jiffies;
+	ps->tx_seq_id = be16_to_cpup(seq_ptr);
 
-		/* Otherwise we're already in progress... */
-		dev_dbg(chip->dev,
-			"p%d: tx timestamp already in progress, discarding",
-			port);
-	}
-
-out:
-	return false;
+	queue_work(system_highpri_wq, &ps->tx_tstamp_work);
+	return true;
 }
 
 static int mv88e6xxx_hwtstamp_port_setup(struct mv88e6xxx_chip *chip, int port)
