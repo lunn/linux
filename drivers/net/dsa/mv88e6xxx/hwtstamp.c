@@ -302,7 +302,9 @@ bool mv88e6xxx_port_rxtstamp(struct dsa_switch *ds, int port,
 	 */
 	ptp_rx_ts = (__be32 *)(ptp_hdr + OFF_PTP_RESERVED);
 	raw_ts = __be32_to_cpu(*ptp_rx_ts);
+	mutex_lock(&chip->reg_lock);
 	ns = timecounter_cyc2time(&chip->tstamp_tc, raw_ts);
+	mutex_unlock(&chip->reg_lock);
 	shhwtstamps->hwtstamp = ns_to_ktime(ns);
 
 	dev_dbg(chip->dev, "p%d: rxtstamp %llx\n", port, ns);
