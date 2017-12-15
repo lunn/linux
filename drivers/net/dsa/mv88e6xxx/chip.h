@@ -177,6 +177,10 @@ struct mv88e6xxx_port_hwtstamp {
 	/* Timestamping state */
 	unsigned long state;
 
+	/* Resources for receive timestamping */
+	struct sk_buff_head rx_queue;
+	struct sk_buff_head rx_queue2;
+
 	/* Resources for transmit timestamping */
 	unsigned long tx_tstamp_start;
 	struct sk_buff *tx_skb;
