@@ -157,7 +157,9 @@ static void mv88e6xxx_tai_event_work(struct work_struct *ugly)
 
 	/* We only have one timestamping channel. */
 	ev.index = 0;
+	mutex_lock(&chip->reg_lock);
 	ev.timestamp = timecounter_cyc2time(&chip->tstamp_tc, raw_ts);
+	mutex_unlock(&chip->reg_lock);
 
 	ptp_clock_event(chip->ptp_clock, &ev);
 out:
