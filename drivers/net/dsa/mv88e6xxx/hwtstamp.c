@@ -368,7 +368,9 @@ static int mv88e6xxx_txtstamp_work(struct mv88e6xxx_chip *chip,
 
 	memset(&shhwtstamps, 0, sizeof(shhwtstamps));
 	time_raw = ((u32)departure_block[2] << 16) | departure_block[1];
+	mutex_lock(&chip->reg_lock);
 	ns = timecounter_cyc2time(&chip->tstamp_tc, time_raw);
+	mutex_unlock(&chip->reg_lock);
 	shhwtstamps.hwtstamp = ns_to_ktime(ns);
 
 	dev_dbg(chip->dev,
