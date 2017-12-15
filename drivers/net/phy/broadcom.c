@@ -552,6 +552,34 @@ static int brcm_fet_config_intr(struct phy_device *phydev)
 	return err;
 }
 
+static int bcm5395_config_init(struct phy_device *phydev)
+{
+	int ret;
+
+	/* Implement BCM5395 rev A0 recommended workaround to adjust PHY power
+	 * control register.
+	 */
+	ret = phy_write(phydev, MII_BCM54XX_AUX_CTL, 0xC042);
+	if (ret < 0)
+		return ret;
+
+	if (phydev->mdio.addr != 4)
+		return 0;
+
+	/* Implement BCM5395 rev A0 recommended workaround to adjust PHY output
+	 * voltages for port 4 (5th port)
+	 */
+	ret = phy_write(phydev, MII_BCM54XX_AUX_CTL, 0x0C00);
+	if (ret < 0)
+		return ret;
+
+	ret = bcm_phy_write_exp(phydev, 0xA, 0x1123);
+	if (ret < 0)
+		return ret;
+
+	return phy_write(phydev, MII_BRCM_CORE_BASE1E, 0x12);
+}
+
 struct bcm53xx_phy_priv {
 	u64	*stats;
 };
@@ -728,6 +756,7 @@ static struct phy_driver broadcom_drivers[] = {
 	.name		= "Broadcom BCM5395",
 	.flags		= PHY_IS_INTERNAL,
 	.features	= PHY_GBIT_FEATURES,
+	.config_init	= bcm5395_config_init,
 	.get_sset_count	= bcm_phy_get_sset_count,
 	.get_strings	= bcm_phy_get_strings,
 	.get_stats	= bcm53xx_phy_get_stats,
