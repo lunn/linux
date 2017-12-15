@@ -20,6 +20,8 @@
 #include "ptp.h"
 #include <linux/ptp_classify.h>
 
+#define SKB_PTP_TYPE(__skb) (*(unsigned int *)((__skb)->cb))
+
 static int mv88e6xxx_port_ptp_read(struct mv88e6xxx_chip *chip, int port,
 				   int addr, u16 *data, int len)
 {
@@ -212,7 +214,7 @@ int mv88e6xxx_port_hwtstamp_get(struct dsa_switch *ds, int port,
 }
 
 /* Get the start of the PTP header in this skb */
-static u8 *_get_ptp_header(struct sk_buff *skb, unsigned int type)
+static u8 *parse_ptp_header(struct sk_buff *skb, unsigned int type)
 {
 	u8 *data = skb_mac_header(skb);
 	unsigned int offset = 0;
@@ -231,12 +233,12 @@ static u8 *_get_ptp_header(struct sk_buff *skb, unsigned int type)
 		offset += ETH_HLEN;
 		break;
 	default:
-		return ERR_PTR(-EINVAL);
+		return NULL;
 	}
 
 	/* Ensure that the entire header is present in this packet. */
 	if (skb->len + ETH_HLEN < offset + 34)
-		return ERR_PTR(-EINVAL);
+		return NULL;
 
 	return data + offset;
 }
@@ -248,7 +250,7 @@ static u8 *mv88e6xxx_should_tstamp(struct mv88e6xxx_chip *chip, int port,
 				   struct sk_buff *skb, unsigned int type)
 {
 	struct mv88e6xxx_port_hwtstamp *ps = &chip->port_hwtstamp[port];
-	u8 *ptp_hdr, *msgtype;
+	u8 *hdr;
 
 	if (!chip->info->ptp_support)
 		return NULL;
@@ -256,60 +258,132 @@ static u8 *mv88e6xxx_should_tstamp(struct mv88e6xxx_chip *chip, int port,
 	if (port < 0 || port >= mv88e6xxx_num_ports(chip))
 		return NULL;
 
-	ptp_hdr = _get_ptp_header(skb, type);
-	if (IS_ERR(ptp_hdr))
+	hdr = parse_ptp_header(skb, type);
+	if (!hdr)
 		return NULL;
-
-	if (unlikely(type & PTP_CLASS_V1))
-		msgtype = ptp_hdr + OFF_PTP_CONTROL;
-	else
-		msgtype = ptp_hdr;
 
 	if (!test_bit(MV88E6XXX_HWTSTAMP_ENABLED, &ps->state))
 		return NULL;
 
-	dev_dbg(chip->dev,
-		"p%d: PTP message classification 0x%x type 0x%x, tstamp? %p",
-		port, type, *msgtype, ptp_hdr);
-
-	return ptp_hdr;
+	return hdr;
 }
 
-/* rxtstamp will be called in interrupt context so we don't to do
- * anything like read PTP registers over SMI.
- */
+static int mv88e6xxx_ts_valid(u16 status)
+{
+	if (!(status & MV88E6XXX_PTP_TS_VALID))
+		return 0;
+	if (status & MV88E6XXX_PTP_TS_STATUS_MASK)
+		return 0;
+	return 1;
+}
+
+static int seq_match(struct sk_buff *skb, u16 ts_seqid)
+{
+	unsigned int type = SKB_PTP_TYPE(skb);
+	u8 *hdr = parse_ptp_header(skb, type);
+	u16 *seqid;
+
+	seqid = (u16 *)(hdr + OFF_PTP_SEQUENCE_ID);
+
+	return ts_seqid == ntohs(*seqid);
+}
+
+static void mv88e6xxx_get_rxts(struct mv88e6xxx_chip *chip,
+			       struct mv88e6xxx_port_hwtstamp *ps,
+			       struct sk_buff *skb, u16 reg,
+			       struct sk_buff_head *rxq)
+{
+	u16 buf[4] = { 0 }, status, timelo, timehi, seq_id;
+	struct skb_shared_hwtstamps *shwt;
+	int err;
+
+	mutex_lock(&chip->reg_lock);
+	err = mv88e6xxx_port_ptp_read(chip, ps->port_id,
+				      reg, buf, ARRAY_SIZE(buf));
+	mutex_unlock(&chip->reg_lock);
+	if (err)
+		pr_err("failed to get the receive time stamp\n");
+
+	status = buf[0];
+	timelo = buf[1];
+	timehi = buf[2];
+	seq_id = buf[3];
+
+	if (status & MV88E6XXX_PTP_TS_VALID) {
+		mutex_lock(&chip->reg_lock);
+		err = mv88e6xxx_port_ptp_write(chip, ps->port_id, reg, 0);
+		mutex_unlock(&chip->reg_lock);
+		if (err)
+			pr_err("failed to clear the receive status\n");
+	}
+	/* Since the device can only handle one time stamp at a time,
+	 * we purge any extra frames from the queue.
+	 */
+	for ( ; skb; skb = skb_dequeue(rxq)) {
+		if (mv88e6xxx_ts_valid(status) && seq_match(skb, seq_id)) {
+			u64 ns = timehi << 16 | timelo;
+
+			mutex_lock(&chip->reg_lock);
+			ns = timecounter_cyc2time(&chip->tstamp_tc, ns);
+			mutex_unlock(&chip->reg_lock);
+			shwt = skb_hwtstamps(skb);
+			memset(shwt, 0, sizeof(*shwt));
+			shwt->hwtstamp = ns_to_ktime(ns);
+			status &= ~MV88E6XXX_PTP_TS_VALID;
+		}
+		netif_rx_ni(skb);
+	}
+}
+
+static void mv88e6xxx_rxtstamp_work(struct mv88e6xxx_chip *chip,
+				    struct mv88e6xxx_port_hwtstamp *ps)
+{
+	struct sk_buff *skb;
+
+	skb = skb_dequeue(&ps->rx_queue);
+
+	if (skb)
+		mv88e6xxx_get_rxts(chip, ps, skb, MV88E6XXX_PORT_PTP_ARR0_STS,
+				   &ps->rx_queue);
+
+	skb = skb_dequeue(&ps->rx_queue2);
+	if (skb)
+		mv88e6xxx_get_rxts(chip, ps, skb, MV88E6XXX_PORT_PTP_ARR1_STS,
+				   &ps->rx_queue2);
+}
+
+static int is_pdelay_resp(u8 *msgtype)
+{
+	return (*msgtype & 0xf) == 3;
+}
+
 bool mv88e6xxx_port_rxtstamp(struct dsa_switch *ds, int port,
 			     struct sk_buff *skb, unsigned int type)
 {
-	struct skb_shared_hwtstamps *shhwtstamps;
-	struct mv88e6xxx_chip *chip = ds->priv;
-	__be32 *ptp_rx_ts;
-	u8 *ptp_hdr;
-	u32 raw_ts;
-	u64 ns;
+	struct mv88e6xxx_port_hwtstamp *ps;
+	struct mv88e6xxx_chip *chip;
+	u8 *hdr;
 
-	ptp_hdr = mv88e6xxx_should_tstamp(chip, port, skb, type);
-	if (!ptp_hdr)
+	chip = ds->priv;
+	ps = &chip->port_hwtstamp[port];
+
+	if (ps->tstamp_config.rx_filter != HWTSTAMP_FILTER_PTP_V2_EVENT)
 		return false;
 
-	shhwtstamps = skb_hwtstamps(skb);
-	memset(shhwtstamps, 0, sizeof(*shhwtstamps));
+	hdr = mv88e6xxx_should_tstamp(chip, port, skb, type);
+	if (!hdr)
+		return false;
 
-	/* Because we configured the arrival timestamper to put the counter
-	 * into the 32-bit "reserved" field of the PTP header, we can retrieve
-	 * the value from the packet directly instead of having to retrieve it
-	 * via SMI.
-	 */
-	ptp_rx_ts = (__be32 *)(ptp_hdr + OFF_PTP_RESERVED);
-	raw_ts = __be32_to_cpu(*ptp_rx_ts);
-	mutex_lock(&chip->reg_lock);
-	ns = timecounter_cyc2time(&chip->tstamp_tc, raw_ts);
-	mutex_unlock(&chip->reg_lock);
-	shhwtstamps->hwtstamp = ns_to_ktime(ns);
+	SKB_PTP_TYPE(skb) = type;
 
-	dev_dbg(chip->dev, "p%d: rxtstamp %llx\n", port, ns);
+	if (is_pdelay_resp(hdr))
+		skb_queue_tail(&ps->rx_queue2, skb);
+	else
+		skb_queue_tail(&ps->rx_queue, skb);
 
-	return false;
+	ptp_schedule_worker(chip->ptp_clock, 0);
+
+	return true;
 }
 
 static int mv88e6xxx_txtstamp_work(struct mv88e6xxx_chip *chip,
@@ -402,6 +476,8 @@ long mv88e6xxx_hwtstamp_work(struct ptp_clock_info *ptp)
 		ps = &chip->port_hwtstamp[i];
 		if (test_bit(MV88E6XXX_HWTSTAMP_TX_IN_PROGRESS, &ps->state))
 			restart |= mv88e6xxx_txtstamp_work(chip, ps);
+
+		mv88e6xxx_rxtstamp_work(chip, ps);
 	}
 	mutex_unlock(&chip->reg_lock);
 
@@ -414,16 +490,16 @@ bool mv88e6xxx_port_txtstamp(struct dsa_switch *ds, int port,
 	struct mv88e6xxx_chip *chip = ds->priv;
 	struct mv88e6xxx_port_hwtstamp *ps = &chip->port_hwtstamp[port];
 	__be16 *seq_ptr;
-	u8 *ptp_hdr;
+	u8 *hdr;
 
 	if (!(skb_shinfo(clone)->tx_flags & SKBTX_HW_TSTAMP))
 		return false;
 
-	ptp_hdr = mv88e6xxx_should_tstamp(chip, port, clone, type);
-	if (!ptp_hdr)
+	hdr = mv88e6xxx_should_tstamp(chip, port, clone, type);
+	if (!hdr)
 		return false;
 
-	seq_ptr = (__be16 *)(ptp_hdr + OFF_PTP_SEQUENCE_ID);
+	seq_ptr = (__be16 *)(hdr + OFF_PTP_SEQUENCE_ID);
 
 	if (test_and_set_bit_lock(MV88E6XXX_HWTSTAMP_TX_IN_PROGRESS,
 				  &ps->state))
@@ -442,6 +518,9 @@ static int mv88e6xxx_hwtstamp_port_setup(struct mv88e6xxx_chip *chip, int port)
 	struct mv88e6xxx_port_hwtstamp *ps = &chip->port_hwtstamp[port];
 
 	ps->port_id = port;
+
+	skb_queue_head_init(&ps->rx_queue);
+	skb_queue_head_init(&ps->rx_queue2);
 
 	return mv88e6xxx_port_ptp_write(chip, port, MV88E6XXX_PORT_PTP_CFG0,
 					MV88E6XXX_PORT_PTP_CFG0_DISABLE_PTP);
@@ -469,27 +548,11 @@ int mv88e6xxx_hwtstamp_setup(struct mv88e6xxx_chip *chip)
 	if (err)
 		return err;
 
-	/* Each event type will be timestamped using ARRIVAL0. */
-	err = mv88e6xxx_ptp_write(chip, MV88E6XXX_PTP_TS_ARRIVAL_PTR, 0x0);
+	/* Use ARRIVAL1 for peer delay response messages. */
+	err = mv88e6xxx_ptp_write(chip, MV88E6XXX_PTP_TS_ARRIVAL_PTR,
+				  MV88E6XXX_PTP_MSGTYPE_PDLAY_RES);
 	if (err)
 		return err;
-
-	/* Configure the switch to embed the (32-bit) arrival timestamps in
-	 * the packets, in the "reserved" field of the PTP header at octet 16
-	 * (OFF_PTP_RESERVED), and disable interrupts. When we do the per-port
-	 * configuration later, we will also allow overwrites (by not setting
-	 * the DISABLE_OVERWRITE bit). This combination lets us handle
-	 * back-to-back RX packets easily, because we don't have to do an SMI
-	 * access to retrieve the timestamp.
-	 */
-	for (i = 0; i < mv88e6xxx_num_ports(chip); ++i) {
-		u16 val = MV88E6XXX_PORT_PTP_CFG2_EMBED_ARRIVAL;
-
-		err = mv88e6xxx_port_ptp_write(chip, i,
-					       MV88E6XXX_PORT_PTP_CFG2, val);
-		if (err)
-			return err;
-	}
 
 	return 0;
 }
