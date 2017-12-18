@@ -281,9 +281,9 @@ static int seq_match(struct sk_buff *skb, u16 ts_seqid)
 {
 	unsigned int type = SKB_PTP_TYPE(skb);
 	u8 *hdr = parse_ptp_header(skb, type);
-	u16 *seqid;
+	__be16 *seqid;
 
-	seqid = (u16 *)(hdr + OFF_PTP_SEQUENCE_ID);
+	seqid = (__be16 *)(hdr + OFF_PTP_SEQUENCE_ID);
 
 	return ts_seqid == ntohs(*seqid);
 }
