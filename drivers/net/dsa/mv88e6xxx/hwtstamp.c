@@ -325,13 +325,10 @@ static int mv88e6xxx_txtstamp_work(struct mv88e6xxx_chip *chip,
 	if (!ps->tx_skb)
 		return 0;
 
-	mutex_lock(&chip->reg_lock);
 	err = mv88e6xxx_port_ptp_read(chip, ps->port_id,
 				      MV88E6XXX_PORT_PTP_DEP_STS,
 				      departure_block,
 				      ARRAY_SIZE(departure_block));
-	mutex_unlock(&chip->reg_lock);
-
 	if (err)
 		goto free_and_clear_skb;
 
@@ -350,10 +347,8 @@ static int mv88e6xxx_txtstamp_work(struct mv88e6xxx_chip *chip,
 	}
 
 	/* We have the timestamp; go ahead and clear valid now */
-	mutex_lock(&chip->reg_lock);
 	mv88e6xxx_port_ptp_write(chip, ps->port_id,
 				 MV88E6XXX_PORT_PTP_DEP_STS, 0);
-	mutex_unlock(&chip->reg_lock);
 
 	status = departure_block[0] & MV88E6XXX_PTP_TS_STATUS_MASK;
 	if (status != MV88E6XXX_PTP_TS_STATUS_NORMAL) {
@@ -368,9 +363,7 @@ static int mv88e6xxx_txtstamp_work(struct mv88e6xxx_chip *chip,
 
 	memset(&shhwtstamps, 0, sizeof(shhwtstamps));
 	time_raw = ((u32)departure_block[2] << 16) | departure_block[1];
-	mutex_lock(&chip->reg_lock);
 	ns = timecounter_cyc2time(&chip->tstamp_tc, time_raw);
-	mutex_unlock(&chip->reg_lock);
 	shhwtstamps.hwtstamp = ns_to_ktime(ns);
 
 	dev_dbg(chip->dev,
@@ -404,11 +397,13 @@ long mv88e6xxx_hwtstamp_work(struct ptp_clock_info *ptp)
 	struct mv88e6xxx_port_hwtstamp *ps;
 	int i, restart = 0;
 
+	mutex_lock(&chip->reg_lock);
 	for (i = 0; i < DSA_MAX_PORTS; i++) {
 		ps = &chip->port_hwtstamp[i];
 		if (test_bit(MV88E6XXX_HWTSTAMP_TX_IN_PROGRESS, &ps->state))
 			restart |= mv88e6xxx_txtstamp_work(chip, ps);
 	}
+	mutex_unlock(&chip->reg_lock);
 
 	return restart ? 1 : -1;
 }
