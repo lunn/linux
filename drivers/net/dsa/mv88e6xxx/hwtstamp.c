@@ -297,10 +297,8 @@ static void mv88e6xxx_get_rxts(struct mv88e6xxx_chip *chip,
 	struct skb_shared_hwtstamps *shwt;
 	int err;
 
-	mutex_lock(&chip->reg_lock);
 	err = mv88e6xxx_port_ptp_read(chip, ps->port_id,
 				      reg, buf, ARRAY_SIZE(buf));
-	mutex_unlock(&chip->reg_lock);
 	if (err)
 		pr_err("failed to get the receive time stamp\n");
 
@@ -310,9 +308,7 @@ static void mv88e6xxx_get_rxts(struct mv88e6xxx_chip *chip,
 	seq_id = buf[3];
 
 	if (status & MV88E6XXX_PTP_TS_VALID) {
-		mutex_lock(&chip->reg_lock);
 		err = mv88e6xxx_port_ptp_write(chip, ps->port_id, reg, 0);
-		mutex_unlock(&chip->reg_lock);
 		if (err)
 			pr_err("failed to clear the receive status\n");
 	}
@@ -323,9 +319,8 @@ static void mv88e6xxx_get_rxts(struct mv88e6xxx_chip *chip,
 		if (mv88e6xxx_ts_valid(status) && seq_match(skb, seq_id)) {
 			u64 ns = timehi << 16 | timelo;
 
-			mutex_lock(&chip->reg_lock);
 			ns = timecounter_cyc2time(&chip->tstamp_tc, ns);
-			mutex_unlock(&chip->reg_lock);
+
 			shwt = skb_hwtstamps(skb);
 			memset(shwt, 0, sizeof(*shwt));
 			shwt->hwtstamp = ns_to_ktime(ns);
@@ -340,6 +335,7 @@ static void mv88e6xxx_rxtstamp_work(struct mv88e6xxx_chip *chip,
 {
 	struct sk_buff *skb;
 
+	mutex_lock(&chip->reg_lock);
 	skb = skb_dequeue(&ps->rx_queue);
 
 	if (skb)
@@ -350,6 +346,7 @@ static void mv88e6xxx_rxtstamp_work(struct mv88e6xxx_chip *chip,
 	if (skb)
 		mv88e6xxx_get_rxts(chip, ps, skb, MV88E6XXX_PORT_PTP_ARR1_STS,
 				   &ps->rx_queue2);
+	mutex_unlock(&chip->reg_lock);
 }
 
 static int is_pdelay_resp(u8 *msgtype)
