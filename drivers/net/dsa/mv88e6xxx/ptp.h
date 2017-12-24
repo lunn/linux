@@ -71,7 +71,7 @@ void mv88e6xxx_ptp_free(struct mv88e6xxx_chip *chip);
 
 static inline int mv88e6xxx_ptp_setup(struct mv88e6xxx_chip *chip)
 {
-	return -EOPNOTSUPP;
+	return 0;
 }
 
 static void mv88e6xxx_ptp_free(struct mv88e6xxx_chip *chip)
