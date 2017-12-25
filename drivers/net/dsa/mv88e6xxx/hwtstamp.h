@@ -151,7 +151,7 @@ static inline int mv88e6xxx_get_ts_info(struct dsa_switch *ds, int port,
 
 static inline int mv88e6xxx_hwtstamp_setup(struct mv88e6xxx_chip *chip)
 {
-	return -EOPNOTSUPP;
+	return 0;
 }
 
 static inline void mv88e6xxx_hwtstamp_free(struct mv88e6xxx_chip *chip)
