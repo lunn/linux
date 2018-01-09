@@ -317,6 +317,13 @@
 			#size-cells = <1>;
 			zii,eeprom-name = "main-eeprom";
 		};
+
+		gpio {
+			compatible = "zii,rave-sp-gpio";
+			status = "okay";
+			gpio-controller;
+			#gpio-cells = <1>;
+		};
 	};
 };
 
