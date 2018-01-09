@@ -428,6 +428,12 @@ config GPIO_PXA
 	help
 	  Say yes here to support the PXA GPIO device
 
+config GPIO_RAVE_SP
+	tristate "RAVE SP GPIO"
+	depends on RAVE_SP_CORE || COMPILE_TEST
+	help
+	  Say yes here to support GPIO on RAVE SP.
+
 config GPIO_RCAR
 	tristate "Renesas R-Car GPIO"
 	depends on ARCH_RENESAS || COMPILE_TEST
