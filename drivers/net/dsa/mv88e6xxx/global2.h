@@ -117,6 +117,12 @@
 
 /* Offset 0x0E: ATU Stats Register */
 #define MV88E6XXX_G2_ATU_STATS		0x0e
+#define MV88E6XXX_G2_ATU_STATS_BIN_SHIFT	14
+#define MV88E6XXX_G2_ATU_STATS_ALL		(0x0 << 12)
+#define MV88E6XXX_G2_ATU_STATS_DYNAMIC		(0x1 << 12)
+#define MV88E6XXX_G2_ATU_STATS_ALL_FID		(0x2 << 12)
+#define MV88E6XXX_G2_ATU_STATS_DYNAMIC_FID	(0x3 << 12)
+#define MV88E6XXX_G2_ATU_STATS_MASK		0xfff
 
 /* Offset 0x0F: Priority Override Table */
 #define MV88E6XXX_G2_PRIO_OVERRIDE		0x0f
@@ -267,6 +273,9 @@ int mv88e6xxx_g2_pot_clear(struct mv88e6xxx_chip *chip);
 extern const struct mv88e6xxx_irq_ops mv88e6097_watchdog_ops;
 extern const struct mv88e6xxx_irq_ops mv88e6390_watchdog_ops;
 
+int mv88e6xxx_g2_write(struct mv88e6xxx_chip *chip, int reg, u16 val);
+int mv88e6xxx_g2_read(struct mv88e6xxx_chip *chip, int reg, u16 *val);
+
 #else /* !CONFIG_NET_DSA_MV88E6XXX_GLOBAL2 */
 
 static inline int mv88e6xxx_g2_require(struct mv88e6xxx_chip *chip)
@@ -375,6 +384,18 @@ static inline int mv88e6352_g2_mgmt_rsvd2cpu(struct mv88e6xxx_chip *chip)
 }
 
 static inline int mv88e6xxx_g2_pot_clear(struct mv88e6xxx_chip *chip)
+{
+	return -EOPNOTSUPP;
+}
+
+static inline int mv88e6xxx_g2_write(struct mv88e6xxx_chip *chip, int reg,
+				     u16 val)
+{
+	return -EOPNOTSUPP;
+}
+
+static inline int mv88e6xxx_g2_read(struct mv88e6xxx_chip *chip, int reg,
+				    u16 *val)
 {
 	return -EOPNOTSUPP;
 }

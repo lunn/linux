@@ -315,6 +315,66 @@ static const struct mv88e6xxx_dbg_ops mv88e6xxx_dbg_atu_ops = {
 		.write = mv88e6xxx_dbg_atu_write,
 };
 
+static int mv88e6xxx_dbg_atu_stats_type(struct mv88e6xxx_chip *chip,
+					int id, struct seq_file *seq,
+					u16 stats_type)
+{
+	struct mv88e6xxx_atu_entry next;
+	int err, bin, total = 0;
+	u16 reg, val;
+
+	for (bin = 0; bin < 4; bin++) {
+		reg = bin << MV88E6XXX_G2_ATU_STATS_BIN_SHIFT | stats_type;
+
+		err = mv88e6xxx_g2_write(chip, MV88E6XXX_G2_ATU_STATS, reg);
+		if (err)
+			return err;
+
+		next.state = MV88E6XXX_G1_ATU_DATA_STATE_UNUSED;
+		eth_broadcast_addr(next.mac);
+
+		err = mv88e6xxx_g1_atu_getnext(chip, id, &next);
+		if (err)
+			return err;
+
+		err = mv88e6xxx_g2_read(chip, MV88E6XXX_G2_ATU_STATS, &val);
+		if (err)
+			return err;
+
+		val &= MV88E6XXX_G2_ATU_STATS_MASK;
+		total += val;
+
+		seq_printf(seq, "%5d ", val);
+	}
+	seq_printf(seq, "%5d\n", total);
+
+	return 0;
+}
+
+static int mv88e6xxx_dbg_atu_stats_read(struct mv88e6xxx_chip *chip,
+					int id, struct seq_file *seq)
+{
+	int err;
+
+	seq_printf(seq, "FID     type  bin0  bin1  bin2  bin3  total\n");
+	seq_printf(seq, "%4d     all ", id);
+
+	err = mv88e6xxx_dbg_atu_stats_type(chip, id, seq,
+					   MV88E6XXX_G2_ATU_STATS_ALL_FID);
+	if (err)
+		return err;
+
+	seq_printf(seq, "%4d dynamic ", id);
+
+	err = mv88e6xxx_dbg_atu_stats_type(chip, id, seq,
+					   MV88E6XXX_G2_ATU_STATS_DYNAMIC_FID);
+	return err;
+}
+
+static const struct mv88e6xxx_dbg_ops mv88e6xxx_dbg_atu_stats_ops = {
+		.read = mv88e6xxx_dbg_atu_stats_read,
+};
+
 static int mv88e6xxx_dbg_default_vid_read(struct mv88e6xxx_chip *chip, int id,
 					  struct seq_file *seq)
 {
@@ -1161,6 +1221,12 @@ static int mv88e6xxx_dbg_init_atu(struct mv88e6xxx_chip *chip)
 
 		err = mv88e6xxx_dbg_create_file(chip, dir, name, fid,
 						&mv88e6xxx_dbg_atu_ops);
+		if (err)
+			break;
+
+		snprintf(name, sizeof(name), "%d-stats", fid);
+		err = mv88e6xxx_dbg_create_file(chip, dir, name, fid,
+						&mv88e6xxx_dbg_atu_stats_ops);
 		if (err)
 			break;
 	}
