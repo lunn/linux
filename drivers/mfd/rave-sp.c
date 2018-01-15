@@ -298,9 +298,25 @@ static ssize_t update_fw_status_show(struct device *dev,
 
 static DEVICE_ATTR_RO(update_fw_status);
 
+#define RAVE_SP_ATTR_RO_STRING(name)					\
+	static ssize_t							\
+	name##_show(struct device *dev,					\
+		    struct device_attribute *attr,			\
+		    char *buf)						\
+	{								\
+		struct rave_sp *sp = dev_get_drvdata(dev);		\
+		return sprintf(buf, "%s", sp->name);			\
+	}								\
+	static DEVICE_ATTR_RO(name)
+
+RAVE_SP_ATTR_RO_STRING(part_number_firmware);
+RAVE_SP_ATTR_RO_STRING(part_number_bootloader);
+
 static struct attribute *rave_sp_attrs[] = {
 	&dev_attr_update_fw.attr,
 	&dev_attr_update_fw_status.attr,
+	&dev_attr_part_number_firmware.attr,
+	&dev_attr_part_number_bootloader.attr,
 	NULL,
 };
 
