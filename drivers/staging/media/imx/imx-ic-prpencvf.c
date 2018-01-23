@@ -259,7 +259,7 @@ static irqreturn_t prp_eof_interrupt(int irq, void *dev_id)
 
 	/* bump the EOF timeout timer */
 	mod_timer(&priv->eof_timeout_timer,
-		  jiffies + msecs_to_jiffies(IMX_MEDIA_EOF_TIMEOUT));
+		  jiffies + msecs_to_jiffies(imx_media_eof_timeout));
 
 unlock:
 	spin_unlock(&priv->irqlock);
@@ -733,7 +733,7 @@ static int prp_start(struct prp_priv *priv)
 
 	/* start the EOF timeout timer */
 	mod_timer(&priv->eof_timeout_timer,
-		  jiffies + msecs_to_jiffies(IMX_MEDIA_EOF_TIMEOUT));
+		  jiffies + msecs_to_jiffies(imx_media_eof_timeout));
 
 	return 0;
 
@@ -766,7 +766,7 @@ static void prp_stop(struct prp_priv *priv)
 	 */
 	ret = wait_for_completion_timeout(
 		&priv->last_eof_comp,
-		msecs_to_jiffies(IMX_MEDIA_EOF_TIMEOUT));
+		msecs_to_jiffies(imx_media_eof_timeout));
 	if (ret == 0)
 		v4l2_warn(&ic_priv->sd, "wait last EOF timeout\n");
 

@@ -746,7 +746,7 @@ static void imx7_csi_dma_stop(struct imx7_csi *csi)
 	/*
 	 * and then wait for interrupt handler to mark completion.
 	 */
-	timeout_jiffies = msecs_to_jiffies(IMX_MEDIA_EOF_TIMEOUT);
+	timeout_jiffies = msecs_to_jiffies(imx_media_eof_timeout);
 	ret = wait_for_completion_timeout(&csi->last_eof_completion,
 					  timeout_jiffies);
 	if (ret == 0)

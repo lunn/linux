@@ -252,7 +252,7 @@ static void fim_acquire_first_ts(struct imx_media_fim *fim)
 
 	ret = wait_for_completion_timeout(
 		&fim->icap_first_event,
-		msecs_to_jiffies(IMX_MEDIA_EOF_TIMEOUT));
+		msecs_to_jiffies(imx_media_eof_timeout));
 	if (ret == 0)
 		v4l2_warn(fim->sd, "wait first icap event timeout\n");
 }
