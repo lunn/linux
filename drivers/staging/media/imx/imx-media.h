@@ -65,7 +65,7 @@ enum {
 };
 
 /* How long to wait for EOF interrupts in the buffer-capture subdevs */
-#define IMX_MEDIA_EOF_TIMEOUT       1000
+extern unsigned int imx_media_eof_timeout;
 
 struct imx_media_pixfmt {
 	u32     fourcc;

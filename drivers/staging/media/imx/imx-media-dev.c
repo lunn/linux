@@ -12,6 +12,11 @@
 #include <media/imx.h>
 #include "imx-media.h"
 
+unsigned int imx_media_eof_timeout = 1000;
+EXPORT_SYMBOL_GPL(imx_media_eof_timeout);
+module_param_named(eof_timeout, imx_media_eof_timeout, uint, 0644);
+MODULE_PARM_DESC(imx_media_eof_timeout, "EOF timeout (ms)");
+
 static inline struct imx_media_dev *notifier2dev(struct v4l2_async_notifier *n)
 {
 	return container_of(n, struct imx_media_dev, notifier);

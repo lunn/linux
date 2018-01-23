@@ -323,7 +323,7 @@ static irqreturn_t csi_idmac_eof_interrupt(int irq, void *dev_id)
 
 	/* bump the EOF timeout timer */
 	mod_timer(&priv->eof_timeout_timer,
-		  jiffies + msecs_to_jiffies(IMX_MEDIA_EOF_TIMEOUT));
+		  jiffies + msecs_to_jiffies(imx_media_eof_timeout));
 
 unlock:
 	spin_unlock(&priv->irqlock);
@@ -652,7 +652,7 @@ static int csi_idmac_start(struct csi_priv *priv)
 
 	/* start the EOF timeout timer */
 	mod_timer(&priv->eof_timeout_timer,
-		  jiffies + msecs_to_jiffies(IMX_MEDIA_EOF_TIMEOUT));
+		  jiffies + msecs_to_jiffies(imx_media_eof_timeout));
 
 	return 0;
 
@@ -681,7 +681,7 @@ static void csi_idmac_wait_last_eof(struct csi_priv *priv)
 	 * and then wait for interrupt handler to mark completion.
 	 */
 	ret = wait_for_completion_timeout(
-		&priv->last_eof_comp, msecs_to_jiffies(IMX_MEDIA_EOF_TIMEOUT));
+		&priv->last_eof_comp, msecs_to_jiffies(imx_media_eof_timeout));
 	if (ret == 0)
 		v4l2_warn(&priv->sd, "wait last EOF timeout\n");
 }
