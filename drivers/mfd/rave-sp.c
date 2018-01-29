@@ -371,7 +371,7 @@ int rave_sp_exec(struct rave_sp *sp,
 
 	rave_sp_write(sp, data, data_size);
 
-	if (!wait_for_completion_timeout(&reply.received, HZ)) {
+	if (!wait_for_completion_timeout(&reply.received, 5 * HZ)) {
 		dev_err(&sp->serdev->dev, "Command timeout\n");
 		ret = -ETIMEDOUT;
 
