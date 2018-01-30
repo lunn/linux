@@ -681,7 +681,7 @@ static void csi_idmac_wait_last_eof(struct csi_priv *priv)
 	 * and then wait for interrupt handler to mark completion.
 	 */
 	ret = wait_for_completion_timeout(
-		&priv->last_eof_comp, msecs_to_jiffies(imx_media_eof_timeout));
+		&priv->last_eof_comp, msecs_to_jiffies(100));
 	if (ret == 0)
 		v4l2_warn(&priv->sd, "wait last EOF timeout\n");
 }
