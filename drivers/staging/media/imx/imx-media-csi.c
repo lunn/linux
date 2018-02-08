@@ -1234,6 +1234,10 @@ static int csi_enum_mbus_code(struct v4l2_subdev *sd,
 
 	infmt = __csi_get_fmt(priv, cfg, CSI_SINK_PAD, code->which);
 	incc = imx_media_find_mbus_format(infmt->code, CS_SEL_ANY, true);
+	if (!incc) {
+		ret = -EINVAL;
+		goto out;
+	}
 
 	switch (code->pad) {
 	case CSI_SINK_PAD:
