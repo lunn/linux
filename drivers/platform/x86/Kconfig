@@ -1218,6 +1218,20 @@ config INTEL_CHTDC_TI_PWRBTN
 	  To compile this driver as a module, choose M here: the module
 	  will be called intel_chtdc_ti_pwrbtn.
 
+config ZII_SCU
+	tristate "Zodiac System Controller Unit v2/v3/v4"
+	select PHYLIB
+	select MDIO_BITBANG
+	select MDIO_GPIO
+	select GPIOLIB
+	---help---
+	  This option adds platform drivers for the zodiac RAVE System
+	  Controller Unit versions 2, 3 and 4.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called intel_chtdc_ti_pwrbtn.
+
+
 endif # X86_PLATFORM_DEVICES
 
 config PMC_ATOM
