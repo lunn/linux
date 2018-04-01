@@ -1139,6 +1139,19 @@ config SILEAD_DMI
 	  with the OS-image for the device. This option supplies the missing
 	  information. Enable this for x86 tablets with Silead touchscreens.
 
+config ZII_SCU
+	tristate "Zodiac System Controller Unit v2/v3/v4"
+	select PHYLIB
+	select MDIO_BITBANG
+	select MDIO_GPIO
+	select GPIOLIB
+	---help---
+	  This option adds platform drivers for the zodiac RAVE System
+	  Controller Unit versions 2, 3 and 4.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called intel_chtdc_ti_pwrbtn.
+
 endif # X86_PLATFORM_DEVICES
 
 config PMC_ATOM
