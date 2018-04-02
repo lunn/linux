@@ -28,6 +28,7 @@
 #include <linux/of_device.h>
 #include <linux/of_irq.h>
 #include <linux/of_mdio.h>
+#include <linux/platform_data/mv88e6xxx.h>
 #include <linux/netdevice.h>
 #include <linux/gpio/consumer.h>
 #include <linux/phy.h>
@@ -4113,6 +4114,7 @@ static int mv88e6xxx_register_switch(struct mv88e6xxx_chip *chip)
 		return -ENOMEM;
 
 	ds->priv = chip;
+	ds->dev = dev;
 	ds->ops = &mv88e6xxx_switch_ops;
 	ds->ageing_time_min = chip->info->age_time_coeff;
 	ds->ageing_time_max = chip->info->age_time_coeff * U8_MAX;
@@ -4127,18 +4129,53 @@ static void mv88e6xxx_unregister_switch(struct mv88e6xxx_chip *chip)
 	dsa_unregister_switch(chip->ds);
 }
 
+static const void *pdata_device_get_match_data(struct device *dev)
+{
+	const struct of_device_id *matches = dev->driver->of_match_table;
+	const struct dsa_mv88e6xxx_pdata *pdata = dev->platform_data;
+
+	for (; matches->name[0] ||matches->type[0] || matches->compatible[0];
+	     matches++) {
+		if (!strcmp(pdata->compatible, matches->compatible))
+			return matches->data;
+	}
+	return NULL;
+}
+
 static int mv88e6xxx_probe(struct mdio_device *mdiodev)
 {
+	struct dsa_mv88e6xxx_pdata *pdata = mdiodev->dev.platform_data;
 	struct device *dev = &mdiodev->dev;
 	struct device_node *np = dev->of_node;
 	const struct mv88e6xxx_info *compat_info;
 	struct mv88e6xxx_chip *chip;
+	struct net_device *netdev;
 	u32 eeprom_len;
+	int port;
 	int err;
 
-	compat_info = of_device_get_match_data(dev);
-	if (!compat_info)
-		return -EINVAL;
+	if (np) {
+		compat_info = of_device_get_match_data(dev);
+		if (!compat_info)
+			return -EINVAL;
+	} else {
+		compat_info = pdata_device_get_match_data(dev);
+		if (!compat_info)
+			return -EINVAL;
+
+		netdev = dev_get_by_name(&init_net, pdata->netdev);
+		if (!netdev)
+			return -EPROBE_DEFER;
+
+		for (port = 0; port < DSA_MAX_PORTS; port++) {
+			if (!(pdata->enabled_ports & (1 << port)))
+				continue;
+			if (strcmp(pdata->cd.port_names[port], "cpu"))
+				continue;
+			pdata->cd.netdev[port] = &netdev->dev;
+			break;
+		}
+	}
 
 	chip = mv88e6xxx_alloc_chip(dev);
 	if (!chip)
