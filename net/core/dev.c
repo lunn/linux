@@ -796,6 +796,45 @@ struct net_device *dev_get_by_name(struct net *net, const char *name)
 }
 EXPORT_SYMBOL(dev_get_by_name);
 
+struct net_device *dev_get_by_parent_rcu(struct net *net, const char *parent)
+{
+	struct net_device *netdev;
+
+	for_each_netdev_rcu(net, netdev) {
+		if (netdev->dev.parent &&
+		    !strcmp(dev_name(netdev->dev.parent), parent))
+			return netdev;
+	}
+
+	return NULL;
+}
+EXPORT_SYMBOL(dev_get_by_parent_rcu);
+
+/**
+ *	dev_get_by_parent		- find a device by its parent
+ *	@net: the applicable net namespace
+ *	@parent: parent name to find
+ *
+ *	Find an interface by it parent. This can be called from any
+ *	context and does its own locking. The returned handle has the
+ *	usage count incremented and the caller must use dev_put() to
+ *	release it when it is no longer needed. %NULL is returned if
+ *	no matching device is found.
+ */
+
+struct net_device *dev_get_by_parent(struct net *net, const char *parent)
+{
+	struct net_device *dev;
+
+	rcu_read_lock();
+	dev = dev_get_by_parent_rcu(net, parent);
+	if (dev)
+		dev_hold(dev);
+	rcu_read_unlock();
+	return dev;
+}
+EXPORT_SYMBOL(dev_get_by_parent);
+
 /**
  *	__dev_get_by_index - find a device by its ifindex
  *	@net: the applicable net namespace
