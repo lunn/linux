@@ -54,7 +54,7 @@ static struct dsa_mv88e6xxx_pdata dsa_mv88e6xxx_pdata = {
 	},
 	.compatible = "marvell,mv88e6085",
 	.enabled_ports = 0x1f,
-	.netdev = "eno1",
+	.parent = "0000:00:19.0",
 };
 
 static const struct mdio_board_info bdinfo = {

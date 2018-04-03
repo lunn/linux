@@ -4261,7 +4261,7 @@ static int mv88e6xxx_probe(struct mdio_device *mdiodev)
 	if (pdata) {
 		compat_info = pdata_device_get_match_data(dev);
 
-		netdev = dev_get_by_name(&init_net, pdata->netdev);
+		netdev = dev_get_by_parent(&init_net, pdata->parent);
 		if (!netdev)
 			return -EPROBE_DEFER;
 
