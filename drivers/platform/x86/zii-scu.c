@@ -54,6 +54,7 @@ static struct dsa_mv88e6xxx_pdata dsa_mv88e6xxx_pdata = {
 	},
 	.compatible = "marvell,mv88e6085",
 	.enabled_ports = 0x1f,
+	.eeprom_len = 512,
 	.parent = "0000:00:19.0",
 };
 
