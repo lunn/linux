@@ -4251,7 +4251,6 @@ static int mv88e6xxx_probe(struct mdio_device *mdiodev)
 	const struct mv88e6xxx_info *compat_info;
 	struct mv88e6xxx_chip *chip;
 	struct net_device *netdev;
-	u32 eeprom_len;
 	int port;
 	int err;
 
@@ -4302,9 +4301,13 @@ static int mv88e6xxx_probe(struct mdio_device *mdiodev)
 
 	mv88e6xxx_phy_init(chip);
 
-	if (chip->info->ops->get_eeprom &&
-	    !of_property_read_u32(np, "eeprom-length", &eeprom_len))
-		chip->eeprom_len = eeprom_len;
+	if (chip->info->ops->get_eeprom) {
+		if (np)
+			of_property_read_u32(np, "eeprom-length",
+					     &chip->eeprom_len);
+		else
+			chip->eeprom_len = pdata->eeprom_len;
+	}
 
 	mutex_lock(&chip->reg_lock);
 	err = mv88e6xxx_switch_reset(chip);

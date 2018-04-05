@@ -11,6 +11,7 @@ struct dsa_mv88e6xxx_pdata {
 	struct dsa_chip_data cd;
 	const char *compatible;
 	unsigned int enabled_ports;
+	u32 eeprom_len;
 	const char *parent;
 };
 
