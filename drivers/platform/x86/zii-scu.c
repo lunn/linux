@@ -15,6 +15,7 @@
  */
 
 #include <linux/gpio/machine.h>
+#include <linux/i2c.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
 #include <linux/mdio-gpio.h>
@@ -54,6 +55,7 @@ static struct dsa_mv88e6xxx_pdata dsa_mv88e6xxx_pdata = {
 	},
 	.compatible = "marvell,mv88e6085",
 	.enabled_ports = 0x1f,
+	.eeprom_len = 512,
 	.parent = "0000:00:19.0",
 };
 
@@ -63,6 +65,35 @@ static const struct mdio_board_info bdinfo = {
 	.mdio_addr = 0,
 	.platform_data = &dsa_mv88e6xxx_pdata,
 };
+
+static int zii_scu_i2c_adap_name_match(struct device *dev, void *data)
+{
+	struct i2c_adapter *adap = i2c_verify_adapter(dev);
+
+	if (!adap)
+		return false;
+
+	pr_info("%s %s\n", adap->name, (char *)data);
+
+	return !strcmp(adap->name, (char *)data);
+}
+
+static struct i2c_adapter *zii_scu_find_i2c_adapter(char *name)
+{
+	struct device *dev;
+	struct i2c_adapter *adap;
+
+	dev = bus_find_device(&i2c_bus_type, NULL, name,
+			      zii_scu_i2c_adap_name_match);
+	if (!dev)
+		return NULL;
+
+	adap = i2c_verify_adapter(dev);
+	if (!adap)
+		put_device(dev);
+
+	return adap;
+}
 
 static int __init zii_scu_mdio_init(void)
 {
@@ -78,9 +109,44 @@ static int __init zii_scu_mdio_init(void)
 	return 0;
 }
 
+static struct i2c_board_info scu_i2c_info_common[] = {
+	/* On Main Board */
+	{ I2C_BOARD_INFO("zii_scu_pic", 0x20)},			/* SCU PIC */
+};
+
+static int __init zii_scu_add_i2c_devices(struct i2c_adapter *adapter,
+					  struct i2c_board_info *info,
+					  int count)
+{
+	struct i2c_client *client;
+	int i;
+
+	for (i = 0; i < count; i++) {
+		client = i2c_new_device(adapter, info);
+		if (!client)
+			/*
+			 * Unfortunately this call does not tell us
+			 * why it failed. Pick the most likely reason.
+			 */
+			return -EBUSY;
+		info++;
+	}
+	return 0;
+}
+
 static int __init zii_scu_init(void)
 {
+	struct i2c_adapter *adapter;
 	int err;
+
+	adapter = zii_scu_find_i2c_adapter("i2c-kempld");
+	if (!adapter)
+		return -EPROBE_DEFER;
+
+	err = zii_scu_add_i2c_devices(adapter, scu_i2c_info_common,
+				      ARRAY_SIZE(scu_i2c_info_common));
+	if (err)
+		return err;
 
 	err = mdiobus_register_board_info(&bdinfo, 1);
 	if (err) {
