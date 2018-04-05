@@ -29,6 +29,8 @@ static struct clk *twd_clk;
 static unsigned long twd_timer_rate;
 static DEFINE_PER_CPU(bool, percpu_setup_called);
 
+static cpumask_var_t active_twd_mask;
+
 static struct clock_event_device __percpu *twd_evt;
 static unsigned int twd_features =
 		CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT;
@@ -36,12 +38,24 @@ static int twd_ppi;
 
 static int twd_shutdown(struct clock_event_device *clk)
 {
+	cpumask_clear_cpu(smp_processor_id(), active_twd_mask);
+
 	writel_relaxed(0, twd_base + TWD_TIMER_CONTROL);
 	return 0;
 }
 
 static int twd_set_oneshot(struct clock_event_device *clk)
 {
+	cpumask_set_cpu(smp_processor_id(), active_twd_mask);
+
+	/*
+	 * When going from shutdown to oneshot we might have missed some
+	 * frequency updates if the CPU was sleeping. Make sure to update
+	 * the timer frequency with the current rate.
+	 */
+	if (clockevent_state_shutdown(clk))
+		clockevents_update_freq(clk, twd_timer_rate);
+
 	/* period set, and timer enabled in 'next_event' hook */
 	writel_relaxed(TWD_TIMER_CONTROL_IT_ENABLE | TWD_TIMER_CONTROL_ONESHOT,
 		       twd_base + TWD_TIMER_CONTROL);
@@ -53,6 +67,16 @@ static int twd_set_periodic(struct clock_event_device *clk)
 	unsigned long ctrl = TWD_TIMER_CONTROL_ENABLE |
 			     TWD_TIMER_CONTROL_IT_ENABLE |
 			     TWD_TIMER_CONTROL_PERIODIC;
+
+	cpumask_set_cpu(smp_processor_id(), active_twd_mask);
+
+	/*
+	 * When going from shutdown to periodic we might have missed some
+	 * frequency updates if the CPU was sleeping. Make sure to update
+	 * the timer frequency with the current rate.
+	 */
+	if (clockevent_state_shutdown(clk))
+		clockevents_update_freq(clk, twd_timer_rate);
 
 	writel_relaxed(DIV_ROUND_CLOSEST(twd_timer_rate, HZ),
 		       twd_base + TWD_TIMER_LOAD);
@@ -119,8 +143,8 @@ static int twd_rate_change(struct notifier_block *nb,
 	 * changing cpu.
 	 */
 	if (flags == POST_RATE_CHANGE)
-		on_each_cpu(twd_update_frequency,
-				  (void *)&cnd->new_rate, 1);
+		on_each_cpu_mask(active_twd_mask, twd_update_frequency,
+				 (void *)&cnd->new_rate, 1);
 
 	return NOTIFY_OK;
 }
@@ -272,6 +296,9 @@ static int twd_timer_dying_cpu(unsigned int cpu)
 static int __init twd_local_timer_common_register(struct device_node *np)
 {
 	int err;
+
+	if (!zalloc_cpumask_var(&active_twd_mask, GFP_KERNEL))
+		return -ENOMEM;
 
 	twd_evt = alloc_percpu(struct clock_event_device);
 	if (!twd_evt) {
