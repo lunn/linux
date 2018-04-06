@@ -223,6 +223,17 @@ config ZIIRAVE_WATCHDOG
 	  To compile this driver as a module, choose M here: the
 	  module will be called ziirave_wdt.
 
+config ZII_SCU_WATCHDOG
+	tristate "Zodiac SCU Watchdog Timer"
+	depends on I2C
+	select WATCHDOG_CORE
+	select ZII_SCU_MFD
+	help
+	  Watchdog driver for the Zodiac Aerospace SCU PIC Watchdog.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called zii_scu_pic_wdt.
+
 config RAVE_SP_WATCHDOG
 	tristate "RAVE SP Watchdog timer"
 	depends on RAVE_SP_CORE
