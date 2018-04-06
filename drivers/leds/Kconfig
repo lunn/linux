@@ -485,6 +485,14 @@ config LEDS_BD2802
 	  This option enables support for BD2802GU RGB LED driver chips
 	  accessed via the I2C bus.
 
+config LEDS_ZII_SCU_PIC
+	tristate "LED driver for ZII SCU PIC LED"
+	depends on LEDS_CLASS
+	depends on MFD_ZII_SCU_PIC
+	help
+	  This option enables support for the LED controlled by the PIC
+	  on the Zodiac System Controller Unit.
+
 config LEDS_INTEL_SS4200
 	tristate "LED driver for Intel NAS SS4200 series"
 	depends on LEDS_CLASS
