@@ -1812,6 +1812,14 @@ config MFD_STM32_TIMERS
 	  for PWM and IIO Timer. This driver allow to share the
 	  registers between the others drivers.
 
+config MFD_ZII_SCU_PIC
+	tristate "Zodiac SCU PIC"
+	select MFD_CORE
+	help
+	  The Zodiac System Controller Unit has a PIC which offers
+	  a number of services. This driver allows the sharing of
+	  the i2c bus between other drivers
+
 menu "Multimedia Capabilities Port drivers"
 	depends on ARCH_SA1100
 
