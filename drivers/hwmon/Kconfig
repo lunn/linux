@@ -1891,6 +1891,14 @@ config SENSORS_XGENE
 	  If you say yes here you get support for the temperature
 	  and power sensors for APM X-Gene SoC.
 
+config SENSORS_ZII_SCU_PIC
+	tristate "Zodiac SCU PIC FAN and Temperature monitoring driver"
+	depends on MFD_ZII_SCU_PIC
+	help
+	  If you say yes here you get support for the fan rotation
+	  speeds for the two fans and the temperature sensors
+	  controlled by the PIC on the Zodiac System Controller Unit
+
 if ACPI
 
 comment "ACPI drivers"
