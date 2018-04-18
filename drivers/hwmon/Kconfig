@@ -1636,6 +1636,13 @@ config SENSORS_INA3221
 	  This driver can also be built as a module. If so, the module
 	  will be called ina3221.
 
+config SENSORS_RAVE_SP
+	tristate "RAVE SP sensors"
+	depends on RAVE_SP_CORE
+	help
+	  This driver provides support for reading RAVE SP voltage,
+	  current, and temperature sensors.
+
 config SENSORS_TC74
 	tristate "Microchip TC74"
 	depends on I2C
