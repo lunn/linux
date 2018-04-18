@@ -118,35 +118,6 @@ struct rave_sp_checksum {
 	void (*subroutine)(const u8 *, size_t, u8 *);
 };
 
-struct rave_sp_version {
-	u8     hardware;
-	__le16 major;
-	u8     minor;
-	u8     letter[2];
-} __packed;
-
-struct rave_sp_status {
-	struct rave_sp_version bootloader_version;
-	struct rave_sp_version firmware_version;
-	u16 rdu_eeprom_flag;
-	u16 dds_eeprom_flag;
-	u8  pic_flag;
-	u8  orientation;
-	u32 etc;
-	s16 temp[2];
-	u8  backlight_current[3];
-	u8  dip_switch;
-	u8  host_interrupt;
-	u16 voltage_28;
-	u8  i2c_device_status;
-	u8  power_status;
-	u8  general_status;
-	u8  deprecated1;
-	u8  power_led_status;
-	u8  deprecated2;
-	u8  periph_power_shutoff;
-} __packed;
-
 struct rave_sp_booloader_query_device_response {
 	u8  command;
 	u8  device_type;
@@ -844,31 +815,12 @@ static int rave_sp_emulated_get_status(struct rave_sp *sp,
 			    sizeof(status->bootloader_version));
 }
 
-static int rave_sp_get_status(struct rave_sp *sp)
+int rave_sp_get_status(struct rave_sp *sp,
+			      struct rave_sp_status *status)
 {
-	struct device *dev = &sp->serdev->dev;
-	struct rave_sp_status status;
-	const char *version;
-	int ret;
-
-	ret = sp->variant->cmd.get_status(sp, &status);
-	if (ret)
-		return ret;
-
-	version = devm_rave_sp_version(dev, &status.firmware_version);
-	if (!version)
-		return -ENOMEM;
-
-	sp->part_number_firmware = version;
-
-	version = devm_rave_sp_version(dev, &status.bootloader_version);
-	if (!version)
-		return -ENOMEM;
-
-	sp->part_number_bootloader = version;
-
-	return 0;
+	return sp->variant->cmd.get_status(sp, status);
 }
+EXPORT_SYMBOL_GPL(rave_sp_get_status);
 
 static const struct rave_sp_checksum rave_sp_checksum_8b2c = {
 	.length     = 1,
@@ -1185,6 +1137,7 @@ static int rave_sp_probe(struct serdev_device *serdev)
 	struct device *dev = &serdev->dev;
 	const char *unknown = "unknown\n";
 	struct rave_sp *sp;
+	struct rave_sp_status status;
 	u32 baud;
 	int ret;
 
@@ -1225,11 +1178,18 @@ static int rave_sp_probe(struct serdev_device *serdev)
 		return ret;
 	}
 
-	ret = rave_sp_get_status(sp);
+	ret = rave_sp_get_status(sp, &status);
 	if (ret) {
 		dev_warn(dev, "Failed to get firmware status: %d\n", ret);
 		sp->part_number_firmware   = unknown;
 		sp->part_number_bootloader = unknown;
+	} else {
+		sp->part_number_firmware = devm_rave_sp_version(dev,
+				&status.firmware_version);
+		sp->part_number_bootloader = devm_rave_sp_version(dev,
+				&status.bootloader_version);
+		if (!sp->part_number_firmware || !sp->part_number_bootloader)
+			return -ENOMEM;
 	}
 
 	/*
