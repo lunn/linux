@@ -150,10 +150,14 @@ enum rave_sp_bootloader_command {
  *
  * @translate:	Generic to variant specific command mapping routine
  * @get_status: Variant specific implementation of CMD_GET_STATUS
+ * @get_elapsed_time:   Query SP's elapsed time counter, if available
+ * @get_power_count:    Query SP's power counter, if available
  */
 struct rave_sp_variant_cmds {
 	int (*translate)(enum rave_sp_command);
 	int (*get_status)(struct rave_sp *sp, struct rave_sp_status *);
+	u32 (*get_elapsed_time)(struct rave_sp *);
+	u32 (*get_power_count)(struct rave_sp *);
 };
 
 /**
@@ -283,16 +287,49 @@ static DEVICE_ATTR_RO(update_fw_status);
 RAVE_SP_ATTR_RO_STRING(part_number_firmware);
 RAVE_SP_ATTR_RO_STRING(part_number_bootloader);
 
+#define RAVE_SP_ATTR_CMD_U32(name)					\
+	static ssize_t							\
+	name##_show(struct device *dev,					\
+		    struct device_attribute *attr,			\
+		    char *buf)						\
+	{								\
+		struct rave_sp *sp = dev_get_drvdata(dev);		\
+		return sprintf(buf, "%u\n",				\
+				sp->variant->cmd.get_##name(sp));	\
+	}								\
+	static DEVICE_ATTR_RO(name)
+
+RAVE_SP_ATTR_CMD_U32(elapsed_time);
+RAVE_SP_ATTR_CMD_U32(power_count);
+
 static struct attribute *rave_sp_attrs[] = {
 	&dev_attr_update_fw.attr,
 	&dev_attr_update_fw_status.attr,
 	&dev_attr_part_number_firmware.attr,
 	&dev_attr_part_number_bootloader.attr,
+	&dev_attr_elapsed_time.attr,
+	&dev_attr_power_count.attr,
 	NULL,
 };
 
+static umode_t rave_sp_is_visible(struct kobject *kobj, struct attribute *attr,
+		int unused)
+{
+	struct rave_sp *sp = dev_get_drvdata(kobj_to_dev(kobj));
+
+#define FILTER_IF_NO_ROUTINE(name)	\
+	if (attr == &dev_attr_##name.attr && !sp->variant->cmd.get_##name) \
+		return 0
+
+	FILTER_IF_NO_ROUTINE(elapsed_time);
+	FILTER_IF_NO_ROUTINE(power_count);
+
+	return attr->mode;
+}
+
 struct attribute_group rave_sp_group = {
 	.attrs = rave_sp_attrs,
+	.is_visible = rave_sp_is_visible,
 };
 
 static void devm_rave_sp_sysfs_group_release(struct device *dev, void *res)
@@ -822,6 +859,51 @@ int rave_sp_get_status(struct rave_sp *sp,
 }
 EXPORT_SYMBOL_GPL(rave_sp_get_status);
 
+static u32 rdu1_get_elapsed_time(struct rave_sp *sp)
+{
+	struct rave_sp_status status;
+
+	if (rave_sp_get_status(sp, &status))
+		return 0;
+
+	return le32_to_cpu(status.etc);
+}
+
+struct rdu2_etc {
+	__le32 elapsed_time;
+	__le32 power_count;
+};
+
+static int rdu2_get_etc(struct rave_sp *sp, struct rdu2_etc *etc)
+{
+	u8 cmd[] = {
+		[0] = RAVE_SP_CMD_GET_ETC,
+		[1] = 0
+	};
+
+	return rave_sp_exec(sp, cmd, sizeof(cmd), etc, sizeof(*etc));
+}
+
+static u32 rdu2_get_elapsed_time(struct rave_sp *sp)
+{
+	struct rdu2_etc etc;
+
+	if (rdu2_get_etc(sp, &etc))
+		return 0;
+
+	return le32_to_cpu(etc.elapsed_time);
+}
+
+static u32 rdu2_get_power_count(struct rave_sp *sp)
+{
+	struct rdu2_etc etc;
+
+	if (rdu2_get_etc(sp, &etc))
+		return 0;
+
+	return le32_to_cpu(etc.power_count);
+}
+
 static const struct rave_sp_checksum rave_sp_checksum_8b2c = {
 	.length     = 1,
 	.subroutine = csum_8b2c,
@@ -845,6 +927,7 @@ static const struct rave_sp_variant rave_sp_rdu1 = {
 	.cmd = {
 		.translate = rave_sp_rdu1_cmd_translate,
 		.get_status = rave_sp_rdu1_get_status,
+		.get_elapsed_time = rdu1_get_elapsed_time,
 	},
 };
 
@@ -853,6 +936,8 @@ static const struct rave_sp_variant rave_sp_rdu2 = {
 	.cmd = {
 		.translate = rave_sp_rdu2_cmd_translate,
 		.get_status = rave_sp_emulated_get_status,
+		.get_elapsed_time = rdu2_get_elapsed_time,
+		.get_power_count = rdu2_get_power_count,
 	},
 };
 
