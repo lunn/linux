@@ -298,6 +298,10 @@
 			compatible = "zii,rave-sp-backlight";
 		};
 
+		hwmon {
+			compatible = "zii,rave-sp-hwmon-rdu2";
+		};
+
 		pwrbutton {
 			compatible = "zii,rave-sp-pwrbutton";
 		};
