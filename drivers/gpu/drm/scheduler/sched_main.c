@@ -276,6 +276,10 @@ static void drm_sched_job_begin(struct drm_sched_job *s_job)
 	spin_lock_irqsave(&sched->job_list_lock, flags);
 	list_add_tail(&s_job->node, &sched->ring_mirror_list);
 	drm_sched_start_timeout(sched);
+	if (list_is_singular(&sched->ring_mirror_list)) {
+		sched->stats->active_ts = ktime_get();
+		sched->stats->active = true;
+	}
 	spin_unlock_irqrestore(&sched->job_list_lock, flags);
 }
 
@@ -640,6 +644,8 @@ static void drm_sched_process_job(struct dma_fence *f, struct dma_fence_cb *cb)
  */
 static void drm_sched_cleanup_jobs(struct drm_gpu_scheduler *sched)
 {
+	struct drm_gpu_scheduler_stats *stats = sched->stats;
+	ktime_t now = ktime_get();
 	unsigned long flags;
 
 	/* Don't destroy jobs while the timeout worker is running */
@@ -669,6 +675,11 @@ static void drm_sched_cleanup_jobs(struct drm_gpu_scheduler *sched)
 	drm_sched_start_timeout(sched);
 	spin_unlock_irqrestore(&sched->job_list_lock, flags);
 
+	spin_lock_irqsave(&stats->lock, flags);
+	stats->active_time_us += ktime_to_us(ktime_sub(now, stats->active_ts));
+	stats->active_ts = now;
+	stats->active = false;
+	spin_unlock_irqrestore(&stats->lock, flags);
 }
 
 /**
