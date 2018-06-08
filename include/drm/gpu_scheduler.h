@@ -26,6 +26,7 @@
 
 #include <drm/spsc_queue.h>
 #include <linux/dma-fence.h>
+#include <linux/kobject.h>
 
 #define MAX_WAIT_SCHED_ENTITY_Q_EMPTY msecs_to_jiffies(1000)
 
@@ -235,6 +236,16 @@ struct drm_sched_backend_ops {
 	void (*free_job)(struct drm_sched_job *sched_job);
 };
 
+struct drm_gpu_scheduler;
+
+struct drm_gpu_scheduler_stats {
+	struct kobject			kobj;
+	spinlock_t			lock;
+	uint64_t			active_time_us;
+	ktime_t				active_ts;
+	bool				active;
+};
+
 /**
  * struct drm_gpu_scheduler
  *
@@ -281,6 +292,7 @@ struct drm_gpu_scheduler {
 	atomic_t                        num_jobs;
 	bool			ready;
 	bool				free_guilty;
+	struct drm_gpu_scheduler_stats	*stats;
 };
 
 int drm_sched_init(struct drm_gpu_scheduler *sched,

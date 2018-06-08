@@ -29,6 +29,8 @@
 
 #include <drm/gpu_scheduler.h>
 
+#include "sched_stats.h"
+
 static struct kmem_cache *sched_fence_slab;
 
 static int __init drm_sched_fence_slab_init(void)
@@ -42,7 +44,7 @@ static int __init drm_sched_fence_slab_init(void)
 	return 0;
 }
 
-static void __exit drm_sched_fence_slab_fini(void)
+static void drm_sched_fence_slab_fini(void)
 {
 	rcu_barrier();
 	kmem_cache_destroy(sched_fence_slab);
@@ -175,8 +177,29 @@ struct drm_sched_fence *drm_sched_fence_create(struct drm_sched_entity *entity,
 	return fence;
 }
 
-module_init(drm_sched_fence_slab_init);
-module_exit(drm_sched_fence_slab_fini);
+static int __init drm_sched_modinit(void)
+{
+	int ret;
+
+	ret = drm_sched_fence_slab_init();
+	if (ret)
+		return ret;
+
+	ret = drm_sched_stats_class_init();
+	if (ret)
+		drm_sched_fence_slab_fini();
+
+	return ret;
+}
+
+static void __exit drm_sched_modexit(void)
+{
+	drm_sched_stats_class_fini();
+	drm_sched_fence_slab_fini();
+}
+
+module_init(drm_sched_modinit);
+module_exit(drm_sched_modexit);
 
 MODULE_DESCRIPTION("DRM GPU scheduler");
 MODULE_LICENSE("GPL and additional rights");
