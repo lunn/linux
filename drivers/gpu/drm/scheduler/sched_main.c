@@ -274,6 +274,11 @@ static void drm_sched_job_begin(struct drm_sched_job *s_job)
 	spin_lock(&sched->job_list_lock);
 	list_add_tail(&s_job->node, &sched->ring_mirror_list);
 	drm_sched_start_timeout(sched);
+
+	if (list_is_singular(&sched->ring_mirror_list)) {
+		sched->stats->active_ts = ktime_get();
+		sched->stats->active = true;
+	}
 	spin_unlock(&sched->job_list_lock);
 }
 
@@ -637,6 +642,8 @@ static void drm_sched_process_job(struct dma_fence *f, struct dma_fence_cb *cb)
 static struct drm_sched_job *
 drm_sched_get_cleanup_job(struct drm_gpu_scheduler *sched)
 {
+	struct drm_gpu_scheduler_stats *stats = sched->stats;
+	ktime_t now = ktime_get();
 	struct drm_sched_job *job;
 
 	/*
@@ -663,6 +670,12 @@ drm_sched_get_cleanup_job(struct drm_gpu_scheduler *sched)
 	}
 
 	spin_unlock(&sched->job_list_lock);
+
+	spin_lock(&stats->lock);
+	stats->active_time_us += ktime_to_us(ktime_sub(now, stats->active_ts));
+	stats->active_ts = now;
+	stats->active = false;
+	spin_unlock(&stats->lock);
 
 	return job;
 }
