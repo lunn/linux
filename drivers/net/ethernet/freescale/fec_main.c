@@ -1946,15 +1946,13 @@ static int fec_enet_mii_probe(struct net_device *ndev)
 	/* mask with MAC supported features */
 	if (fep->quirks & FEC_QUIRK_HAS_GBIT) {
 		phy_set_max_speed(phy_dev, SPEED_1000);
-		phy_dev->supported &= ~SUPPORTED_1000baseT_Half;
+		phy_remove_legacy_link_mode(phy_dev, SUPPORTED_1000baseT_Half);
 #if !defined(CONFIG_M5272)
 		phy_dev->supported |= SUPPORTED_Pause;
 #endif
 	}
 	else
 		phy_set_max_speed(phy_dev, SPEED_100);
-
-	phy_dev->advertising = phy_dev->supported;
 
 	fep->link = 0;
 	fep->full_duplex = 0;

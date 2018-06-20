@@ -1067,7 +1067,8 @@ static int ravb_phy_init(struct net_device *ndev)
 	}
 
 	/* 10BASE is not supported */
-	phydev->supported &= ~PHY_10BT_FEATURES;
+	phy_remove_legacy_link_mode(phydev, SUPPORTED_10baseT_Half);
+	phy_remove_legacy_link_mode(phydev, SUPPORTED_10baseT_Full);
 
 	phy_attached_info(phydev);
 

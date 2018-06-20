@@ -1742,11 +1742,12 @@ static int init_phy(struct net_device *dev)
 	if (priv->phy_interface == PHY_INTERFACE_MODE_SGMII)
 		uec_configure_serdes(dev);
 
-	if (priv->max_speed == SPEED_1000)
-		/* FIXME: Remove 1000BaseT_Half */
+	if (priv->max_speed == SPEED_1000) {
+		phy_remove_legacy_link_mode(phydev, SUPPORTED_1000baseT_Half);
 		phy_set_max_speed(phydev, SPEED_1000);
-	else
+	} else {
 		phy_set_max_speed(phydev, SPEED_100);
+	}
 
 	priv->phydev = phydev;
 

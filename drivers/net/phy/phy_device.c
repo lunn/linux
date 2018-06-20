@@ -1760,6 +1760,15 @@ int phy_set_max_speed(struct phy_device *phydev, u32 max_speed)
 }
 EXPORT_SYMBOL(phy_set_max_speed);
 
+int phy_remove_legacy_link_mode(struct phy_device *phydev, u32 link_mode)
+{
+	phydev->supported &= ~link_mode;
+	phydev->advertising = phydev->supported;
+
+	return 0;
+}
+EXPORT_SYMBOL(phy_remove_legacy_link_mode);
+
 static void of_set_phy_supported(struct phy_device *phydev)
 {
 	struct device_node *node = phydev->mdio.dev.of_node;

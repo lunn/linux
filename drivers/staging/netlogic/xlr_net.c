@@ -837,7 +837,7 @@ static int xlr_mii_probe(struct xlr_net_priv *priv)
 		return PTR_ERR(phydev);
 	}
 	phy_set_max_speed(phydev, SPEED_1000);
-	/* FIXME: Remove 1000BaseT_half*/
+	phy_remove_legacy_link_mode(phydev, SUPPORTED_1000baseT_Half);
 
 	phy_attached_info(phydev);
 	return 0;

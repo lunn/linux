@@ -547,7 +547,7 @@ static int macb_mii_probe(struct net_device *dev)
 	}
 
 	if (bp->caps & MACB_CAPS_NO_GIGABIT_HALF)
-		phydev->supported &= ~SUPPORTED_1000baseT_Half;
+		phy_remove_legacy_link_mode(phydev, SUPPORTED_1000baseT_Half);
 
 	/* mask with MAC supported features */
 	if (macb_is_gem(bp) && bp->caps & MACB_CAPS_GIGABIT_MODE_AVAILABLE)

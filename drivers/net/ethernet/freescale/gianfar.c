@@ -1808,11 +1808,12 @@ static int init_phy(struct net_device *dev)
 		gfar_configure_serdes(dev);
 
 	/* Remove any features not supported by the controller */
-	if (priv->device_flags & FSL_GIANFAR_DEV_HAS_GIGABIT)
-		/* FIXME: Need to remove 1000BaseT_Half */
+	if (priv->device_flags & FSL_GIANFAR_DEV_HAS_GIGABIT) {
+		phy_remove_legacy_link_mode(phydev, SUPPORTED_1000baseT_Half);
 		phy_set_max_speed(phydev, SPEED_1000);
-	else
+	} else {
 		phy_set_max_speed(phydev, SPEED_100);
+	}
 
 	/* Add support for flow control, but don't advertise it by default */
 	phydev->supported |= (SUPPORTED_Pause | SUPPORTED_Asym_Pause);

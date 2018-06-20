@@ -608,7 +608,6 @@ static int tc_mii_probe(struct net_device *dev)
 {
 	struct tc35815_local *lp = netdev_priv(dev);
 	struct phy_device *phydev;
-	u32 dropmask;
 
 	phydev = phy_find_first(lp->mii_bus);
 	if (!phydev) {
@@ -629,17 +628,21 @@ static int tc_mii_probe(struct net_device *dev)
 
 	/* mask with MAC supported features */
 	phy_set_max_speed(phydev, SPEED_100);
-	dropmask = 0;
-	if (options.speed == 10)
-		dropmask |= SUPPORTED_100baseT_Half | SUPPORTED_100baseT_Full;
-	else if (options.speed == 100)
-		dropmask |= SUPPORTED_10baseT_Half | SUPPORTED_10baseT_Full;
-	if (options.duplex == 1)
-		dropmask |= SUPPORTED_10baseT_Full | SUPPORTED_100baseT_Full;
-	else if (options.duplex == 2)
-		dropmask |= SUPPORTED_10baseT_Half | SUPPORTED_100baseT_Half;
-	phydev->supported &= ~dropmask;
-	phydev->advertising = phydev->supported;
+	if (options.speed == 10) {
+		phy_remove_legacy_link_mode(phydev, SUPPORTED_100baseT_Half);
+		phy_remove_legacy_link_mode(phydev, SUPPORTED_100baseT_Full);
+	} else if (options.speed == 100) {
+		phy_remove_legacy_link_mode(phydev, SUPPORTED_10baseT_Half);
+		phy_remove_legacy_link_mode(phydev, SUPPORTED_10baseT_Full);
+	}
+
+	if (options.duplex == 1) {
+		phy_remove_legacy_link_mode(phydev, SUPPORTED_100baseT_Full);
+		phy_remove_legacy_link_mode(phydev, SUPPORTED_10baseT_Full);
+	} else if (options.duplex == 2) {
+		phy_remove_legacy_link_mode(phydev, SUPPORTED_100baseT_Half);
+		phy_remove_legacy_link_mode(phydev, SUPPORTED_10baseT_Half);
+	}
 
 	lp->link = 0;
 	lp->speed = 0;

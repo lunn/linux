@@ -972,10 +972,11 @@ static int stmmac_init_phy(struct net_device *dev)
 	 * Half-duplex mode not supported with multiqueue
 	 * half-duplex can only works with single queue
 	 */
-	if (tx_cnt > 1)
-		phydev->supported &= ~(SUPPORTED_1000baseT_Half |
-				       SUPPORTED_100baseT_Half |
-				       SUPPORTED_10baseT_Half);
+	if (tx_cnt > 1) {
+		phy_remove_legacy_link_mode(phydev, SUPPORTED_1000baseT_Half);
+		phy_remove_legacy_link_mode(phydev, SUPPORTED_100baseT_Half);
+		phy_remove_legacy_link_mode(phydev, SUPPORTED_10baseT_Half);
+	}
 
 	/*
 	 * Broken HW is sometimes missing the pull-up resistor on the
