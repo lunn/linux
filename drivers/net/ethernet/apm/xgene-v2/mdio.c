@@ -148,16 +148,8 @@ int xge_mdio_config(struct net_device *ndev)
 		goto err;
 	}
 
-	phydev->supported &= ~(SUPPORTED_10baseT_Half |
-			       SUPPORTED_10baseT_Full |
-			       SUPPORTED_100baseT_Half |
-			       SUPPORTED_100baseT_Full |
-			       SUPPORTED_1000baseT_Half |
-			       SUPPORTED_AUI |
-			       SUPPORTED_MII |
-			       SUPPORTED_FIBRE |
-			       SUPPORTED_BNC);
-	phydev->advertising = phydev->supported;
+	phy_set_max_speed(phydev, SPEED_1000);
+
 	pdata->phy_speed = SPEED_UNKNOWN;
 
 	return 0;

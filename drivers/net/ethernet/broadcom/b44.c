@@ -2302,12 +2302,7 @@ static int b44_register_phy_one(struct b44 *bp)
 		goto err_out_mdiobus_unregister;
 	}
 
-	/* mask with MAC supported features */
-	phydev->supported &= (SUPPORTED_100baseT_Half |
-			      SUPPORTED_100baseT_Full |
-			      SUPPORTED_Autoneg |
-			      SUPPORTED_MII);
-	phydev->advertising = phydev->supported;
+	phy_set_max_speed(phydev, SPEED_100);
 
 	bp->old_link = 0;
 	bp->phy_addr = phydev->mdio.addr;

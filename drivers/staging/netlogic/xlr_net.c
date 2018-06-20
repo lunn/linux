@@ -836,15 +836,9 @@ static int xlr_mii_probe(struct xlr_net_priv *priv)
 		pr_err("could not attach PHY\n");
 		return PTR_ERR(phydev);
 	}
-	phydev->supported &= (ADVERTISED_10baseT_Full
-				| ADVERTISED_10baseT_Half
-				| ADVERTISED_100baseT_Full
-				| ADVERTISED_100baseT_Half
-				| ADVERTISED_1000baseT_Full
-				| ADVERTISED_Autoneg
-				| ADVERTISED_MII);
+	phy_set_max_speed(phydev, SPEED_1000);
+	/* FIXME: Remove 1000BaseT_half*/
 
-	phydev->advertising = phydev->supported;
 	phy_attached_info(phydev);
 	return 0;
 }

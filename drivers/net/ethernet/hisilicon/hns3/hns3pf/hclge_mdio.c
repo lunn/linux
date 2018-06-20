@@ -14,14 +14,6 @@
 #include "hclge_main.h"
 #include "hclge_mdio.h"
 
-#define HCLGE_PHY_SUPPORTED_FEATURES	(SUPPORTED_Autoneg | \
-					 SUPPORTED_TP | \
-					 SUPPORTED_Pause | \
-					 SUPPORTED_Asym_Pause | \
-					 PHY_10BT_FEATURES | \
-					 PHY_100BT_FEATURES | \
-					 PHY_1000BT_FEATURES)
-
 enum hclge_mdio_c22_op_seq {
 	HCLGE_MDIO_C22_WRITE = 1,
 	HCLGE_MDIO_C22_READ = 2
@@ -216,8 +208,7 @@ int hclge_mac_start_phy(struct hclge_dev *hdev)
 		return ret;
 	}
 
-	phydev->supported &= HCLGE_PHY_SUPPORTED_FEATURES;
-	phydev->advertising = phydev->supported;
+	phy_set_max_speed(phydev, SPEED_1000);
 
 	phy_start(phydev);
 

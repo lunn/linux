@@ -143,15 +143,6 @@ extern const char gfar_driver_version[];
 #define DEFAULT_RX_COALESCE 0
 #define DEFAULT_RXCOUNT	0
 
-#define GFAR_SUPPORTED (SUPPORTED_10baseT_Half \
-		| SUPPORTED_10baseT_Full \
-		| SUPPORTED_100baseT_Half \
-		| SUPPORTED_100baseT_Full \
-		| SUPPORTED_Autoneg \
-		| SUPPORTED_MII)
-
-#define GFAR_SUPPORTED_GBIT SUPPORTED_1000baseT_Full
-
 /* TBI register addresses */
 #define MII_TBICON		0x11
 

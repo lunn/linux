@@ -1787,9 +1787,6 @@ static phy_interface_t gfar_get_interface(struct net_device *dev)
 static int init_phy(struct net_device *dev)
 {
 	struct gfar_private *priv = netdev_priv(dev);
-	uint gigabit_support =
-		priv->device_flags & FSL_GIANFAR_DEV_HAS_GIGABIT ?
-		GFAR_SUPPORTED_GBIT : 0;
 	phy_interface_t interface;
 	struct phy_device *phydev;
 	struct ethtool_eee edata;
@@ -1811,8 +1808,11 @@ static int init_phy(struct net_device *dev)
 		gfar_configure_serdes(dev);
 
 	/* Remove any features not supported by the controller */
-	phydev->supported &= (GFAR_SUPPORTED | gigabit_support);
-	phydev->advertising = phydev->supported;
+	if (priv->device_flags & FSL_GIANFAR_DEV_HAS_GIGABIT)
+		/* FIXME: Need to remove 1000BaseT_Half */
+		phy_set_max_speed(phydev, SPEED_1000);
+	else
+		phy_set_max_speed(phydev, SPEED_100);
 
 	/* Add support for flow control, but don't advertise it by default */
 	phydev->supported |= (SUPPORTED_Pause | SUPPORTED_Asym_Pause);

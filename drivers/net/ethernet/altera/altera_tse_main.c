@@ -840,8 +840,7 @@ static int init_phy(struct net_device *dev)
 	 */
 	if ((priv->phy_iface == PHY_INTERFACE_MODE_MII) ||
 	    (priv->phy_iface == PHY_INTERFACE_MODE_RMII))
-		phydev->advertising &= ~(SUPPORTED_1000baseT_Half |
-					 SUPPORTED_1000baseT_Full);
+		phy_set_max_speed(phydev, SPEED_100);
 
 	/* Broken HW is sometimes missing the pull-up resistor on the
 	 * MDIO line, which results in reads to non-existent devices returning

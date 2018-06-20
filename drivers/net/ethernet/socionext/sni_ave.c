@@ -1224,8 +1224,7 @@ static int ave_init(struct net_device *ndev)
 	device_set_wakeup_capable(&ndev->dev, !!wol.supported);
 
 	if (!phy_interface_is_rgmii(phydev)) {
-		phydev->supported &= ~PHY_GBIT_FEATURES;
-		phydev->supported |= PHY_BASIC_FEATURES;
+		phy_set_max_speed(phydev, SPEED_100);
 	}
 	phydev->supported |= SUPPORTED_Pause | SUPPORTED_Asym_Pause;
 

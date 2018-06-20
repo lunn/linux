@@ -359,10 +359,10 @@ static int mtk_phy_connect(struct net_device *dev)
 		dev->phydev->supported |=
 		SUPPORTED_Pause | SUPPORTED_Asym_Pause;
 
-	dev->phydev->supported &= PHY_GBIT_FEATURES | SUPPORTED_Pause |
-				   SUPPORTED_Asym_Pause;
-	dev->phydev->advertising = dev->phydev->supported |
-				    ADVERTISED_Autoneg;
+	dev->phydev->supported &= SUPPORTED_Pause | SUPPORTED_Asym_Pause;
+
+	phy_set_max_speed(dev->phydev, SPEED_1000);
+
 	phy_start_aneg(dev->phydev);
 
 	of_node_put(np);

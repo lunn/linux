@@ -546,16 +546,14 @@ static int macb_mii_probe(struct net_device *dev)
 		}
 	}
 
-	/* mask with MAC supported features */
-	if (macb_is_gem(bp) && bp->caps & MACB_CAPS_GIGABIT_MODE_AVAILABLE)
-		phydev->supported &= PHY_GBIT_FEATURES;
-	else
-		phydev->supported &= PHY_BASIC_FEATURES;
-
 	if (bp->caps & MACB_CAPS_NO_GIGABIT_HALF)
 		phydev->supported &= ~SUPPORTED_1000baseT_Half;
 
-	phydev->advertising = phydev->supported;
+	/* mask with MAC supported features */
+	if (macb_is_gem(bp) && bp->caps & MACB_CAPS_GIGABIT_MODE_AVAILABLE)
+		phy_set_max_speed(phydev, SPEED_1000);
+	else
+		phy_set_max_speed(phydev, SPEED_100);
 
 	bp->link = 0;
 	bp->speed = 0;

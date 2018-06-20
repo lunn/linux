@@ -208,7 +208,7 @@ int bcmgenet_mii_config(struct net_device *dev, bool init)
 
 	case PHY_INTERFACE_MODE_MII:
 		phy_name = "external MII";
-		phydev->supported &= PHY_BASIC_FEATURES;
+		phy_set_max_speed(phydev, SPEED_1000);
 		bcmgenet_sys_writel(priv,
 				    PORT_MODE_EXT_EPHY, SYS_PORT_CTRL);
 		break;
@@ -311,8 +311,6 @@ int bcmgenet_mii_probe(struct net_device *dev)
 		phy_disconnect(dev->phydev);
 		return ret;
 	}
-
-	phydev->advertising = phydev->supported;
 
 	/* The internal PHY has its link interrupts routed to the
 	 * Ethernet MAC ISRs
