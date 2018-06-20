@@ -1815,8 +1815,8 @@ static int init_phy(struct net_device *dev)
 		phy_set_max_speed(phydev, SPEED_100);
 	}
 
-	/* Add support for flow control, but don't advertise it by default */
-	phydev->supported |= (SUPPORTED_Pause | SUPPORTED_Asym_Pause);
+	/* Add support for flow control */
+	phy_enable_pause_asym_pause(phydev);
 
 	/* disable EEE autoneg, EEE not supported by eTSEC */
 	memset(&edata, 0, sizeof(struct ethtool_eee));

@@ -1010,7 +1010,7 @@ static int lan743x_phy_open(struct lan743x_adapter *adapter)
 
 	/* support both flow controls */
 	phy->fc_request_control = (FLOW_CTRL_RX | FLOW_CTRL_TX);
-	phydev->advertising &= ~(ADVERTISED_Pause | ADVERTISED_Asym_Pause);
+	phy_enable_pause_asym_pause(phydev);
 	mii_adv = (u32)mii_advertise_flowctrl(phy->fc_request_control);
 	phydev->advertising |= mii_adv_to_ethtool_adv_t(mii_adv);
 	phy->fc_autoneg = phydev->autoneg;

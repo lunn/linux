@@ -370,8 +370,7 @@ static int gmac_setup_phy(struct net_device *netdev)
 			   phy_modes(phy->interface));
 
 	phy_set_max_speed(phy, SPEED_1000);
-	phy->supported |= SUPPORTED_Asym_Pause | SUPPORTED_Pause;
-	phy->advertising = phy->supported;
+	phy_enable_pause_asym_pause(phy);
 
 	/* set PHY interface type */
 	switch (phy->interface) {

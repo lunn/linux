@@ -282,7 +282,7 @@ static int dnet_mii_probe(struct net_device *dev)
 		return PTR_ERR(phydev);
 	}
 
-	phydev->supported |= SUPPORTED_Asym_Pause | SUPPORTED_Pause;
+	phy_enable_pause_asym_pause(phydev);
 
 	/* mask with MAC supported features */
 	if (bp->capabilities & DNET_HAS_GIGABIT)

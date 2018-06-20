@@ -1135,8 +1135,7 @@ static int smsc9420_mii_probe(struct net_device *dev)
 		return PTR_ERR(phydev);
 	}
 
-	phydev->supported &= (SUPPORTED_Pause | SUPPORTED_Asym_Pause);
-
+	phy_enable_pause_asym_pause(phydev);
 	phy_set_max_speed(phydev, SPEED_100);
 
 	phy_attached_info(phydev);

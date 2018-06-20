@@ -492,10 +492,14 @@ stmmac_set_pauseparam(struct net_device *netdev,
 			return -EOPNOTSUPP;
 	}
 
-	if (pause->rx_pause)
+	phy_set_pause(phy, pause->rx_pause, pause->tx_pause);
+	if (pause->rx_pause) {
 		new_pause |= FLOW_RX;
-	if (pause->tx_pause)
+	}
+
+	if (pause->tx_pause) {
 		new_pause |= FLOW_TX;
+	}
 
 	priv->flow_ctrl = new_pause;
 	phy->autoneg = pause->autoneg;

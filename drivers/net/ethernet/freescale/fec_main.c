@@ -1948,7 +1948,7 @@ static int fec_enet_mii_probe(struct net_device *ndev)
 		phy_set_max_speed(phy_dev, SPEED_1000);
 		phy_remove_legacy_link_mode(phy_dev, SUPPORTED_1000baseT_Half);
 #if !defined(CONFIG_M5272)
-		phy_dev->supported |= SUPPORTED_Pause;
+		phy_enable_pause(phy_dev);
 #endif
 	}
 	else
@@ -2227,13 +2227,10 @@ static int fec_enet_set_pauseparam(struct net_device *ndev,
 	fep->pause_flag |= pause->rx_pause ? FEC_PAUSE_FLAG_ENABLE : 0;
 	fep->pause_flag |= pause->autoneg ? FEC_PAUSE_FLAG_AUTONEG : 0;
 
-	if (pause->rx_pause || pause->autoneg) {
-		ndev->phydev->supported |= ADVERTISED_Pause;
-		ndev->phydev->advertising |= ADVERTISED_Pause;
-	} else {
-		ndev->phydev->supported &= ~ADVERTISED_Pause;
-		ndev->phydev->advertising &= ~ADVERTISED_Pause;
-	}
+	if (pause->rx_pause || pause->autoneg)
+		phy_enable_pause(ndev->phydev);
+	else
+		phy_disable_pause(ndev->phydev);
 
 	if (pause->autoneg) {
 		if (netif_running(ndev))

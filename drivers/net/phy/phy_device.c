@@ -1769,6 +1769,46 @@ int phy_remove_legacy_link_mode(struct phy_device *phydev, u32 link_mode)
 }
 EXPORT_SYMBOL(phy_remove_legacy_link_mode);
 
+void phy_set_pause(struct phy_device *phydev, int rx, int tx)
+{
+	phydev->supported &= ~(SUPPORTED_Pause | SUPPORTED_Asym_Pause);
+
+	if (rx)
+		phydev->supported |= SUPPORTED_Pause | SUPPORTED_Asym_Pause;
+	if (tx)
+		phydev->supported ^= SUPPORTED_Asym_Pause;
+
+	phydev->advertising = phydev->supported;
+}
+EXPORT_SYMBOL(phy_set_pause);
+
+int phy_enable_pause(struct phy_device *phydev)
+{
+	phydev->supported |= SUPPORTED_Pause;
+	phydev->advertising = phydev->supported;
+
+	return 0;
+}
+EXPORT_SYMBOL(phy_enable_pause);
+
+int phy_disable_pause(struct phy_device *phydev)
+{
+	phydev->supported &= ~SUPPORTED_Pause;
+	phydev->advertising = phydev->supported;
+
+	return 0;
+}
+EXPORT_SYMBOL(phy_disable_pause);
+
+int phy_enable_pause_asym_pause(struct phy_device *phydev)
+{
+	phydev->supported |= SUPPORTED_Pause | SUPPORTED_Asym_Pause;
+	phydev->advertising = phydev->supported;
+
+	return 0;
+}
+EXPORT_SYMBOL(phy_enable_pause_asym_pause);
+
 static void of_set_phy_supported(struct phy_device *phydev)
 {
 	struct device_node *node = phydev->mdio.dev.of_node;

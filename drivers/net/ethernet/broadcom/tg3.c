@@ -2115,15 +2115,13 @@ static int tg3_phy_init(struct tg3 *tp)
 	case PHY_INTERFACE_MODE_GMII:
 	case PHY_INTERFACE_MODE_RGMII:
 		if (!(tp->phy_flags & TG3_PHYFLG_10_100_ONLY)) {
-			phydev->supported &= (SUPPORTED_Pause |
-					      SUPPORTED_Asym_Pause);
+			phy_enable_pause_asym_pause(phydev);
 			phy_set_max_speed(phydev, SPEED_1000);
 			break;
 		}
 		/* fallthru */
 	case PHY_INTERFACE_MODE_MII:
-		phydev->supported &= (SUPPORTED_Pause |
-				      SUPPORTED_Asym_Pause);
+		phy_enable_pause_asym_pause(phydev);
 		phy_set_max_speed(phydev, SPEED_100);
 		break;
 	default:
@@ -2132,8 +2130,6 @@ static int tg3_phy_init(struct tg3 *tp)
 	}
 
 	tp->phy_flags |= TG3_PHYFLG_IS_CONNECTED;
-
-	phydev->advertising = phydev->supported;
 
 	phy_attached_info(phydev);
 

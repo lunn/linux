@@ -2356,14 +2356,10 @@ static int sbmac_mii_probe(struct net_device *dev)
 		return PTR_ERR(phy_dev);
 	}
 
-	phy_dev->supported &= SUPPORTED_Pause |
-			      SUPPORTED_Asym_Pause;
-
+	phy_enable_pause_asym_pause(phy_dev);
 	phy_set_max_speed(phy_dev, SPEED_1000);
 
 	phy_attached_info(phy_dev);
-
-	phy_dev->advertising = phy_dev->supported;
 
 	sc->phy_dev = phy_dev;
 

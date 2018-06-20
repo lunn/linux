@@ -878,7 +878,7 @@ static bool xgbe_phy_finisar_phy_quirks(struct xgbe_prv_data *pdata)
 	phy_write(phy_data->phydev, 0x04, 0x0d01);
 	phy_write(phy_data->phydev, 0x00, 0x9140);
 
-	phy_data->phydev->supported |= SUPPORTED_Pause | SUPPORTED_Asym_Pause;
+	phy_enable_pause_asym_pause(phy_data->phydev);
 	phy_set_max_speed(phy_data->phydev, SPEED_1000);
 
 	netif_dbg(pdata, drv, pdata->netdev,
@@ -949,7 +949,7 @@ static bool xgbe_phy_belfuse_phy_quirks(struct xgbe_prv_data *pdata)
 	reg = phy_read(phy_data->phydev, 0x00);
 	phy_write(phy_data->phydev, 0x00, reg & ~0x00800);
 
-	phy_data->phydev->supported |= SUPPORTED_Pause | SUPPORTED_Asym_Pause;
+	phy_enable_pause_asym_pause(phy_data->phydev);
 	phy_set_max_speed(phy_data->phydev, SPEED_1000);
 
 	netif_dbg(pdata, drv, pdata->netdev,

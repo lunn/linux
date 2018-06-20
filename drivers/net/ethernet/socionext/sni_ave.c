@@ -461,11 +461,7 @@ static int ave_ethtool_set_pauseparam(struct net_device *ndev,
 	priv->pause_rx   = pause->rx_pause;
 	priv->pause_tx   = pause->tx_pause;
 
-	phydev->advertising &= ~(ADVERTISED_Pause | ADVERTISED_Asym_Pause);
-	if (pause->rx_pause)
-		phydev->advertising |= ADVERTISED_Pause | ADVERTISED_Asym_Pause;
-	if (pause->tx_pause)
-		phydev->advertising ^= ADVERTISED_Asym_Pause;
+	phy_set_pause(phydev, pause->rx_pause, pause->tx_pause);
 
 	if (pause->autoneg) {
 		if (netif_running(ndev))
@@ -1226,7 +1222,8 @@ static int ave_init(struct net_device *ndev)
 	if (!phy_interface_is_rgmii(phydev)) {
 		phy_set_max_speed(phydev, SPEED_100);
 	}
-	phydev->supported |= SUPPORTED_Pause | SUPPORTED_Asym_Pause;
+
+	phy_enable_pause_asym_pause(phydev);
 
 	phy_attached_info(phydev);
 

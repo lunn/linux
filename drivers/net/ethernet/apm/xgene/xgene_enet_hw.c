@@ -898,9 +898,7 @@ int xgene_enet_phy_connect(struct net_device *ndev)
 	phy_remove_legacy_link_mode(phy_dev, SUPPORTED_10baseT_Half);
 	phy_remove_legacy_link_mode(phy_dev, SUPPORTED_100baseT_Half);
 	phy_remove_legacy_link_mode(phy_dev, SUPPORTED_1000baseT_Half);
-	phy_dev->supported |= SUPPORTED_Pause |
-			      SUPPORTED_Asym_Pause;
-	phy_dev->advertising = phy_dev->supported;
+	phy_enable_pause_asym_pause(phy_dev);
 
 	return 0;
 }

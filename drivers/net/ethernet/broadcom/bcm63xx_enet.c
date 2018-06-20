@@ -892,9 +892,9 @@ static int bcm_enet_open(struct net_device *dev)
 		phy_set_max_speed(phydev, SPEED_100);
 
 		if (priv->pause_auto && priv->pause_rx && priv->pause_tx)
-			phydev->advertising |= SUPPORTED_Pause;
+			phy_enable_pause(phydev);
 		else
-			phydev->advertising &= ~SUPPORTED_Pause;
+			phy_disable_pause(phydev);
 
 		phy_attached_info(phydev);
 

@@ -179,7 +179,6 @@ static int dpaa_set_pauseparam(struct net_device *net_dev,
 	struct phy_device *phydev;
 	bool rx_pause, tx_pause;
 	struct dpaa_priv *priv;
-	u32 newadv, oldadv;
 	int err;
 
 	priv = netdev_priv(net_dev);
@@ -207,28 +206,13 @@ static int dpaa_set_pauseparam(struct net_device *net_dev,
 	/* Determine the sym/asym advertised PAUSE capabilities from the desired
 	 * rx/tx pause settings.
 	 */
-	newadv = 0;
-	if (epause->rx_pause)
-		newadv = ADVERTISED_Pause | ADVERTISED_Asym_Pause;
-	if (epause->tx_pause)
-		newadv ^= ADVERTISED_Asym_Pause;
 
-	oldadv = phydev->advertising &
-			(ADVERTISED_Pause | ADVERTISED_Asym_Pause);
+	phy_set_pause(phydev, epause->rx_pause, epause->tx_pause);
 
-	/* If there are differences between the old and the new advertised
-	 * values, restart PHY autonegotiation and advertise the new values.
-	 */
-	if (oldadv != newadv) {
-		phydev->advertising &= ~(ADVERTISED_Pause
-				| ADVERTISED_Asym_Pause);
-		phydev->advertising |= newadv;
-		if (phydev->autoneg) {
-			err = phy_start_aneg(phydev);
-			if (err < 0)
-				netdev_err(net_dev, "phy_start_aneg() = %d\n",
-					   err);
-		}
+	if (phydev->autoneg) {
+		err = phy_start_aneg(phydev);
+		if (err < 0)
+			netdev_err(net_dev, "phy_start_aneg() = %d\n", err);
 	}
 
 	fman_get_pause_cfg(mac_dev, &rx_pause, &tx_pause);
