@@ -22,6 +22,7 @@
 #define PHY_ID_AQR105	0x03a1b4a2
 #define PHY_ID_AQR106	0x03a1b4d0
 #define PHY_ID_AQR107	0x03a1b4e0
+#define PHY_ID_AQCS109	0x03a1b5c2
 #define PHY_ID_AQR405	0x03a1b4b0
 
 #define MDIO_AN_TX_VEND_STATUS1			0xc800
@@ -448,6 +449,18 @@ static struct phy_driver aqr_driver[] = {
 	.read_status	= aqr_read_status,
 },
 {
+	.phy_id		= PHY_ID_AQCS109,
+	.phy_id_mask	= 0xfffffff0,
+	.name		= "Aquantia AQCS109",
+	.features	= PHY_10GBIT_FULL_FEATURES,
+	.probe          = aqr_probe,
+	.aneg_done	= genphy_c45_aneg_done,
+	.config_aneg    = aqr_config_aneg,
+	.config_intr	= aqr_config_intr,
+	.ack_interrupt	= aqr_ack_interrupt,
+	.read_status	= aqr_read_status,
+},
+{
 	.phy_id		= PHY_ID_AQR405,
 	.phy_id_mask	= 0xfffffff0,
 	.name		= "Aquantia AQR405",
@@ -468,6 +481,7 @@ static struct mdio_device_id __maybe_unused aqr_tbl[] = {
 	{ PHY_ID_AQR105, 0xfffffff0 },
 	{ PHY_ID_AQR106, 0xfffffff0 },
 	{ PHY_ID_AQR107, 0xfffffff0 },
+	{ PHY_ID_AQCS109, 0xfffffff0 },
 	{ PHY_ID_AQR405, 0xfffffff0 },
 	{ }
 };
