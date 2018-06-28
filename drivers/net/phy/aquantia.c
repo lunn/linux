@@ -37,6 +37,22 @@
 #define MDIO_AN_TX_VEND_INT_STATUS2		0xcc01
 #define MDIO_AN_TX_VEND_INT_MASK2		0xd401
 
+/* PHY XS System Interface Connection Status */
+#define MDIO_XS_SYSIF_STATUS			0xe812
+#define MDIO_XS_SYSIF_MODE_SHIFT		3
+#define MDIO_XS_SYSIF_MODE_MASK			0x1f
+#define MDIO_XS_SYSIF_MODE_BACKPLANE_KR		0
+#define MDIO_XS_SYSIF_MODE_BACKPLANE_KX		1
+#define MDIO_XS_SYSIF_MODE_XFI			2
+#define MDIO_XS_SYSIF_MODE_USXGMII		3
+#define MDIO_XS_SYSIF_MODE_XAUI			4
+#define MDIO_XS_SYSIF_MODE_XAUI_PAUSE		5
+#define MDIO_XS_SYSIF_MODE_SGMII		6
+#define MDIO_XS_SYSIF_MODE_RXAUI		7
+#define MDIO_XS_SYSIF_MODE_MAC			8
+#define MDIO_XS_SYSIF_MODE_OFF			9
+#define MDIO_XS_SYSIF_MODE_OCSGMII		10
+
 /* Vendor specific 1, MMIO_MMD_VEND1 */
 #define VEND1_THERMAL_PROV_HIGH_TEMP_FAIL	0xc421
 #define VEND1_THERMAL_PROV_LOW_TEMP_FAIL	0xc422
@@ -173,7 +189,31 @@ static int aqr_read_status(struct phy_device *phydev)
 		phydev->speed = SPEED_UNKNOWN;
 		break;
 	}
-	phydev->duplex = DUPLEX_FULL;
+
+	if (reg & MDIO_AN_TX_VEND_STAUTS1_FULL_DUPLEX)
+		phydev->duplex = DUPLEX_FULL;
+	else
+		phydev->duplex = DUPLEX_HALF;
+
+	reg = phy_read_mmd(phydev, MDIO_MMD_PHYXS, MDIO_XS_SYSIF_STATUS);
+
+	switch ((reg >> MDIO_XS_SYSIF_MODE_SHIFT) & MDIO_XS_SYSIF_MODE_MASK) {
+	case MDIO_XS_SYSIF_MODE_BACKPLANE_KR:
+		phydev->interface = PHY_INTERFACE_MODE_10GKR;
+		break;
+	case MDIO_XS_SYSIF_MODE_SGMII:
+		phydev->interface = PHY_INTERFACE_MODE_SGMII;
+		break;
+	case MDIO_XS_SYSIF_MODE_XAUI:
+	case MDIO_XS_SYSIF_MODE_XAUI_PAUSE:
+		phydev->interface = PHY_INTERFACE_MODE_XAUI;
+		break;
+	case MDIO_XS_SYSIF_MODE_RXAUI:
+		phydev->interface = PHY_INTERFACE_MODE_RXAUI;
+		break;
+	default:
+		phydev->interface = PHY_INTERFACE_MODE_NA;
+	}
 
 	return 0;
 }
