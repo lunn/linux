@@ -2889,8 +2889,8 @@ static int coda_hw_init(struct coda_dev *dev)
 	if (dev->devtype->product != CODA_DX6)
 		coda_write(dev, 0, CODA7_REG_BIT_AXI_SRAM_USE);
 
-	coda_write(dev, CODA_INT_INTERRUPT_ENABLE,
-		      CODA_REG_BIT_INT_ENABLE);
+	/* Enable all interrupts for debugging purposes */
+	coda_write(dev, 0xffffffff, CODA_REG_BIT_INT_ENABLE);
 
 	/* Reset VPU and start processor */
 	data = coda_read(dev, CODA_REG_BIT_CODE_RESET);

@@ -2691,12 +2691,48 @@ irqreturn_t coda_irq_handler(int irq, void *data)
 {
 	struct coda_dev *dev = data;
 	struct coda_ctx *ctx;
+	u32 status, reason;
 
 	/* read status register to attend the IRQ */
-	coda_read(dev, CODA_REG_BIT_INT_STATUS);
+	status = coda_read(dev, CODA_REG_BIT_INT_STATUS);
+	reason = coda_read(dev, CODA_REG_BIT_INT_REASON);
 	coda_write(dev, 0, CODA_REG_BIT_INT_REASON);
 	coda_write(dev, CODA_REG_BIT_INT_CLEAR_SET,
 		      CODA_REG_BIT_INT_CLEAR);
+
+	if (status != 1)
+		pr_debug("coda: interrupt status 0x%x\n", status);
+
+	switch (reason) {
+	case CODA_INT_BIT_INIT:
+	case CODA_INT_BIT_SEQ_INIT:
+	case CODA_INT_BIT_SEQ_END:
+	case CODA_INT_BIT_PIC_RUN:
+	case CODA_INT_BIT_SET_FRAME_BUF:
+		break;
+	case CODA_INT_BIT_BUF_EMPTY:
+		pr_debug("coda: interrupt reason 0x%x (buf empty)\n", reason);
+
+		ctx = v4l2_m2m_get_curr_priv(dev->m2m_dev);
+		if (ctx) {
+			struct __kfifo *kfifo = &ctx->bitstream_fifo.kfifo;
+
+			pr_debug("coda: before: rd = 0x%x, wr = 0x%x\n",
+				 kfifo->out & kfifo->mask,
+				 kfifo->in & kfifo->mask);
+			coda_kfifo_sync_from_device(ctx);
+			pr_debug("coda: after: rd = 0x%x, wr = 0x%x\n",
+				 kfifo->out & kfifo->mask,
+				 kfifo->in & kfifo->mask);
+		}
+		break;
+	default:
+		pr_debug("coda: interrupt reason 0x%x\n", reason);
+		break;
+	}
+
+	if (!(reason & CODA_INT_BIT_PIC_RUN))
+		return IRQ_HANDLED;
 
 	ctx = v4l2_m2m_get_curr_priv(dev->m2m_dev);
 	if (ctx == NULL) {

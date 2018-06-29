@@ -123,7 +123,17 @@
 #define		CODA9_MODE_ENCODE_MJPG		13
 #define		CODA_MODE_INVALID		0xffff
 #define CODA_REG_BIT_INT_ENABLE		0x170
-#define		CODA_INT_INTERRUPT_ENABLE	(1 << 3)
+#define		CODA_INT_BIT_INIT		(1 << 0)
+#define		CODA_INT_BIT_SEQ_INIT		(1 << 1)
+#define		CODA_INT_BIT_SEQ_END		(1 << 2)
+#define		CODA_INT_BIT_PIC_RUN		(1 << 3)
+#define		CODA_INT_BIT_SET_FRAME_BUF	(1 << 4)
+#define		CODA_INT_BIT_ENC_HEADER		(1 << 5)
+#define		CODA_INT_BIT_ENC_PARA_SET	(1 << 6)
+#define		CODA_INT_BIT_DEC_PARA_SET	(1 << 7)
+#define		CODA_INT_BIT_DEC_BUF_FLUSH	(1 << 8)
+#define		CODA_INT_BIT_BUF_EMPTY		(1 << 14)
+#define		CODA_INT_BIT_BUF_FULL		(1 << 15)
 #define CODA_REG_BIT_INT_REASON			0x174
 #define CODA7_REG_BIT_RUN_AUX_STD		0x178
 #define		CODA_MP4_AUX_MPEG4		0
