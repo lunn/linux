@@ -2489,7 +2489,7 @@ static int emac_mdio_phy_start_aneg(struct mii_phy *phy,
 	phy_dev->autoneg = phy->autoneg;
 	phy_dev->speed = phy->speed;
 	phy_dev->duplex = phy->duplex;
-	phy_dev->advertising = phy->advertising;
+
 	return phy_start_aneg(phy_dev);
 }
 
