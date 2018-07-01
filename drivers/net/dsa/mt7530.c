@@ -634,7 +634,6 @@ static void mt7530_adjust_link(struct dsa_switch *ds, int port,
 		 */
 		mt7623_pad_clk_setup(ds);
 	} else {
-		u16 lcl_adv = 0, rmt_adv = 0;
 		u8 flowctrl;
 		u32 mcr = PMCR_USERP_LINK | PMCR_FORCE_MODE;
 
@@ -653,17 +652,7 @@ static void mt7530_adjust_link(struct dsa_switch *ds, int port,
 		if (phydev->duplex) {
 			mcr |= PMCR_FORCE_FDX;
 
-			if (phydev->pause)
-				rmt_adv = LPA_PAUSE_CAP;
-			if (phydev->asym_pause)
-				rmt_adv |= LPA_PAUSE_ASYM;
-
-			if (phydev->advertising & ADVERTISED_Pause)
-				lcl_adv |= ADVERTISE_PAUSE_CAP;
-			if (phydev->advertising & ADVERTISED_Asym_Pause)
-				lcl_adv |= ADVERTISE_PAUSE_ASYM;
-
-			flowctrl = mii_resolve_flowctrl_fdx(lcl_adv, rmt_adv);
+			flowctrl = phy_resolve_flowctrl(phydev);
 
 			if (flowctrl & FLOW_CTRL_TX)
 				mcr |= PMCR_TX_FC_EN;

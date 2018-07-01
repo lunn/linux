@@ -1042,6 +1042,7 @@ void phy_set_pause(struct phy_device *phydev, int rx, int tx);
 int phy_enable_pause(struct phy_device *phydev);
 int phy_disable_pause(struct phy_device *phydev);
 int phy_enable_pause_asym_pause(struct phy_device *phydev);
+u16 phy_resolve_flowctrl(struct phy_device *phydev);
 
 int phy_register_fixup(const char *bus_id, u32 phy_uid, u32 phy_uid_mask,
 		       int (*run)(struct phy_device *));

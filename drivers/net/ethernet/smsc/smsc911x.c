@@ -925,9 +925,7 @@ static void smsc911x_phy_update_flowcontrol(struct smsc911x_data *pdata)
 	unsigned long flags;
 
 	if (phy_dev->duplex == DUPLEX_FULL) {
-		u16 lcladv = phy_read(phy_dev, MII_ADVERTISE);
-		u16 rmtadv = phy_read(phy_dev, MII_LPA);
-		u8 cap = mii_resolve_flowctrl_fdx(lcladv, rmtadv);
+		u8 cap = phy_resolve_flowctrl(phy_dev);
 
 		if (cap & FLOW_CTRL_RX)
 			flow = 0xFFFF0002;

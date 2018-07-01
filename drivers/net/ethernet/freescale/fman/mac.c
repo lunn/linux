@@ -371,7 +371,6 @@ void fman_get_pause_cfg(struct mac_device *mac_dev, bool *rx_pause,
 			bool *tx_pause)
 {
 	struct phy_device *phy_dev = mac_dev->phy_dev;
-	u16 lcl_adv, rmt_adv;
 	u8 flowctrl;
 
 	*rx_pause = *tx_pause = false;
@@ -392,24 +391,7 @@ void fman_get_pause_cfg(struct mac_device *mac_dev, bool *rx_pause,
 	 * settings depend on the result of the link negotiation.
 	 */
 
-	/* get local capabilities */
-	lcl_adv = 0;
-	if (phy_dev->advertising & ADVERTISED_Pause)
-		lcl_adv |= ADVERTISE_PAUSE_CAP;
-	if (phy_dev->advertising & ADVERTISED_Asym_Pause)
-		lcl_adv |= ADVERTISE_PAUSE_ASYM;
-
-	/* get link partner capabilities */
-	rmt_adv = 0;
-	if (phy_dev->pause)
-		rmt_adv |= LPA_PAUSE_CAP;
-	if (phy_dev->asym_pause)
-		rmt_adv |= LPA_PAUSE_ASYM;
-
-	/* Calculate TX/RX settings based on local and peer advertised
-	 * symmetric/asymmetric PAUSE capabilities.
-	 */
-	flowctrl = mii_resolve_flowctrl_fdx(lcl_adv, rmt_adv);
+	flowctrl = phy_resolve_flowctrl(phy_dev);
 	if (flowctrl & FLOW_CTRL_RX)
 		*rx_pause = true;
 	if (flowctrl & FLOW_CTRL_TX)

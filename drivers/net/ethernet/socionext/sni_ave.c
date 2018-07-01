@@ -1085,7 +1085,6 @@ static void ave_phy_adjust_link(struct net_device *ndev)
 	struct ave_private *priv = netdev_priv(ndev);
 	struct phy_device *phydev = ndev->phydev;
 	u32 val, txcr, rxcr, rxcr_org;
-	u16 rmt_adv = 0, lcl_adv = 0;
 	u8 cap;
 
 	/* set RGMII speed */
@@ -1117,16 +1116,7 @@ static void ave_phy_adjust_link(struct net_device *ndev)
 	if (phydev->duplex) {
 		rxcr |= AVE_RXCR_FDUPEN;
 
-		if (phydev->pause)
-			rmt_adv |= LPA_PAUSE_CAP;
-		if (phydev->asym_pause)
-			rmt_adv |= LPA_PAUSE_ASYM;
-		if (phydev->advertising & ADVERTISED_Pause)
-			lcl_adv |= ADVERTISE_PAUSE_CAP;
-		if (phydev->advertising & ADVERTISED_Asym_Pause)
-			lcl_adv |= ADVERTISE_PAUSE_ASYM;
-
-		cap = mii_resolve_flowctrl_fdx(lcl_adv, rmt_adv);
+		cap = phy_resolve_flowctrl(phydev);
 		if (cap & FLOW_CTRL_TX)
 			txcr |= AVE_TXCR_FLOCTR;
 		else

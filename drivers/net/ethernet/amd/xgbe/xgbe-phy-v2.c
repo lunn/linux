@@ -1484,7 +1484,6 @@ static void xgbe_phy_phydev_flowctrl(struct xgbe_prv_data *pdata)
 {
 	struct ethtool_link_ksettings *lks = &pdata->phy.lks;
 	struct xgbe_phy_data *phy_data = pdata->phy_data;
-	u16 lcl_adv = 0, rmt_adv = 0;
 	u8 fc;
 
 	pdata->phy.tx_pause = 0;
@@ -1493,21 +1492,13 @@ static void xgbe_phy_phydev_flowctrl(struct xgbe_prv_data *pdata)
 	if (!phy_data->phydev)
 		return;
 
-	if (phy_data->phydev->advertising & ADVERTISED_Pause)
-		lcl_adv |= ADVERTISE_PAUSE_CAP;
-	if (phy_data->phydev->advertising & ADVERTISED_Asym_Pause)
-		lcl_adv |= ADVERTISE_PAUSE_ASYM;
-
-	if (phy_data->phydev->pause) {
+	if (phy_data->phydev->pause)
 		XGBE_SET_LP_ADV(lks, Pause);
-		rmt_adv |= LPA_PAUSE_CAP;
-	}
-	if (phy_data->phydev->asym_pause) {
-		XGBE_SET_LP_ADV(lks, Asym_Pause);
-		rmt_adv |= LPA_PAUSE_ASYM;
-	}
 
-	fc = mii_resolve_flowctrl_fdx(lcl_adv, rmt_adv);
+	if (phy_data->phydev->asym_pause)
+		XGBE_SET_LP_ADV(lks, Asym_Pause);
+
+	fc = phy_resolve_flowctrl(phy_data->phydev);
 	if (fc & FLOW_CTRL_TX)
 		pdata->phy.tx_pause = 1;
 	if (fc & FLOW_CTRL_RX)

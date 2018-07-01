@@ -209,7 +209,6 @@ static void mtk_gmac_sgmii_hw_setup(struct mtk_eth *eth, int mac_id)
 static void mtk_phy_link_adjust(struct net_device *dev)
 {
 	struct mtk_mac *mac = netdev_priv(dev);
-	u16 lcl_adv = 0, rmt_adv = 0;
 	u8 flowctrl;
 	u32 mcr = MAC_MCR_MAX_RX_1536 | MAC_MCR_IPG_CFG |
 		  MAC_MCR_FORCE_MODE | MAC_MCR_TX_EN |
@@ -238,17 +237,7 @@ static void mtk_phy_link_adjust(struct net_device *dev)
 	if (dev->phydev->duplex) {
 		mcr |= MAC_MCR_FORCE_DPX;
 
-		if (dev->phydev->pause)
-			rmt_adv = LPA_PAUSE_CAP;
-		if (dev->phydev->asym_pause)
-			rmt_adv |= LPA_PAUSE_ASYM;
-
-		if (dev->phydev->advertising & ADVERTISED_Pause)
-			lcl_adv |= ADVERTISE_PAUSE_CAP;
-		if (dev->phydev->advertising & ADVERTISED_Asym_Pause)
-			lcl_adv |= ADVERTISE_PAUSE_ASYM;
-
-		flowctrl = mii_resolve_flowctrl_fdx(lcl_adv, rmt_adv);
+		flowctrl = phy_resolve_flowctrl(dev->phydev);
 
 		if (flowctrl & FLOW_CTRL_TX)
 			mcr |= MAC_MCR_FORCE_TX_FC;

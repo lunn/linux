@@ -3650,22 +3650,9 @@ static u32 gfar_get_flowctrl_cfg(struct gfar_private *priv)
 		if (priv->rx_pause_en)
 			val |= MACCFG1_RX_FLOW;
 	} else {
-		u16 lcl_adv, rmt_adv;
 		u8 flowctrl;
-		/* get link partner capabilities */
-		rmt_adv = 0;
-		if (phydev->pause)
-			rmt_adv = LPA_PAUSE_CAP;
-		if (phydev->asym_pause)
-			rmt_adv |= LPA_PAUSE_ASYM;
 
-		lcl_adv = 0;
-		if (phydev->advertising & ADVERTISED_Pause)
-			lcl_adv |= ADVERTISE_PAUSE_CAP;
-		if (phydev->advertising & ADVERTISED_Asym_Pause)
-			lcl_adv |= ADVERTISE_PAUSE_ASYM;
-
-		flowctrl = mii_resolve_flowctrl_fdx(lcl_adv, rmt_adv);
+		flowctrl = phy_resolve_flowctrl(phydev);
 		if (flowctrl & FLOW_CTRL_TX)
 			val |= MACCFG1_TX_FLOW;
 		if (flowctrl & FLOW_CTRL_RX)
