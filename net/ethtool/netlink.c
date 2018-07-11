@@ -4,6 +4,10 @@
 #include <linux/ethtool_netlink.h>
 #include "netlink.h"
 
+u32 ethnl_bcast_seq;
+
+static bool ethnl_ok __read_mostly;
+
 static const struct nla_policy dev_policy[ETHA_DEV_MAX + 1] = {
 	[ETHA_DEV_UNSPEC]	= { .type = NLA_REJECT },
 	[ETHA_DEV_INDEX]	= { .type = NLA_U32 },
@@ -147,9 +151,39 @@ err:
 	return NULL;
 }
 
+/* notifications */
+
+typedef void (*ethnl_notify_handler_t)(struct net_device *dev,
+				       struct netlink_ext_ack *extack,
+				       unsigned int cmd, u32 req_mask,
+				       const void *data);
+
+ethnl_notify_handler_t ethnl_notify_handlers[] = {
+};
+
+void ethtool_notify(struct net_device *dev, struct netlink_ext_ack *extack,
+		    unsigned int cmd, u32 req_mask, const void *data)
+{
+	if (unlikely(!ethnl_ok))
+		return;
+	ASSERT_RTNL();
+
+	if (likely(cmd < ARRAY_SIZE(ethnl_notify_handlers) &&
+		   ethnl_notify_handlers[cmd]))
+		ethnl_notify_handlers[cmd](dev, extack, cmd, req_mask, data);
+	else
+		WARN_ONCE(1, "notification %u not implemented (dev=%s, req_mask=0x%x)\n",
+			  cmd, netdev_name(dev), req_mask);
+}
+EXPORT_SYMBOL(ethtool_notify);
+
 /* genetlink setup */
 
 static const struct genl_ops ethtool_genl_ops[] = {
+};
+
+static const struct genl_multicast_group ethtool_nl_mcgrps[] = {
+	[ETHNL_MCGRP_MONITOR] = { .name = ETHTOOL_MCGRP_MONITOR_NAME },
 };
 
 struct genl_family ethtool_genl_family = {
@@ -160,6 +194,8 @@ struct genl_family ethtool_genl_family = {
 	.parallel_ops	= true,
 	.ops		= ethtool_genl_ops,
 	.n_ops		= ARRAY_SIZE(ethtool_genl_ops),
+	.mcgrps		= ethtool_nl_mcgrps,
+	.n_mcgrps	= ARRAY_SIZE(ethtool_nl_mcgrps),
 };
 
 /* module setup */
@@ -171,6 +207,7 @@ static int __init ethnl_init(void)
 	ret = genl_register_family(&ethtool_genl_family);
 	if (WARN(ret < 0, "ethtool: genetlink family registration failed"))
 		return ret;
+	ethnl_ok = true;
 
 	return 0;
 }

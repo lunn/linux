@@ -11,6 +11,8 @@
 #define ETHNL_SET_ERRMSG(info, msg) \
 	do { if (info) GENL_SET_ERR_MSG(info, msg); } while (0)
 
+extern u32 ethnl_bcast_seq;
+
 extern struct genl_family ethtool_genl_family;
 
 struct net_device *ethnl_dev_get(struct genl_info *info, struct nlattr *nest);
