@@ -171,16 +171,8 @@
 				port@5 {
 					reg = <5>;
 					label = "eth_fc_1000_1";
-					pinctrl-names = "default";
-					pinctrl-0 = <&pinctrl_optical>;
-					module-eeprom-type = <8472>;
-					module-eeprom-i2c = <&i2c0>;
-					fixed-link {
-						speed = <1000>;
-						full-duplex;
-						link-gpios = <&gpio4 4
-						      GPIO_ACTIVE_HIGH>;
-					};
+					phy-mode = "1000base-x";
+					sfp = <&sff>;
 				};
 
 				port@6 {
