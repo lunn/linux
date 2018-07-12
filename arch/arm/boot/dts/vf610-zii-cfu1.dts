@@ -66,6 +66,15 @@
 		 regulator-min-microvolt = <3300000>;
 		 regulator-max-microvolt = <3300000>;
 	};
+
+	sff: sfp {
+		compatible = "sff,sff";
+		pinctrl-0 = <&pinctrl_optical>;
+		pinctrl-names = "default";
+		i2c-bus = <&i2c0>;
+		los-gpio = <&gpio4 4 GPIO_ACTIVE_HIGH>;
+		tx-disable-gpio = <&gpio3 22 GPIO_ACTIVE_HIGH>;
+	};
 };
 
 &adc0 {
