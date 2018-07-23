@@ -275,4 +275,8 @@ struct get_request_ops {
 	void (*cleanup)(struct common_req_info *req_info);
 };
 
+/* request handlers */
+
+extern const struct get_request_ops strset_request_ops;
+
 #endif /* _NET_ETHTOOL_NETLINK_H */

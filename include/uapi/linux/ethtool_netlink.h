@@ -14,6 +14,8 @@
 enum {
 	ETHNL_CMD_NOOP,
 	ETHNL_CMD_EVENT,		/* only for notifications */
+	ETHNL_CMD_GET_STRSET,
+	ETHNL_CMD_SET_STRSET,		/* only for reply */
 
 	__ETHNL_CMD_CNT,
 	ETHNL_CMD_MAX = (__ETHNL_CMD_CNT - 1)
@@ -96,6 +98,47 @@ enum {
 
 	__ETHA_EVENT_CNT,
 	ETHA_EVENT_MAX = (__ETHA_EVENT_CNT - 1)
+};
+
+/* string sets */
+
+enum {
+	ETHA_STRING_UNSPEC,
+	ETHA_STRING_INDEX,			/* u32 */
+	ETHA_STRING_VALUE,			/* string */
+
+	__ETHA_STRING_CNT,
+	ETHA_STRING_MAX = (__ETHA_STRING_CNT - 1)
+};
+
+enum {
+	ETHA_STRINGS_UNSPEC,
+	ETHA_STRINGS_STRING,			/* nest - ETHA_STRINGS_* */
+
+	__ETHA_STRINGS_CNT,
+	ETHA_STRINGS_MAX = (__ETHA_STRINGS_CNT - 1)
+};
+
+enum {
+	ETHA_STRINGSET_UNSPEC,
+	ETHA_STRINGSET_ID,			/* u32 */
+	ETHA_STRINGSET_COUNT,			/* u32 */
+	ETHA_STRINGSET_STRINGS,			/* nest - ETHA_STRINGS_* */
+
+	__ETHA_STRINGSET_CNT,
+	ETHA_STRINGSET_MAX = (__ETHA_STRINGSET_CNT - 1)
+};
+
+/* GET_STRINGSET / SET_STRINGSET */
+
+enum {
+	ETHA_STRSET_UNSPEC,
+	ETHA_STRSET_DEV,			/* nest - ETHA_DEV_* */
+	ETHA_STRSET_COUNTS,			/* flag */
+	ETHA_STRSET_STRINGSET,			/* nest - ETHA_STRSET_* */
+
+	__ETHA_STRSET_CNT,
+	ETHA_STRSET_MAX = (__ETHA_STRSET_CNT - 1)
 };
 
 /* generic netlink info */
