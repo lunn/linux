@@ -123,6 +123,8 @@ List of message types
 ---------------------
 
     ETHNL_CMD_EVENT			notification only
+    ETHNL_CMD_GET_STRSET
+    ETHNL_CMD_SET_STRSET		response only
 
 All constants use ETHNL_CMD_ prefix, usually followed by "GET", "SET" or "ACT"
 to indicate the type.
@@ -163,6 +165,46 @@ and also multiple events of the same type (e.g. two or more newly registered
 devices).
 
 
+GET_STRSET
+----------
+
+Requests contents of a string set as provided by ioctl commands
+ETHTOOL_GSSET_INFO and ETHTOOL_GSTRINGS. String sets are not user writeable so
+that the corresponding SET_STRSET message is only used in kernel replies.
+There are two types of string sets: global (independent of a device, e.g.
+device feature names) and device specific (e.g. device private flags).
+
+Request contents:
+
+    ETHTOOL_A_STRSET_DEV		(nested)	device identification
+    ETHTOOL_A_STRSET_COUNTS		(flag)		request only counts
+    ETHTOOL_A_STRSET_STRINGSET		(nested)	string set to request
+        ETHTOOL_A_STRINGSET_ID		(u32)		set id
+
+Kernel response contents:
+
+    ETHTOOL_A_STRSET_DEV		(nested)	device identification
+    ETHTOOL_A_STRSET_STRINGSET		(nested)	string set to request
+        ETHTOOL_A_STRINGSET_ID		    (u32)	    set id
+        ETHTOOL_A_STRINGSET_COUNT	    (u32)	    number of strings
+        ETHTOOL_A_STRINGSET_STRINGS	    (nested)	    array of strings
+            ETHTOOL_A_STRING_INDEX		(u32)		string index
+            ETHTOOL_A_STRING_VALUE		(string)	string value
+
+ETHTOOL_A_STRSET_DEV, if present, identifies the device to request device
+specific string sets for. Depending on its presence a and NLM_F_DUMP flag,
+there are three type of GET_STRSET requests:
+
+ - no NLM_F_DUMP, no device: get "global" stringsets
+ - no NLM_F_DUMP, with device: get string sets related to the device
+ - NLM_F_DUMP, no device: get device related string sets for all devices
+
+If there is no ETHTOOL_A_STRSET_STRINGSET attribute, all string sets of
+requested type are returned, otherwise only those specified in the request.
+Flag ETHTOOL_A_STRSET_COUNTS tells kernel to only return string counts of the
+sets, not the actual strings.
+
+
 Request translation
 -------------------
 
@@ -197,7 +239,7 @@ ETHTOOL_STXCSUM			n/a
 ETHTOOL_GSG			n/a
 ETHTOOL_SSG			n/a
 ETHTOOL_TEST			n/a
-ETHTOOL_GSTRINGS		n/a
+ETHTOOL_GSTRINGS		ETHNL_CMD_GET_STRSET
 ETHTOOL_PHYS_ID			n/a
 ETHTOOL_GSTATS			n/a
 ETHTOOL_GTSO			n/a
@@ -225,7 +267,7 @@ ETHTOOL_FLASHDEV		n/a
 ETHTOOL_RESET			n/a
 ETHTOOL_SRXNTUPLE		n/a
 ETHTOOL_GRXNTUPLE		n/a
-ETHTOOL_GSSET_INFO		n/a
+ETHTOOL_GSSET_INFO		ETHNL_CMD_GET_STRSET
 ETHTOOL_GRXFHINDIR		n/a
 ETHTOOL_SRXFHINDIR		n/a
 ETHTOOL_GFEATURES		n/a

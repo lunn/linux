@@ -582,6 +582,8 @@ enum ethtool_stringset {
 	ETH_SS_TUNABLES,
 	ETH_SS_PHY_STATS,
 	ETH_SS_PHY_TUNABLES,
+
+	ETH_SS_COUNT
 };
 
 /**

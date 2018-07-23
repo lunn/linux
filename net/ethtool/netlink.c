@@ -177,6 +177,7 @@ static int ethnl_multicast(struct sk_buff *skb, struct net_device *dev)
 /* GET request helpers */
 
 const struct get_request_ops *get_requests[__ETHNL_CMD_CNT] = {
+	[ETHNL_CMD_GET_STRSET]		= &strset_request_ops,
 };
 
 /**
@@ -582,6 +583,13 @@ static struct notifier_block ethnl_netdev_notifier = {
 /* genetlink setup */
 
 static const struct genl_ops ethtool_genl_ops[] = {
+	{
+		.cmd	= ETHNL_CMD_GET_STRSET,
+		.doit	= ethnl_get_doit,
+		.start	= ethnl_get_start,
+		.dumpit	= ethnl_get_dumpit,
+		.done	= ethnl_get_done,
+	},
 };
 
 static const struct genl_multicast_group ethtool_nl_mcgrps[] = {
