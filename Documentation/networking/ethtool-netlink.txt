@@ -126,6 +126,8 @@ which the request applies.
 List of message types
 ---------------------
 
+    ETHNL_CMD_EVENT			notification only
+
 All constants use ETHNL_CMD_ prefix, usually followed by "GET", "SET" or "ACT"
 to indicate the type.
 
@@ -137,7 +139,32 @@ messages marked as "response only" in the table above. "Get" messages with
 NLM_F_DUMP flags and no device identification dump the information for all
 devices supporting the request.
 
+Type ETHNL_CMD_EVENT is special, these messages are never used in userspace
+requests or kernel replies. They are only sent by kernel to sockets listening
+to "monitor" multicast group to inform userspace about certain events.
+
 Later sections describe the format and semantics of these request messages.
+
+
+EVENT
+-----
+
+EVENT messages are only used in kernel multicast notifications. Atributes
+correspond to specific event types, the same type can appear multiple times.
+
+    ETHA_EVENT_NEWDEV		(nested)	new device was registered
+       ETHA_NEWDEV_DEV			(nested)	new device
+    ETHA_EVENT_DELDEV		(nested)	device was unregistered
+       ETHA_DELDEV_DEV			(nested)	removed device
+    ETHA_EVENT_RENAMEDEV	(nested)	device was renamed
+       ETHA_RENAMEDEV_DEV		(nested)	renamed device
+
+For ETHA_EVENT_RENAMEDEV, the name ETHA_RENAME_DEV/ETHA_DEV_NAME is the new
+name after the rename.
+
+Userspace application must expect multiple events to be present in one message
+and also multiple events of the same type (e.g. two or more newly registered
+devices).
 
 
 Request translation

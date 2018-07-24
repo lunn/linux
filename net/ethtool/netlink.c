@@ -177,6 +177,67 @@ void ethtool_notify(struct net_device *dev, struct netlink_ext_ack *extack,
 }
 EXPORT_SYMBOL(ethtool_notify);
 
+/* size of NEWDEV/DELDEV notification */
+static inline unsigned int dev_notify_size(void)
+{
+	return nla_total_size(dev_ident_size());
+}
+
+static void ethnl_notify_devlist(struct netdev_notifier_info *info,
+				 u16 ev_type, u16 dev_attr)
+{
+	struct net_device *dev = netdev_notifier_info_to_dev(info);
+	struct sk_buff *skb;
+	struct nlattr *nest;
+	void *ehdr;
+	int ret;
+
+	skb = genlmsg_new(dev_notify_size(), GFP_KERNEL);
+	if (!skb)
+		return;
+	ehdr = genlmsg_put(skb, 0, ++ethnl_bcast_seq, &ethtool_genl_family, 0,
+			   ETHNL_CMD_EVENT);
+	if (!ehdr)
+		goto out_skb;
+	nest = ethnl_nest_start(skb, ev_type);
+	if (!nest)
+		goto out_skb;
+	ret = ethnl_fill_dev(skb, dev, dev_attr);
+	if (ret < 0)
+		goto out_skb;
+	nla_nest_end(skb, nest);
+	genlmsg_end(skb, ehdr);
+
+	genlmsg_multicast(&ethtool_genl_family, skb, 0, ETHNL_MCGRP_MONITOR,
+			  GFP_KERNEL);
+	return;
+out_skb:
+	nlmsg_free(skb);
+}
+
+static int ethnl_netdev_event(struct notifier_block *this, unsigned long event,
+			      void *ptr)
+{
+	switch (event) {
+	case NETDEV_REGISTER:
+		ethnl_notify_devlist(ptr, ETHA_EVENT_NEWDEV, ETHA_NEWDEV_DEV);
+		break;
+	case NETDEV_UNREGISTER:
+		ethnl_notify_devlist(ptr, ETHA_EVENT_DELDEV, ETHA_DELDEV_DEV);
+		break;
+	case NETDEV_CHANGENAME:
+		ethnl_notify_devlist(ptr, ETHA_EVENT_RENAMEDEV,
+				     ETHA_RENAMEDEV_DEV);
+		break;
+	}
+
+	return NOTIFY_DONE;
+}
+
+static struct notifier_block ethnl_netdev_notifier = {
+	.notifier_call = ethnl_netdev_event,
+};
+
 /* genetlink setup */
 
 static const struct genl_ops ethtool_genl_ops[] = {
@@ -209,7 +270,9 @@ static int __init ethnl_init(void)
 		return ret;
 	ethnl_ok = true;
 
-	return 0;
+	ret = register_netdevice_notifier(&ethnl_netdev_notifier);
+	WARN(ret < 0, "ethtool: net device notifier registration failed");
+	return ret;
 }
 
 subsys_initcall(ethnl_init);

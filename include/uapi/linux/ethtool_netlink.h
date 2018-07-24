@@ -13,6 +13,7 @@
 
 enum {
 	ETHNL_CMD_NOOP,
+	ETHNL_CMD_EVENT,		/* only for notifications */
 
 	__ETHNL_CMD_CNT,
 	ETHNL_CMD_MAX = (__ETHNL_CMD_CNT - 1)
@@ -59,6 +60,42 @@ enum {
 
 	__ETHA_BITSET_CNT,
 	ETHA_BITSET_MAX = (__ETHA_BITSET_CNT - 1)
+};
+
+/* events */
+
+enum {
+	ETHA_NEWDEV_UNSPEC,
+	ETHA_NEWDEV_DEV,			/* nest - ETHA_DEV_* */
+
+	__ETHA_NEWDEV_CNT,
+	ETHA_NEWDEV_MAX = (__ETHA_NEWDEV_CNT - 1)
+};
+
+enum {
+	ETHA_DELDEV_UNSPEC,
+	ETHA_DELDEV_DEV,			/* nest - ETHA_DEV_* */
+
+	__ETHA_DELDEV_CNT,
+	ETHA_DELDEV_MAX = (__ETHA_DELDEV_CNT - 1)
+};
+
+enum {
+	ETHA_RENAMEDEV_UNSPEC,
+	ETHA_RENAMEDEV_DEV,			/* nest - ETHA_DEV_* */
+
+	__ETHA_RENAMEDEV_CNT,
+	ETHA_RENAMEDEV_MAX = (__ETHA_RENAMEDEV_CNT - 1)
+};
+
+enum {
+	ETHA_EVENT_UNSPEC,
+	ETHA_EVENT_NEWDEV,			/* nest - ETHA_NEWDEV_* */
+	ETHA_EVENT_DELDEV,			/* nest - ETHA_DELDEV_* */
+	ETHA_EVENT_RENAMEDEV,			/* nest - ETHA_RENAMEDEV_* */
+
+	__ETHA_EVENT_CNT,
+	ETHA_EVENT_MAX = (__ETHA_EVENT_CNT - 1)
 };
 
 /* generic netlink info */
