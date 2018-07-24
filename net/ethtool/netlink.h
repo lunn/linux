@@ -164,4 +164,115 @@ static inline unsigned int dev_ident_size(void)
 			      nla_total_size(IFNAMSIZ));
 }
 
+/* GET request handling */
+
+struct common_reply_data;
+
+/* The structure holding data for unified processing a GET request consists of
+ * two parts: request info and reply data. Request info starts at offset 0 with
+ * embedded struct common_req_info, is usually filled by ->parse_request() and
+ * is common for all reply messages to one request. Reply data start with
+ * embedded struct common_reply_data and contain data specific to a reply
+ * message (usually one per device for dump requests); this part is filled by
+ * ->prepare_data()
+ */
+
+/**
+ * struct common_req_info - base type of request information for GET requests
+ * @reply_data: pointer to reply data within the same block
+ * @dev:        network device the request is for (may be null)
+ * @req_mask:   request mask, bitmap of requested information
+ * @compact:    true if compact format of bitsets in reply is requested
+ *
+ * This is a common base, additional members may follow after this structure.
+ */
+struct common_req_info {
+	struct common_reply_data	*reply_data;
+	struct net_device		*dev;
+	u32				req_mask;
+	bool				compact;
+};
+
+/**
+ * struct common_reply_data - base type of reply data for GET requests
+ * @dev:       device for current reply message; in single shot requests it is
+ *             equal to &common_req_info.dev; in dumps it's different for each
+ *             reply message
+ * @info_mask: bitmap of information actually provided in reply; it is a subset
+ *             of &common_req_info.req_mask with cleared bits corresponding to
+ *             information which cannot be provided
+ *
+ * This structure is usually followed by additional members filled by
+ * ->prepare_data() and used by ->cleanup().
+ */
+struct common_reply_data {
+	struct net_device		*dev;
+	u32				info_mask;
+};
+
+static inline int ethnl_before_ops(struct net_device *dev)
+{
+	if (dev && dev->ethtool_ops->begin)
+		return dev->ethtool_ops->begin(dev);
+	else
+		return 0;
+}
+
+static inline void ethnl_after_ops(struct net_device *dev)
+{
+	if (dev && dev->ethtool_ops->complete)
+		dev->ethtool_ops->complete(dev);
+}
+
+/**
+ * struct get_request_ops - unified handling of GET requests
+ * @request_cmd:    command id for request (GET)
+ * @reply_cmd:      command id for reply (SET)
+ * @dev_attr:       attribute type for device specification
+ * @data_size:      total length of data structure
+ * @repdata_offset: offset of "reply data" part (struct common_reply_data)
+ * @allow_nodev_do: do not fail if device is not specified for non-dump request
+ * @parse_request:
+ *	parse request message and fill request info; request info is zero
+ *	initialized on entry except reply_data pointer (which is initialized)
+ * @prepare_data:
+ *	retrieve data needed to compose a reply message; reply data are zero
+ *	initialized on entry except for @dev
+ * @reply_size:
+ *	return size of reply message payload without device specification;
+ *	returned size may be bigger than actual reply size but it must suffice
+ *	to hold the reply
+ * @fill_reply:
+ *	fill reply message payload using the data prepared by @prepare_data()
+ * @cleanup
+ *	(optional) called when data are no longer needed; use e.g. to free
+ *	any additional data structures allocated in prepare_data() which are
+ *	not part of the main structure
+ *
+ * Description of variable parts of GET request handling when using the unified
+ * infrastructure. When used, a pointer to an instance of this structure is to
+ * be added to &get_requests array, generic handlers ethnl_get_doit(),
+ * ethnl_get_dumpit(), ethnl_get_start() and ethnl_get_done() used in
+ * @ethnl_genl_ops and (optionally) ethnl_std_notify() as notification handler
+ * in &ethnl_notify_handlers.
+ */
+struct get_request_ops {
+	u8			request_cmd;
+	u8			reply_cmd;
+	u16			dev_attrtype;
+	unsigned int		data_size;
+	unsigned int		repdata_offset;
+	bool			allow_nodev_do;
+
+	int (*parse_request)(struct common_req_info *req_info,
+			     struct sk_buff *skb, struct genl_info *info,
+			     const struct nlmsghdr *nlhdr);
+	int (*prepare_data)(struct common_req_info *req_info,
+			    struct genl_info *info);
+	int (*reply_size)(const struct common_req_info *req_info);
+	int (*fill_reply)(struct sk_buff *skb,
+			  const struct common_req_info *req_info);
+	void (*cleanup)(struct common_req_info *req_info);
+};
+
 #endif /* _NET_ETHTOOL_NETLINK_H */
