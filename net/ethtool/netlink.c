@@ -616,6 +616,14 @@ out_skb:
 	nlmsg_free(skb);
 }
 
+static void ethnl_notify_features(struct netdev_notifier_info *info)
+{
+	struct net_device *dev = netdev_notifier_info_to_dev(info);
+
+	ethtool_notify(dev, NULL, ETHNL_CMD_SET_SETTINGS,
+		       ETH_SETTINGS_IM_FEATURES, NULL);
+}
+
 static int ethnl_netdev_event(struct notifier_block *this, unsigned long event,
 			      void *ptr)
 {
@@ -629,6 +637,9 @@ static int ethnl_netdev_event(struct notifier_block *this, unsigned long event,
 	case NETDEV_CHANGENAME:
 		ethnl_notify_devlist(ptr, ETHA_EVENT_RENAMEDEV,
 				     ETHA_RENAMEDEV_DEV);
+		break;
+	case NETDEV_FEAT_CHANGE:
+		ethnl_notify_features(ptr);
 		break;
 	}
 

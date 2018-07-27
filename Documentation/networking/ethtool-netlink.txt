@@ -280,6 +280,7 @@ Info mask bits meaning:
     ETH_SETTINGS_IM_LINKSTATE		link state
     ETH_SETTINGS_IM_WOL			struct ethtool_wolinfo
     ETH_SETTINGS_IM_DEBUG		debugging
+    ETH_SETTINGS_IM_FEATURES		features
 
 Response contents:
 
@@ -303,6 +304,11 @@ Response contents:
         ETHA_WOL_SOPASS			(binary)	SecureOn(tm) password
     ETHA_SETTINGS_DEBUG		(nested)	debugging
         ETHA_DEBUG_MSG_MASK		(bitfield32)	debug message mask
+    ETHA_SETTINGS_FEATURES	(nested)	device features
+        ETHA_FEATURES_HW		(bitset)	dev->hw_features
+        ETHA_FEATURES_WANTED		(bitset)	dev->wanted_features
+        ETHA_FEATURES_ACTIVE		(bitset)	dev->features
+        ETHA_FEATURES_NOCHANGE		(bitset)	NETIF_F_NEVER_CHANGE
 
 Most of the attributes and their values have the same meaning as matching
 members of the corresponding ioctl structures. For ETHA_LINKMODES_OURS,
@@ -316,13 +322,23 @@ ETHA_DEBUG_MSG_MASK corresponds to message level (which is actually a bitfield)
 as reported by ETHTOOL_GMSGLVL. The selector reports all message types
 recognized by kernel and value types enabled for the device.
 
+Bitmaps contained in ETHA_SETTINGS_FEATURES have the same meaning as bitmaps
+used in ioctl interference but attribute names are different (they are based
+on corresponding members of struct net_device). Legacy "flags" are not
+provided, if userspace needs them (most likely only ethtool for backward
+compatibility), it can calculate their values from related feature bits
+itself. ETHA_FEATURES_HW uses mask consisting of all features recognized by
+kernel (to provide all names when using verbose bitmap format), remaining
+three use mask equal to value (to save space).
+
 GET_SETTINGS request is allowed for unprivileged user but ETHA_WOL_SOPASS
 is only provided by kernel in response to privileged (netns CAP_NET_ADMIN)
 requests.
 
 GET_SETTINGS requests allow dumps and messages in the same format as response
 to them are broadcasted as notifications on change of these settings using
-netlink or ioctl ethtool interface.
+netlink or ioctl ethtool interface; feature notifications are also sent
+whenever netdev_update_features() or netdev_change_features() is called.
 
 
 SET_SETTINGS
@@ -394,30 +410,30 @@ ETHTOOL_GRINGPARAM		n/a
 ETHTOOL_SRINGPARAM		n/a
 ETHTOOL_GPAUSEPARAM		n/a
 ETHTOOL_SPAUSEPARAM		n/a
-ETHTOOL_GRXCSUM			n/a
+ETHTOOL_GRXCSUM			ETHNL_CMD_GET_SETTINGS
 ETHTOOL_SRXCSUM			n/a
-ETHTOOL_GTXCSUM			n/a
+ETHTOOL_GTXCSUM			ETHNL_CMD_GET_SETTINGS
 ETHTOOL_STXCSUM			n/a
-ETHTOOL_GSG			n/a
+ETHTOOL_GSG			ETHNL_CMD_GET_SETTINGS
 ETHTOOL_SSG			n/a
 ETHTOOL_TEST			n/a
 ETHTOOL_GSTRINGS		ETHNL_CMD_GET_STRSET
 ETHTOOL_PHYS_ID			n/a
 ETHTOOL_GSTATS			n/a
-ETHTOOL_GTSO			n/a
+ETHTOOL_GTSO			ETHNL_CMD_GET_SETTINGS
 ETHTOOL_STSO			n/a
 ETHTOOL_GPERMADDR		rtnetlink RTM_GETLINK
-ETHTOOL_GUFO			n/a
+ETHTOOL_GUFO			ETHNL_CMD_GET_SETTINGS
 ETHTOOL_SUFO			n/a
-ETHTOOL_GGSO			n/a
+ETHTOOL_GGSO			ETHNL_CMD_GET_SETTINGS
 ETHTOOL_SGSO			n/a
-ETHTOOL_GFLAGS			n/a
+ETHTOOL_GFLAGS			ETHNL_CMD_GET_SETTINGS
 ETHTOOL_SFLAGS			n/a
 ETHTOOL_GPFLAGS			n/a
 ETHTOOL_SPFLAGS			n/a
 ETHTOOL_GRXFH			n/a
 ETHTOOL_SRXFH			n/a
-ETHTOOL_GGRO			n/a
+ETHTOOL_GGRO			ETHNL_CMD_GET_SETTINGS
 ETHTOOL_SGRO			n/a
 ETHTOOL_GRXRINGS		n/a
 ETHTOOL_GRXCLSRLCNT		n/a
@@ -432,7 +448,7 @@ ETHTOOL_GRXNTUPLE		n/a
 ETHTOOL_GSSET_INFO		ETHNL_CMD_GET_STRSET
 ETHTOOL_GRXFHINDIR		n/a
 ETHTOOL_SRXFHINDIR		n/a
-ETHTOOL_GFEATURES		n/a
+ETHTOOL_GFEATURES		ETHNL_CMD_GET_SETTINGS
 ETHTOOL_SFEATURES		n/a
 ETHTOOL_GCHANNELS		n/a
 ETHTOOL_SCHANNELS		n/a

@@ -6,6 +6,8 @@
 #include <linux/netdevice.h>
 #include <linux/ethtool.h>
 
+#define ETHTOOL_DEV_FEATURE_WORDS	((NETDEV_FEATURE_COUNT + 31) / 32)
+
 extern const char
 netdev_features_strings[NETDEV_FEATURE_COUNT][ETH_GSTRING_LEN];
 extern const char
