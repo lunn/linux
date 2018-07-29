@@ -363,6 +363,9 @@ to be passed with SET_SETTINGS request:
         ETHA_WOL_SOPASS			(binary)	SecureOn(tm) password
     ETHA_SETTINGS_DEBUG		(nested)	debugging
         ETHA_DEBUG_MSG_MASK		(bitfield32)	message mask
+    ETHA_SETTINGS_FEATURES	(nested)	device features
+        ETHA_FEATURES_WANTED		(bitset)	wanted features
+        ETHA_FEATURES_WANT_DIFF		(flag)		actual diff
 
 ETHA_LINKMODES_OURS bit set allows setting advertised link modes. If
 autonegotiation is on (either set now or kept from before), advertised modes
@@ -381,6 +384,17 @@ issued if any of them is also set in the value (i.e. if userspace tries to
 enable mode not supported by device). ETHA_SETTINGS_MSGLEVEL bitfield also
 allows bits not recognized by kernel in selector as long as the request does
 not attempt to enable them.
+
+When changing device features, only ETHA_FEATURES_WANTED is passed. As usual,
+mask defines which bits are to be set and value their values. If the request
+has ETHA_FEATURES_WANT_DIFF flag set, reply will contain a message in the same
+format as response to GET request, except only two bitsets are provided.
+ETHA_FEATURES_WANTED shows difference between requested features and actual
+result (dev->features after the operation); mask shows bits which differ and
+value their values from the original request (new values are negated). Value
+shows changes between old dev->features (before the operation) and new (after
+the operation); mask shows bits which have been changed and value their new
+values.
 
 
 Request translation
@@ -411,30 +425,30 @@ ETHTOOL_SRINGPARAM		n/a
 ETHTOOL_GPAUSEPARAM		n/a
 ETHTOOL_SPAUSEPARAM		n/a
 ETHTOOL_GRXCSUM			ETHNL_CMD_GET_SETTINGS
-ETHTOOL_SRXCSUM			n/a
+ETHTOOL_SRXCSUM			ETHNL_CMD_SET_SETTINGS
 ETHTOOL_GTXCSUM			ETHNL_CMD_GET_SETTINGS
-ETHTOOL_STXCSUM			n/a
+ETHTOOL_STXCSUM			ETHNL_CMD_SET_SETTINGS
 ETHTOOL_GSG			ETHNL_CMD_GET_SETTINGS
-ETHTOOL_SSG			n/a
+ETHTOOL_SSG			ETHNL_CMD_SET_SETTINGS
 ETHTOOL_TEST			n/a
 ETHTOOL_GSTRINGS		ETHNL_CMD_GET_STRSET
 ETHTOOL_PHYS_ID			n/a
 ETHTOOL_GSTATS			n/a
 ETHTOOL_GTSO			ETHNL_CMD_GET_SETTINGS
-ETHTOOL_STSO			n/a
+ETHTOOL_STSO			ETHNL_CMD_SET_SETTINGS
 ETHTOOL_GPERMADDR		rtnetlink RTM_GETLINK
 ETHTOOL_GUFO			ETHNL_CMD_GET_SETTINGS
-ETHTOOL_SUFO			n/a
+ETHTOOL_SUFO			ETHNL_CMD_SET_SETTINGS
 ETHTOOL_GGSO			ETHNL_CMD_GET_SETTINGS
-ETHTOOL_SGSO			n/a
+ETHTOOL_SGSO			ETHNL_CMD_SET_SETTINGS
 ETHTOOL_GFLAGS			ETHNL_CMD_GET_SETTINGS
-ETHTOOL_SFLAGS			n/a
+ETHTOOL_SFLAGS			ETHNL_CMD_SET_SETTINGS
 ETHTOOL_GPFLAGS			n/a
 ETHTOOL_SPFLAGS			n/a
 ETHTOOL_GRXFH			n/a
 ETHTOOL_SRXFH			n/a
 ETHTOOL_GGRO			ETHNL_CMD_GET_SETTINGS
-ETHTOOL_SGRO			n/a
+ETHTOOL_SGRO			ETHNL_CMD_SET_SETTINGS
 ETHTOOL_GRXRINGS		n/a
 ETHTOOL_GRXCLSRLCNT		n/a
 ETHTOOL_GRXCLSRULE		n/a
@@ -449,7 +463,7 @@ ETHTOOL_GSSET_INFO		ETHNL_CMD_GET_STRSET
 ETHTOOL_GRXFHINDIR		n/a
 ETHTOOL_SRXFHINDIR		n/a
 ETHTOOL_GFEATURES		ETHNL_CMD_GET_SETTINGS
-ETHTOOL_SFEATURES		n/a
+ETHTOOL_SFEATURES		ETHNL_CMD_SET_SETTINGS
 ETHTOOL_GCHANNELS		n/a
 ETHTOOL_SCHANNELS		n/a
 ETHTOOL_SET_DUMP		n/a

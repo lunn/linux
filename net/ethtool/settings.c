@@ -652,6 +652,15 @@ static const struct nla_policy set_debug_policy[ETHA_DEBUG_MAX + 1] = {
 					    .validation_data = &all_bits },
 };
 
+static const struct nla_policy set_features_policy[ETHA_FEATURES_MAX + 1] = {
+	[ETHA_FEATURES_UNSPEC]		= { .type = NLA_REJECT },
+	[ETHA_FEATURES_HW]		= { .type = NLA_REJECT },
+	[ETHA_FEATURES_WANTED]		= { .type = NLA_NESTED },
+	[ETHA_FEATURES_ACTIVE]		= { .type = NLA_REJECT },
+	[ETHA_FEATURES_NOCHANGE]	= { .type = NLA_REJECT },
+	[ETHA_FEATURES_WANT_DIFF]	= { .type = NLA_FLAG },
+};
+
 static const struct nla_policy set_settings_policy[ETHA_SETTINGS_MAX + 1] = {
 	[ETHA_SETTINGS_UNSPEC]		= { .type = NLA_REJECT },
 	[ETHA_SETTINGS_DEV]		= { .type = NLA_NESTED },
@@ -662,7 +671,7 @@ static const struct nla_policy set_settings_policy[ETHA_SETTINGS_MAX + 1] = {
 	[ETHA_SETTINGS_LINK_STATE]	= { .type = NLA_REJECT },
 	[ETHA_SETTINGS_WOL]		= { .type = NLA_NESTED },
 	[ETHA_SETTINGS_DEBUG]		= { .type = NLA_NESTED },
-	[ETHA_SETTINGS_FEATURES]	= { .type = NLA_REJECT },
+	[ETHA_SETTINGS_FEATURES]	= { .type = NLA_NESTED },
 };
 
 static int ethnl_set_link_ksettings(struct genl_info *info,
@@ -877,11 +886,146 @@ static int update_debug(struct genl_info *info, struct nlattr *nest,
 	return ret;
 }
 
+static void bitmap_from_features(unsigned long *bitmap, netdev_features_t val)
+{
+	const unsigned int words = BITS_TO_LONGS(NETDEV_FEATURE_COUNT);
+	unsigned int i;
+
+	bitmap_zero(bitmap, NETDEV_FEATURE_COUNT);
+	for (i = 0; i < words; i++)
+		bitmap[i] = (unsigned long)(val >> (i * BITS_PER_LONG));
+}
+
+static netdev_features_t features_from_bitmap(unsigned long *bitmap)
+{
+	const unsigned int words = BITS_TO_LONGS(NETDEV_FEATURE_COUNT);
+	netdev_features_t ret = 0;
+	unsigned int i;
+
+	for (i = 0; i < words; i++)
+		ret |= (netdev_features_t)(bitmap[i]) << (i * BITS_PER_LONG);
+	return ret;
+}
+
+static int update_features(struct genl_info *info, struct net_device *dev,
+			   const struct nlattr *nest, bool compact,
+			   bool *changed)
+{
+	const unsigned int bitset_flags =
+	       (compact ? ETHNL_BITSET_COMPACT : 0) |
+	       ETHNL_BITSET_LEGACY_NAMES;
+	struct nlattr *tb[ETHA_FEATURES_MAX + 1];
+	DECLARE_BITMAP(old_active, NETDEV_FEATURE_COUNT);
+	DECLARE_BITMAP(req_wanted, NETDEV_FEATURE_COUNT);
+	DECLARE_BITMAP(req_mask, NETDEV_FEATURE_COUNT);
+	DECLARE_BITMAP(new_active, NETDEV_FEATURE_COUNT);
+	DECLARE_BITMAP(wanted_diff_mask, NETDEV_FEATURE_COUNT);
+	DECLARE_BITMAP(active_diff_mask, NETDEV_FEATURE_COUNT);
+	struct nlattr *feat_attr;
+	struct sk_buff *rskb;
+	void *reply_payload;
+	bool mod = false;
+	int reply_len;
+	int ret;
+
+	*changed = false;
+	ret = nla_parse_nested_strict(tb, ETHA_FEATURES_MAX, nest,
+				      set_features_policy, info->extack);
+	if (ret < 0)
+		return ret;
+	if (!tb[ETHA_FEATURES_WANTED])
+		return -EINVAL;
+
+	bitmap_from_features(old_active, dev->features);
+	bitmap_copy(req_wanted, old_active, NETDEV_FEATURE_COUNT);
+	bitmap_zero(req_mask, NETDEV_FEATURE_COUNT);
+	mod = ethnl_update_bitset(req_wanted, req_mask, NETDEV_FEATURE_COUNT,
+				  tb[ETHA_FEATURES_WANTED], &ret,
+				  netdev_features_strings, true, info);
+	if (ret < 0)
+		return ret;
+	if (features_from_bitmap(req_mask) & ~NETIF_F_ETHTOOL_BITS) {
+		ETHNL_SET_ERRMSG(info,
+				 "attempt to change non-ethtool features");
+		return -EINVAL;
+	}
+	if (!mod)
+		return 0;
+
+	dev->wanted_features = features_from_bitmap(req_wanted);
+	__netdev_update_features(dev);
+	bitmap_from_features(new_active, dev->features);
+	*changed = !bitmap_equal(old_active, new_active, NETDEV_FEATURE_COUNT);
+	if (!tb[ETHA_FEATURES_WANT_DIFF])
+		return 0;
+
+	bitmap_xor(wanted_diff_mask, req_wanted, new_active,
+		   NETDEV_FEATURE_COUNT);
+	bitmap_xor(active_diff_mask, old_active, new_active,
+		   NETDEV_FEATURE_COUNT);
+	bitmap_and(wanted_diff_mask, wanted_diff_mask, req_mask,
+		   NETDEV_FEATURE_COUNT);
+	bitmap_and(req_wanted, req_wanted, wanted_diff_mask,
+		   NETDEV_FEATURE_COUNT);
+	bitmap_and(new_active, new_active, active_diff_mask,
+		   NETDEV_FEATURE_COUNT);
+
+	rskb = NULL;
+	reply_len = 0;
+	ret = ethnl_bitset_size(NETDEV_FEATURE_COUNT, req_wanted,
+				wanted_diff_mask, netdev_features_strings,
+				bitset_flags);
+	if (ret < 0)
+		goto err;
+	reply_len += ret;
+	ret = ethnl_bitset_size(NETDEV_FEATURE_COUNT, new_active,
+				active_diff_mask, netdev_features_strings,
+				bitset_flags);
+	if (ret < 0)
+		goto err;
+	reply_len += ret;
+	reply_len = dev_ident_size() + nla_total_size(reply_len);
+	ret = -ENOMEM;
+	rskb = ethnl_reply_init(reply_len, dev, ETHNL_CMD_SET_SETTINGS,
+				ETHA_SETTINGS_DEV, info, &reply_payload);
+	if (!rskb)
+		goto err;
+
+	ret = -EMSGSIZE;
+	feat_attr = ethnl_nest_start(rskb, ETHA_SETTINGS_FEATURES);
+	if (!feat_attr)
+		goto err;
+	ret = ethnl_put_bitset(rskb, ETHA_FEATURES_WANTED, NETDEV_FEATURE_COUNT,
+			       req_wanted, wanted_diff_mask,
+			       netdev_features_strings, bitset_flags);
+	if (ret < 0)
+		goto err;
+	ret = ethnl_put_bitset(rskb, ETHA_FEATURES_ACTIVE, NETDEV_FEATURE_COUNT,
+			       new_active, active_diff_mask,
+			       netdev_features_strings, bitset_flags);
+	if (ret < 0)
+		goto err;
+	nla_nest_end(rskb, feat_attr);
+
+	genlmsg_end(rskb, reply_payload);
+	return genlmsg_reply(rskb, info);
+err:
+	WARN_ONCE(ret == -EMSGSIZE,
+		  "calculated message payload length (%d) not sufficient\n",
+		  reply_len);
+	if (rskb)
+		nlmsg_free(rskb);
+	if (ret < 0)
+		ETHNL_SET_ERRMSG(info, "failed to send reply message");
+	return 0;
+}
+
 int ethnl_set_settings(struct sk_buff *skb, struct genl_info *info)
 {
 	struct nlattr *tb[ETHA_SETTINGS_MAX + 1];
 	struct net_device *dev;
 	u32 req_mask = 0;
+	bool mod;
 	int ret;
 
 	ret = ethnlmsg_parse(info->nlhdr, tb, ETHA_SETTINGS_MAX,
@@ -917,6 +1061,16 @@ int ethnl_set_settings(struct sk_buff *skb, struct genl_info *info)
 			goto out_ops;
 		if (ret)
 			req_mask |= ETH_SETTINGS_IM_DEBUG;
+	}
+	if (tb[ETHA_SETTINGS_FEATURES]) {
+		bool compact = tb[ETHA_SETTINGS_COMPACT];
+
+		ret = update_features(info, dev, tb[ETHA_SETTINGS_FEATURES],
+				      compact, &mod);
+		if (mod)
+			req_mask |= ETH_SETTINGS_IM_FEATURES;
+		if (ret < 0)
+			goto out_ops;
 	}
 	ret = 0;
 
