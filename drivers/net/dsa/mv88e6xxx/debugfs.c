@@ -551,7 +551,7 @@ enum {
 	MV88E6XXX_DBG_REGS_ID_SERDES,
 };
 
-static int mv88e6xxx_serdes_read(struct mv88e6xxx_chip *chip, int reg,
+static int mv88e6352_serdes_read(struct mv88e6xxx_chip *chip, int reg,
 				 u16 *val)
 {
 	return mv88e6xxx_phy_page_read(chip, MV88E6352_ADDR_SERDES,
@@ -559,12 +559,20 @@ static int mv88e6xxx_serdes_read(struct mv88e6xxx_chip *chip, int reg,
 				       reg, val);
 }
 
-static int mv88e6xxx_serdes_write(struct mv88e6xxx_chip *chip, int reg,
+static int mv88e6352_serdes_write(struct mv88e6xxx_chip *chip, int reg,
 				  u16 val)
 {
 	return mv88e6xxx_phy_page_write(chip, MV88E6352_ADDR_SERDES,
 					MV88E6352_SERDES_PAGE_FIBER,
 					reg, val);
+}
+
+static int mv88e6390_serdes_read(struct mv88e6xxx_chip *chip,
+				 int lane, int device, int reg, u16 *val)
+{
+	int reg_c45 = MII_ADDR_C45 | device << 16 | reg;
+
+	return mv88e6xxx_phy_read(chip, lane, reg_c45, val);
 }
 
 static int mv88e6xxx_dbg_regs_read(struct mv88e6xxx_chip *chip, int id,
@@ -586,7 +594,7 @@ static int mv88e6xxx_dbg_regs_read(struct mv88e6xxx_chip *chip, int id,
 
 	for (reg = 0; reg < 32; ++reg) {
 		if (id == MV88E6XXX_DBG_REGS_ID_SERDES)
-			err = mv88e6xxx_serdes_read(chip, reg, &val);
+			err = mv88e6352_serdes_read(chip, reg, &val);
 		else if (id == MV88E6XXX_DBG_REGS_ID_GLOBAL2)
 			err = mv88e6xxx_read(chip, chip->info->global2_addr,
 					     reg, &val);
@@ -616,7 +624,7 @@ static int mv88e6xxx_dbg_regs_write(struct mv88e6xxx_chip *chip, int id,
 		return -ERANGE;
 
 	if (id == MV88E6XXX_DBG_REGS_ID_SERDES)
-		err = mv88e6xxx_serdes_write(chip, reg, val);
+		err = mv88e6352_serdes_write(chip, reg, val);
 	else if (id == MV88E6XXX_DBG_REGS_ID_GLOBAL2)
 		err = mv88e6xxx_write(chip, chip->info->global2_addr, reg, val);
 	else if (id == MV88E6XXX_DBG_REGS_ID_GLOBAL1)
@@ -1062,8 +1070,59 @@ static int mv88e6xxx_dbg_vlan_table_read(struct mv88e6xxx_chip *chip, int id,
 	return 0;
 }
 
+
+
 static const struct mv88e6xxx_dbg_ops mv88e6xxx_dbg_vlan_table_ops = {
 	.read = mv88e6xxx_dbg_vlan_table_read,
+};
+
+static void mv88e6xxx_dbg_serdes_range(struct mv88e6xxx_chip *chip, int lane,
+				      struct seq_file *seq, int from, int to)
+{
+	int i;
+	u16 reg;
+
+	for (i = from; i <= to; i++) {
+		mv88e6390_serdes_read(chip, lane, MDIO_MMD_PHYXS, i, &reg);
+		seq_printf(seq, "%4x: %4x\n", i, reg);
+	}
+}
+
+
+static int mv88e6xxx_dbg_serdes_read(struct mv88e6xxx_chip *chip, int id,
+				     struct seq_file *seq)
+{
+	int port = id;
+	int lane = mv88e6390x_serdes_get_lane(chip, port);
+
+	if (lane == -ENODEV)
+		return 0;
+
+	seq_puts(seq, "Common\n");
+	mv88e6xxx_dbg_serdes_range(chip, lane, seq, 0xf00a, 0xf039);
+
+	seq_puts(seq, "10Base-X4/X2\n");
+	mv88e6xxx_dbg_serdes_range(chip, lane, seq, 0x1000, 0x100f);
+	mv88e6xxx_dbg_serdes_range(chip, lane, seq, 0x1018, 0x1019);
+	mv88e6xxx_dbg_serdes_range(chip, lane, seq, 0x9000, 0x9006);
+	mv88e6xxx_dbg_serdes_range(chip, lane, seq, 0x9010, 0x9016);
+
+	seq_puts(seq, "10GBASE-R\n");
+	mv88e6xxx_dbg_serdes_range(chip, lane, seq, 0x1000, 0x100f);
+	mv88e6xxx_dbg_serdes_range(chip, lane, seq, 0x1020, 0x1029);
+	mv88e6xxx_dbg_serdes_range(chip, lane, seq, 0x102a, 0x102b);
+	mv88e6xxx_dbg_serdes_range(chip, lane, seq, 0x9000, 0x9002);
+
+	seq_puts(seq, "SGMII\n");
+	mv88e6xxx_dbg_serdes_range(chip, lane, seq, 0x2000, 0x2008);
+	mv88e6xxx_dbg_serdes_range(chip, lane, seq, 0x200f, 0x200f);
+	mv88e6xxx_dbg_serdes_range(chip, lane, seq, 0xa000, 0xa003);
+
+	return 0;
+};
+
+static const struct mv88e6xxx_dbg_ops mv88e6xxx_dbg_serdes_table_ops = {
+	.read = mv88e6xxx_dbg_serdes_read,
 };
 
 static void mv88e6xxx_dbg_vtu_read_ent(struct mv88e6xxx_chip *chip,
@@ -1314,6 +1373,11 @@ static int mv88e6xxx_dbg_init_port(struct mv88e6xxx_chip *chip, int port)
 
 	err = mv88e6xxx_dbg_create_file(chip, dir, "vlan_table", port,
 					&mv88e6xxx_dbg_vlan_table_ops);
+	if (err)
+		return err;
+
+	err = mv88e6xxx_dbg_create_file(chip, dir, "serdes", port,
+					&mv88e6xxx_dbg_serdes_table_ops);
 	if (err)
 		return err;
 
