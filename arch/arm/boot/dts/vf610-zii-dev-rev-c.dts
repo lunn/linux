@@ -184,8 +184,10 @@
 
 					port@2 {
 						reg = <2>;
-						label = "lan6";
-						phy-handle = <&switch1phy2>;
+						label = "sff3";
+						phy-mode = "sgmii";
+						managed = "in-band-status";
+						sfp = <&sff3>;
 					};
 
 					port@3 {
