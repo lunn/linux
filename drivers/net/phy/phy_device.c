@@ -2288,6 +2288,13 @@ static int __init phy_init(void)
 {
 	int rc;
 
+	/* The phy_basic_features, phy_gbit_features etc, above, only
+	 * work for values up to 63. Ensure we get a loud error if
+	 * this threshold is exceeded, and the necessary changes are
+	 * made.
+	 */
+	BUILD_BUG_ON(__ETHTOOL_LINK_MODE_LAST > 63);
+
 	rc = mdio_bus_init();
 	if (rc)
 		return rc;
