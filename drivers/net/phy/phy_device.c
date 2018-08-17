@@ -29,6 +29,7 @@
 #include <linux/module.h>
 #include <linux/mii.h>
 #include <linux/ethtool.h>
+#include <linux/bitmap.h>
 #include <linux/phy.h>
 #include <linux/phy_led_triggers.h>
 #include <linux/mdio.h>
@@ -41,6 +42,191 @@
 MODULE_DESCRIPTION("PHY library");
 MODULE_AUTHOR("Andy Fleming");
 MODULE_LICENSE("GPL");
+
+#define BIT_IN_RANGE(bit, lower, upper)			\
+	((bit) < (lower) ? 0 : ((bit) > (upper) ? 0 :	\
+				 BIT((bit) - (lower))))
+
+#define BIT_IN_LONG_ARRAY(bit, index)				\
+	BIT_IN_RANGE(bit, (BITS_PER_LONG * (index)),		\
+		     (BITS_PER_LONG * ((index) + 1)) - 1)
+
+#define BIT_IN_LONG_ARRAY_0(bit) BIT_IN_LONG_ARRAY(bit, 0)
+#define BIT_IN_LONG_ARRAY_1(bit) BIT_IN_LONG_ARRAY(bit, 1)
+#define BIT_IN_LONG_ARRAY_2(bit) BIT_IN_LONG_ARRAY(bit, 2)
+
+const __ETHTOOL_DECLARE_LINK_MODE_MASK(phy_basic_features) = {
+	[0] = (BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_Autoneg_BIT)	|
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_TP_BIT)		|
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_MII_BIT)		|
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_10baseT_Half_BIT)	|
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_10baseT_Full_BIT)	|
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_100baseT_Half_BIT)	|
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_100baseT_Full_BIT)),
+#if BITS_PER_LONG == 32
+	[1] = (BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_Autoneg_BIT)	|
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_TP_BIT)		|
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_MII_BIT)		|
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_10baseT_Half_BIT)	|
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_10baseT_Full_BIT)	|
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_100baseT_Half_BIT)	|
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_100baseT_Full_BIT)),
+#endif
+};
+EXPORT_SYMBOL_GPL(phy_basic_features);
+
+const __ETHTOOL_DECLARE_LINK_MODE_MASK(phy_basic_t1_features) = {
+	[0] = (BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_TP_BIT)		|
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_100baseT_Full_BIT)),
+#if BITS_PER_LONG == 32
+	[1] = (BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_TP_BIT)		|
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_100baseT_Full_BIT)),
+#endif
+};
+EXPORT_SYMBOL_GPL(phy_basic_t1_features);
+
+const __ETHTOOL_DECLARE_LINK_MODE_MASK(phy_gbit_features) = {
+	[0] = (BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_Autoneg_BIT)	 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_TP_BIT)		 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_MII_BIT)		 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_10baseT_Half_BIT)	 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_10baseT_Full_BIT)	 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_100baseT_Half_BIT)	 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_100baseT_Full_BIT)	 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_1000baseT_Half_BIT) |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_1000baseT_Full_BIT)),
+#if BITS_PER_LONG == 32
+	[1] = (BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_Autoneg_BIT)	 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_TP_BIT)		 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_MII_BIT)		 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_10baseT_Half_BIT)	 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_10baseT_Full_BIT)	 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_100baseT_Half_BIT)	 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_100baseT_Full_BIT)	 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_1000baseT_Half_BIT) |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_1000baseT_Full_BIT)),
+#endif
+};
+EXPORT_SYMBOL_GPL(phy_gbit_features);
+
+const __ETHTOOL_DECLARE_LINK_MODE_MASK(phy_gbit_fibre_features) = {
+	[0] = (BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_Autoneg_BIT)	 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_TP_BIT)		 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_MII_BIT)		 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_FIBRE_BIT)		 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_10baseT_Half_BIT)	 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_10baseT_Full_BIT)	 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_100baseT_Half_BIT)	 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_100baseT_Full_BIT)	 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_1000baseT_Half_BIT) |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_1000baseT_Full_BIT)),
+#if BITS_PER_LONG == 32
+	[1] = (BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_Autoneg_BIT)	 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_TP_BIT)		 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_MII_BIT)		 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_FIBRE_BIT)		 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_10baseT_Half_BIT)	 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_10baseT_Full_BIT)	 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_100baseT_Half_BIT)	 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_100baseT_Full_BIT)	 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_1000baseT_Half_BIT) |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_1000baseT_Full_BIT)),
+#endif
+};
+EXPORT_SYMBOL_GPL(phy_gbit_fibre_features);
+
+const __ETHTOOL_DECLARE_LINK_MODE_MASK(phy_gbit_all_ports_features) = {
+	[0] = (BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_Autoneg_BIT)	 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_TP_BIT)		 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_MII_BIT)		 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_FIBRE_BIT)		 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_AUI_BIT)		 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_BNC_BIT)		 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_Backplane_BIT)	 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_10baseT_Half_BIT)	 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_10baseT_Full_BIT)	 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_100baseT_Half_BIT)	 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_100baseT_Full_BIT)	 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_1000baseT_Half_BIT) |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_1000baseT_Full_BIT)),
+#if BITS_PER_LONG == 32
+	[1] = (BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_Autoneg_BIT)	 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_TP_BIT)		 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_MII_BIT)		 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_FIBRE_BIT)		 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_AUI_BIT)		 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_BNC_BIT)		 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_Backplane_BIT)	 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_10baseT_Half_BIT)	 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_10baseT_Full_BIT)	 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_100baseT_Half_BIT)	 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_100baseT_Full_BIT)	 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_1000baseT_Half_BIT) |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_1000baseT_Full_BIT)),
+#endif
+};
+EXPORT_SYMBOL_GPL(phy_gbit_all_ports_features);
+
+const __ETHTOOL_DECLARE_LINK_MODE_MASK(phy_10gbit_features) = {
+	[0] = (BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_Autoneg_BIT)	 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_TP_BIT)		 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_MII_BIT)		 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_FIBRE_BIT)		 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_AUI_BIT)		 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_BNC_BIT)		 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_Backplane_BIT)	 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_10baseT_Half_BIT)	 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_10baseT_Full_BIT)	 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_100baseT_Half_BIT)	 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_100baseT_Full_BIT)	 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_1000baseT_Half_BIT) |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_1000baseT_Full_BIT) |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_10000baseT_Full_BIT)),
+#if BITS_PER_LONG == 32
+	[1] = (BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_Autoneg_BIT)	 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_TP_BIT)		 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_MII_BIT)		 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_FIBRE_BIT)		 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_Backplane_BIT)	 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_10baseT_Half_BIT)	 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_10baseT_Full_BIT)	 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_100baseT_Half_BIT)	 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_100baseT_Full_BIT)	 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_1000baseT_Half_BIT) |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_1000baseT_Full_BIT) |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_10000baseT_Full_BIT)),
+#endif
+};
+EXPORT_SYMBOL_GPL(phy_10gbit_features);
+
+/* No half duplex support */
+const __ETHTOOL_DECLARE_LINK_MODE_MASK(phy_10gbit_full_features) = {
+	[0] = (BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_Autoneg_BIT)	 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_TP_BIT)		 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_MII_BIT)		 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_FIBRE_BIT)		 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_AUI_BIT)		 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_BNC_BIT)		 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_Backplane_BIT)	 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_10baseT_Full_BIT)	 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_100baseT_Full_BIT)	 |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_1000baseT_Full_BIT) |
+	       BIT_IN_LONG_ARRAY_0(ETHTOOL_LINK_MODE_10000baseT_Full_BIT)),
+#if BITS_PER_LONG == 32
+	[1] = (BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_Autoneg_BIT)	 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_TP_BIT)		 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_MII_BIT)		 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_AUI_BIT)		 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_BNC_BIT)		 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_FIBRE_BIT)		 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_Backplane_BIT)	 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_10baseT_Full_BIT)	 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_100baseT_Full_BIT)	 |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_1000baseT_Full_BIT) |
+	       BIT_IN_LONG_ARRAY_1(ETHTOOL_LINK_MODE_10000baseT_Full_BIT)),
+#endif
+};
+EXPORT_SYMBOL_GPL(phy_10gbit_full_features);
 
 void phy_device_free(struct phy_device *phydev)
 {
@@ -1929,6 +2115,7 @@ static int phy_probe(struct device *dev)
 	struct phy_device *phydev = to_phy_device(dev);
 	struct device_driver *drv = phydev->mdio.dev.driver;
 	struct phy_driver *phydrv = to_phy_driver(drv);
+	u32 features;
 	int err = 0;
 
 	phydev->drv = phydrv;
@@ -1949,7 +2136,8 @@ static int phy_probe(struct device *dev)
 	 * a controller will attach, and may modify one
 	 * or both of these values
 	 */
-	phydev->supported = phydrv->features;
+	ethtool_convert_link_mode_to_legacy_u32(&features, phydrv->features);
+	phydev->supported = features;
 	of_set_phy_supported(phydev);
 	phydev->advertising = phydev->supported;
 
@@ -1969,10 +2157,14 @@ static int phy_probe(struct device *dev)
 	 * (e.g. hardware erratum) where the driver wants to set only one
 	 * of these bits.
 	 */
-	if (phydrv->features & (SUPPORTED_Pause | SUPPORTED_Asym_Pause)) {
+	if (test_bit(ETHTOOL_LINK_MODE_Pause_BIT, phydrv->features) ||
+	    test_bit(ETHTOOL_LINK_MODE_Asym_Pause_BIT, phydrv->features)) {
 		phydev->supported &= ~(SUPPORTED_Pause | SUPPORTED_Asym_Pause);
-		phydev->supported |= phydrv->features &
-				     (SUPPORTED_Pause | SUPPORTED_Asym_Pause);
+		if (test_bit(ETHTOOL_LINK_MODE_Pause_BIT, phydrv->features))
+			phydev->supported |= SUPPORTED_Pause;
+		if (test_bit(ETHTOOL_LINK_MODE_Asym_Pause_BIT,
+			     phydrv->features))
+			phydev->supported |= SUPPORTED_Asym_Pause;
 	} else {
 		phydev->supported |= SUPPORTED_Pause | SUPPORTED_Asym_Pause;
 	}
@@ -2085,9 +2277,7 @@ static struct phy_driver genphy_driver = {
 	.name		= "Generic PHY",
 	.soft_reset	= genphy_no_soft_reset,
 	.config_init	= genphy_config_init,
-	.features	= PHY_GBIT_FEATURES | SUPPORTED_MII |
-			  SUPPORTED_AUI | SUPPORTED_FIBRE |
-			  SUPPORTED_BNC,
+	.features	= PHY_GBIT_ALL_PORTS_FEATURES,
 	.aneg_done	= genphy_aneg_done,
 	.suspend	= genphy_suspend,
 	.resume		= genphy_resume,
