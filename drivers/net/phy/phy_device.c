@@ -1811,6 +1811,27 @@ void phy_support_asym_pause(struct phy_device *phydev)
 EXPORT_SYMBOL(phy_support_asym_pause);
 
 /**
+ * phy_set_pause - Configure Pause
+ * @phydev: target phy_device struct
+ * @rx: Receiver Pause is supported
+ * @autoneg: Auto neg should be used
+ *
+ * Description: Configure advertised Pause support depending on if
+ * receiver pause and pause auto neg is supported. Generally called
+ * from the set_pauseparam .ndo.
+ */
+void phy_set_pause(struct phy_device *phydev, bool rx, bool autoneg)
+{
+	phydev->supported &= ~SUPPORTED_Pause;
+
+	if (rx || autoneg)
+		phydev->supported |= SUPPORTED_Pause;
+
+	phydev->advertising = phydev->supported;
+}
+EXPORT_SYMBOL(phy_set_pause);
+
+/**
  * phy_set_asym_pause - Configure Pause and Asym Pause
  * @phydev: target phy_device struct
  * @rx: Receiver Pause is supported
