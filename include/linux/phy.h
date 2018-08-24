@@ -445,10 +445,11 @@ struct phy_device {
 	/* Enabled Interrupts */
 	u32 interrupts;
 
-	/* Union of PHY and Attached devices' supported modes */
-	/* See mii.h for more info */
-	u32 supported;
-	u32 advertising;
+	/* Union of PHY and Attached devices' supported link modes */
+	/* See ethtool.h for more info */
+	__ETHTOOL_DECLARE_LINK_MODE_MASK(supported);
+	__ETHTOOL_DECLARE_LINK_MODE_MASK(advertising);
+
 	u32 lp_advertising;
 
 	/* Energy efficient ethernet modes which should be prohibited */
@@ -697,9 +698,9 @@ struct phy_setting {
 
 const struct phy_setting *
 phy_lookup_setting(int speed, int duplex, const unsigned long *mask,
-		   size_t maxbit, bool exact);
+		   bool exact);
 size_t phy_speeds(unsigned int *speeds, size_t size,
-		  unsigned long *mask, size_t maxbit);
+		  unsigned long *mask);
 
 void phy_resolve_aneg_linkmode(struct phy_device *phydev);
 

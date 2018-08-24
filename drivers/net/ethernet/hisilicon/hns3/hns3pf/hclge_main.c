@@ -5196,9 +5196,9 @@ static void hclge_get_flowctrl_adv(struct hnae3_handle *handle,
 
 	if (!phydev)
 		return;
-
-	*flowctrl_adv |= (phydev->advertising & ADVERTISED_Pause) |
-			 (phydev->advertising & ADVERTISED_Asym_Pause);
+	ethtool_convert_link_mode_to_legacy_u32(flowctrl_adv,
+						phydev->advertising);
+	*flowctrl_adv &= (ADVERTISED_Pause | ADVERTISED_Asym_Pause);
 }
 
 static void hclge_set_flowctrl_adv(struct hclge_dev *hdev, u32 rx_en, u32 tx_en)
@@ -5250,7 +5250,7 @@ int hclge_cfg_flowctrl(struct hclge_dev *hdev)
 	if (!phydev->link || !phydev->autoneg)
 		return 0;
 
-	local_advertising = ethtool_adv_to_lcl_adv_t(phydev->advertising);
+	local_advertising = linkmode_adv_to_lcl_adv_t(phydev->advertising);
 
 	if (phydev->pause)
 		remote_advertising = LPA_PAUSE_CAP;
