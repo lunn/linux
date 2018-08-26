@@ -360,9 +360,7 @@ void phy_ethtool_ksettings_get(struct phy_device *phydev,
 {
 	linkmode_copy(cmd->link_modes.supported, phydev->supported);
 	linkmode_copy(cmd->link_modes.advertising, phydev->advertising);
-
-	ethtool_convert_legacy_u32_to_link_mode(cmd->link_modes.lp_advertising,
-						phydev->lp_advertising);
+	linkmode_copy(cmd->link_modes.lp_advertising, phydev->lp_advertising);
 
 	cmd->base.speed = phydev->speed;
 	cmd->base.duplex = phydev->duplex;
@@ -502,7 +500,7 @@ int phy_start_aneg(struct phy_device *phydev)
 		phy_sanitize_settings(phydev);
 
 	/* Invalidate LP advertising flags */
-	phydev->lp_advertising = 0;
+	linkmode_zero(phydev->lp_advertising);
 
 	err = phy_config_aneg(phydev);
 	if (err < 0)
@@ -579,7 +577,7 @@ int phy_speed_down(struct phy_device *phydev, bool sync)
 		return 0;
 
 	linkmode_copy(adv_old, phydev->advertising);
-	ethtool_convert_legacy_u32_to_link_mode(adv, phydev->lp_advertising);
+	linkmode_copy(adv, phydev->lp_advertising);
 	linkmode_and(adv, adv, phydev->supported);
 
 	if (linkmode_test_bit(ETHTOOL_LINK_MODE_10baseT_Half_BIT, adv) ||
