@@ -24,6 +24,8 @@ int ethnl_fill_dev(struct sk_buff *msg, struct net_device *dev, u16 attrtype);
 struct sk_buff *ethnl_reply_init(size_t payload, struct net_device *dev, u8 cmd,
 				 u16 dev_attrtype, struct genl_info *info,
 				 void **ehdrp);
+void *ethnl_bcastmsg_put(struct sk_buff *skb, u8 cmd);
+int ethnl_multicast(struct sk_buff *skb, struct net_device *dev);
 
 #if BITS_PER_LONG == 64 && defined(__BIG_ENDIAN)
 void ethnl_bitmap_to_u32(unsigned long *bitmap, unsigned int nwords);
@@ -261,5 +263,12 @@ extern const struct get_request_ops params_request_ops;
 
 int ethnl_set_settings(struct sk_buff *skb, struct genl_info *info);
 int ethnl_set_params(struct sk_buff *skb, struct genl_info *info);
+int ethnl_act_nway_rst(struct sk_buff *skb, struct genl_info *info);
+
+/* notify handlers */
+
+void ethnl_nwayrst_notify(struct net_device *dev,
+			  struct netlink_ext_ack *extack, unsigned int cmd,
+			  u32 req_mask, const void *data);
 
 #endif /* _NET_ETHTOOL_NETLINK_H */

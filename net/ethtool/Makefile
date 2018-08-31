@@ -4,4 +4,5 @@ obj-y				+= ioctl.o common.o
 
 obj-$(CONFIG_ETHTOOL_NETLINK)	+= ethtool_nl.o
 
-ethtool_nl-y	:= netlink.o bitset.o strset.o info.o settings.o params.o
+ethtool_nl-y	:= netlink.o bitset.o strset.o info.o settings.o params.o \
+		   actions.o

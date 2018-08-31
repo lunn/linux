@@ -1282,10 +1282,15 @@ static int ethtool_set_eee(struct net_device *dev, char __user *useraddr)
 
 static int ethtool_nway_reset(struct net_device *dev)
 {
+	int ret;
+
 	if (!dev->ethtool_ops->nway_reset)
 		return -EOPNOTSUPP;
+	ret = dev->ethtool_ops->nway_reset(dev);
+	if (ret == 0)
+		ethtool_notify(dev, NULL, ETHNL_CMD_ACT_NWAY_RST, 0, NULL);
 
-	return dev->ethtool_ops->nway_reset(dev);
+	return ret;
 }
 
 static int ethtool_get_link(struct net_device *dev, char __user *useraddr)

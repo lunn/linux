@@ -240,13 +240,13 @@ err:
 	return NULL;
 }
 
-static void *ethnl_bcastmsg_put(struct sk_buff *skb, u8 cmd)
+void *ethnl_bcastmsg_put(struct sk_buff *skb, u8 cmd)
 {
 	return genlmsg_put(skb, 0, ++ethnl_bcast_seq, &ethtool_genl_family, 0,
 			   cmd);
 }
 
-static int ethnl_multicast(struct sk_buff *skb, struct net_device *dev)
+int ethnl_multicast(struct sk_buff *skb, struct net_device *dev)
 {
 	return genlmsg_multicast_netns(&ethtool_genl_family, dev_net(dev), skb,
 				       0, ETHNL_MCGRP_MONITOR, GFP_KERNEL);
@@ -584,6 +584,7 @@ typedef void (*ethnl_notify_handler_t)(struct net_device *dev,
 static const ethnl_notify_handler_t ethnl_notify_handlers[] = {
 	[ETHNL_CMD_SET_SETTINGS]	= ethnl_std_notify,
 	[ETHNL_CMD_SET_PARAMS]		= ethnl_std_notify,
+	[ETHNL_CMD_ACT_NWAY_RST]	= ethnl_nwayrst_notify,
 };
 
 void ethtool_notify(struct net_device *dev, struct netlink_ext_ack *extack,
@@ -714,6 +715,11 @@ static const struct genl_ops ethtool_genl_ops[] = {
 		.cmd	= ETHNL_CMD_SET_PARAMS,
 		.flags	= GENL_UNS_ADMIN_PERM,
 		.doit	= ethnl_set_params,
+	},
+	{
+		.cmd	= ETHNL_CMD_ACT_NWAY_RST,
+		.flags	= GENL_UNS_ADMIN_PERM,
+		.doit	= ethnl_act_nway_rst,
 	},
 };
 
