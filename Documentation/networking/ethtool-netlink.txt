@@ -135,6 +135,7 @@ List of message types
     ETHNL_CMD_SET_SETTINGS
     ETHNL_CMD_GET_PARAMS
     ETHNL_CMD_SET_PARAMS
+    ETHNL_CMD_ACT_NWAY_RST
 
 All constants use ETHNL_CMD_ prefix, usually followed by "GET", "SET" or "ACT"
 to indicate the type.
@@ -557,6 +558,18 @@ cannot be set by SET_PARAMS request.
 		- change configured FEC encodings
 
 
+ACT_NWAY_RST
+------------
+
+Request autonegotiation restart (equivalent of ETHTOOL_NWAY_RST).
+
+Request contents:
+
+    ETHA_NWAYRST_DEV		(nested)	device identification
+
+If successful, a notification in the same format is sent.
+
+
 Request translation
 -------------------
 
@@ -574,7 +587,7 @@ ETHTOOL_GWOL			ETHNL_CMD_GET_SETTINGS
 ETHTOOL_SWOL			ETHNL_CMD_SET_SETTINGS
 ETHTOOL_GMSGLVL			ETHNL_CMD_GET_SETTINGS
 ETHTOOL_SMSGLVL			ETHNL_CMD_SET_SETTINGS
-ETHTOOL_NWAY_RST		n/a
+ETHTOOL_NWAY_RST		ETHNL_CMD_ACT_NWAY_RST
 ETHTOOL_GLINK			ETHNL_CMD_GET_SETTINGS
 ETHTOOL_GEEPROM			n/a
 ETHTOOL_SEEPROM			n/a
