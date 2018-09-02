@@ -570,6 +570,28 @@ Request contents:
 If successful, a notification in the same format is sent.
 
 
+ACT_PHYS_ID
+-----------
+
+Physical identification of a NIC (usually by blinking a LED. Equivalent of
+ETHTOOL_PHYS_ID.
+
+Request contents:
+
+    ETHA_PHYSID_DEV		(nested)	device identification
+    ETHA_PHYSID_LENGTH		(u32)		length in seconds
+
+If length is omitted, maximum length is used. Processing is synchronous, there
+is no reply until requested time expires (returns zero) or processing is
+interrupted by a signal (returns EINTR). Two notifications are sent: one when
+identification starts (with length actually used) and one when it stops (with
+length of zero).
+
+Processing of this message is exclusive. While identification is running, all
+other ACT_PHYS_ID requests for any device fail with EBUSY. The same holds for
+requests using ETHTOOL_PHYS_ID ioctl command.
+
+
 Request translation
 -------------------
 
@@ -605,7 +627,7 @@ ETHTOOL_GSG			ETHNL_CMD_GET_SETTINGS
 ETHTOOL_SSG			ETHNL_CMD_SET_SETTINGS
 ETHTOOL_TEST			n/a
 ETHTOOL_GSTRINGS		ETHNL_CMD_GET_STRSET
-ETHTOOL_PHYS_ID			n/a
+ETHTOOL_PHYS_ID			ETHNL_CMD_ACT_PHYS_ID
 ETHTOOL_GSTATS			n/a
 ETHTOOL_GTSO			ETHNL_CMD_GET_SETTINGS
 ETHTOOL_STSO			ETHNL_CMD_SET_SETTINGS

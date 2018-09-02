@@ -1639,60 +1639,15 @@ out:
 static int ethtool_phys_id(struct net_device *dev, void __user *useraddr)
 {
 	struct ethtool_value id;
-	static bool busy;
-	const struct ethtool_ops *ops = dev->ethtool_ops;
 	int rc;
-
-	if (!ops->set_phys_id)
-		return -EOPNOTSUPP;
-
-	if (busy)
-		return -EBUSY;
 
 	if (copy_from_user(&id, useraddr, sizeof(id)))
 		return -EFAULT;
 
-	rc = ops->set_phys_id(dev, ETHTOOL_ID_ACTIVE);
-	if (rc < 0)
-		return rc;
-
-	/* Drop the RTNL lock while waiting, but prevent reentry or
-	 * removal of the device.
-	 */
-	busy = true;
 	dev_hold(dev);
-	rtnl_unlock();
-
-	if (rc == 0) {
-		/* Driver will handle this itself */
-		schedule_timeout_interruptible(
-			id.data ? (id.data * HZ) : MAX_SCHEDULE_TIMEOUT);
-	} else {
-		/* Driver expects to be called at twice the frequency in rc */
-		int n = rc * 2, i, interval = HZ / n;
-
-		/* Count down seconds */
-		do {
-			/* Count down iterations per second */
-			i = n;
-			do {
-				rtnl_lock();
-				rc = ops->set_phys_id(dev,
-				    (i & 1) ? ETHTOOL_ID_OFF : ETHTOOL_ID_ON);
-				rtnl_unlock();
-				if (rc)
-					break;
-				schedule_timeout_interruptible(interval);
-			} while (!signal_pending(current) && --i != 0);
-		} while (!signal_pending(current) &&
-			 (id.data == 0 || --id.data != 0));
-	}
-
-	rtnl_lock();
+	rc = __ethtool_phys_id(dev, id.data);
 	dev_put(dev);
-	busy = false;
 
-	(void) ops->set_phys_id(dev, ETHTOOL_ID_INACTIVE);
 	return rc;
 }
 

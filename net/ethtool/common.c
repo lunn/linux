@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
 
+#include <linux/ethtool_netlink.h>
 #include <linux/rtnetlink.h>
 #include <linux/phy.h>
 #include <linux/net_tstamp.h>
@@ -287,4 +288,68 @@ int __ethtool_set_channels(struct net_device *dev,
 			return -EINVAL;
 
 	return dev->ethtool_ops->set_channels(dev, channels);
+}
+
+/* physical identification (by blinking a LED)
+ * caller must hold RTNL and a reference to dev
+ */
+int __ethtool_phys_id(struct net_device *dev, unsigned long timeout)
+{
+	const struct ethtool_ops *ops = dev->ethtool_ops;
+	u32 notify_timeout;
+	static bool busy;
+	int rc;
+
+	ASSERT_RTNL();
+	if (!ops->set_phys_id)
+		return -EOPNOTSUPP;
+	if (busy)
+		return -EBUSY;
+
+	rc = ops->set_phys_id(dev, ETHTOOL_ID_ACTIVE);
+	if (rc < 0)
+		return rc;
+
+	/* Drop the RTNL lock while waiting, but prevent reentry; device
+	 * removal is prevented by caller holding a reference
+	 */
+	busy = true;
+	notify_timeout = min_t(unsigned long, timeout, U32_MAX) ?: U32_MAX;
+	ethtool_notify(dev, NULL, ETHNL_CMD_ACT_PHYS_ID, 0, &notify_timeout);
+	rtnl_unlock();
+
+	if (rc == 0) {
+		/* Driver will handle this itself */
+		if (timeout > MAX_SCHEDULE_TIMEOUT / HZ)
+			timeout = MAX_SCHEDULE_TIMEOUT / HZ;
+		schedule_timeout_interruptible(
+			timeout ? (timeout * HZ) : MAX_SCHEDULE_TIMEOUT);
+	} else {
+		/* Driver expects to be called at twice the frequency in rc */
+		int n = rc * 2, i, interval = HZ / n;
+
+		/* Count down seconds */
+		do {
+			/* Count down iterations per second */
+			i = n;
+			do {
+				rtnl_lock();
+				rc = ops->set_phys_id(dev,
+				    (i & 1) ? ETHTOOL_ID_OFF : ETHTOOL_ID_ON);
+				rtnl_unlock();
+				if (rc)
+					break;
+				schedule_timeout_interruptible(interval);
+			} while (!signal_pending(current) && --i != 0);
+		} while (!signal_pending(current) &&
+			 (timeout == 0 || --timeout > 0));
+	}
+
+	rtnl_lock();
+	notify_timeout = 0;
+	ethtool_notify(dev, NULL, ETHNL_CMD_ACT_PHYS_ID, 0, &notify_timeout);
+	busy = false;
+
+	(void) ops->set_phys_id(dev, ETHTOOL_ID_INACTIVE);
+	return rc;
 }

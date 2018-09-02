@@ -24,6 +24,7 @@ int __ethtool_get_wol(struct net_device *dev, struct ethtool_wolinfo *wol);
 int __ethtool_set_channels(struct net_device *dev,
 			   const struct ethtool_channels *curr,
 			   struct ethtool_channels *channels);
+int __ethtool_phys_id(struct net_device *dev, unsigned long timeout);
 
 bool convert_legacy_settings_to_link_ksettings(
 	struct ethtool_link_ksettings *link_ksettings,

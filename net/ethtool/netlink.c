@@ -563,6 +563,7 @@ ethnl_notify_handler_t ethnl_notify_handlers[] = {
 	[ETHNL_CMD_SET_SETTINGS]	= ethnl_std_notify,
 	[ETHNL_CMD_SET_PARAMS]		= ethnl_std_notify,
 	[ETHNL_CMD_ACT_NWAY_RST]	= ethnl_nwayrst_notify,
+	[ETHNL_CMD_ACT_PHYS_ID]		= ethnl_physid_notify,
 };
 
 void ethtool_notify(struct net_device *dev, struct netlink_ext_ack *extack,
@@ -698,6 +699,11 @@ static const struct genl_ops ethtool_genl_ops[] = {
 		.cmd	= ETHNL_CMD_ACT_NWAY_RST,
 		.flags	= GENL_UNS_ADMIN_PERM,
 		.doit	= ethnl_act_nway_rst,
+	},
+	{
+		.cmd	= ETHNL_CMD_ACT_PHYS_ID,
+		.flags	= GENL_UNS_ADMIN_PERM,
+		.doit	= ethnl_act_phys_id,
 	},
 };
 

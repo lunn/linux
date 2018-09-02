@@ -295,11 +295,14 @@ extern const struct get_request_ops params_request_ops;
 int ethnl_set_settings(struct sk_buff *skb, struct genl_info *info);
 int ethnl_set_params(struct sk_buff *skb, struct genl_info *info);
 int ethnl_act_nway_rst(struct sk_buff *skb, struct genl_info *info);
+int ethnl_act_phys_id(struct sk_buff *skb, struct genl_info *info);
 
 /* notify handlers */
 
 void ethnl_nwayrst_notify(struct net_device *dev,
 			  struct netlink_ext_ack *extack, unsigned int cmd,
 			  u32 req_mask, const void *data);
+void ethnl_physid_notify(struct net_device *dev, struct netlink_ext_ack *extack,
+			 unsigned int cmd, u32 req_mask, const void *data);
 
 #endif /* _NET_ETHTOOL_NETLINK_H */
