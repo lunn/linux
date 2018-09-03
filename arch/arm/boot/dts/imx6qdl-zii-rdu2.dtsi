@@ -328,6 +328,72 @@
 			gpio-controller;
 			#gpio-cells = <1>;
 		};
+
+		leds-front {
+			compatible = "zii,rave-sp-leds";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			led-sources = <0>;
+
+			leds-front-brightness {
+				label = "rave-sp:brightness:front";
+				reg = <0>;
+			};
+
+			leds-front-red {
+				label = "rave-sp:red:front";
+				reg = <1>;
+			};
+
+			leds-front-green {
+				label = "rave-sp:green:front";
+				reg = <2>;
+			};
+
+			leds-front-blue {
+				label = "rave-sp:blue:front";
+				reg = <3>;
+			};
+		};
+
+		leds-mood {
+			compatible = "zii,rave-sp-leds";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			led-sources = <1>;
+
+			leds-mood-brightness {
+				label = "rave-sp:brightness:mood";
+				reg = <0>;
+			};
+
+			leds-mood-red {
+				label = "rave-sp:red:mood";
+				reg = <1>;
+			};
+
+			leds-mood-green {
+				label = "rave-sp:green:mood";
+				reg = <2>;
+			};
+
+			leds-mood-blue {
+				label = "rave-sp:blue:mood";
+				reg = <3>;
+			};
+		};
+
+		leds-reading {
+			compatible = "zii,rave-sp-leds";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			led-sources = <1>;
+
+			leds-reading-brightness {
+				label = "rave-sp:brightness:reading";
+				reg = <2>;
+			};
+		};
 	};
 };
 
