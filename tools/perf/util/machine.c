@@ -1671,37 +1671,40 @@ out_problem:
 }
 
 int machine__process_mmap2_event(struct machine *machine,
-				 union perf_event *event,
+				 union perf_event *event_in,
 				 struct perf_sample *sample)
 {
+	union perf_event event;
 	struct thread *thread;
 	struct map *map;
 	int ret = 0;
 
+	memcpy(&event, event_in, sizeof(union perf_event));
+
 	if (dump_trace)
-		perf_event__fprintf_mmap2(event, stdout);
+		perf_event__fprintf_mmap2(&event, stdout);
 
 	if (sample->cpumode == PERF_RECORD_MISC_GUEST_KERNEL ||
 	    sample->cpumode == PERF_RECORD_MISC_KERNEL) {
-		ret = machine__process_kernel_mmap_event(machine, event);
+		ret = machine__process_kernel_mmap_event(machine, &event);
 		if (ret < 0)
 			goto out_problem;
 		return 0;
 	}
 
-	thread = machine__findnew_thread(machine, event->mmap2.pid,
-					event->mmap2.tid);
+	thread = machine__findnew_thread(machine, event.mmap2.pid,
+					event.mmap2.tid);
 	if (thread == NULL)
 		goto out_problem;
 
-	map = map__new(machine, event->mmap2.start,
-			event->mmap2.len, event->mmap2.pgoff,
-			event->mmap2.maj,
-			event->mmap2.min, event->mmap2.ino,
-			event->mmap2.ino_generation,
-			event->mmap2.prot,
-			event->mmap2.flags,
-			event->mmap2.filename, thread);
+	map = map__new(machine, event.mmap2.start,
+			event.mmap2.len, event.mmap2.pgoff,
+			event.mmap2.maj,
+			event.mmap2.min, event.mmap2.ino,
+			event.mmap2.ino_generation,
+			event.mmap2.prot,
+			event.mmap2.flags,
+			event.mmap2.filename, thread);
 
 	if (map == NULL)
 		goto out_problem_map;
