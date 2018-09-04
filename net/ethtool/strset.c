@@ -91,6 +91,12 @@ static const struct strset_info info_template[] = {
 		.count		= __ETHTOOL_LINK_MODE_MASK_NBITS,
 		.data		= { .simple = link_mode_names },
 	},
+	[ETH_SS_RESET_FLAGS] = {
+		.type		= ETH_SS_TYPE_SIMPLE,
+		.per_dev	= false,
+		.count		= ETH_RESET_NFLAGS,
+		.data		= { .simple = reset_flag_names },
+	},
 };
 
 struct strset_data {

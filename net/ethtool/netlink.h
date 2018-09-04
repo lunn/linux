@@ -24,6 +24,7 @@ extern const char *const so_timestamping_labels[];
 extern const char *const tstamp_tx_type_labels[];
 extern const char *const tstamp_rx_filter_labels[];
 extern const char *const link_mode_names[];
+extern const char *const reset_flag_names[];
 
 struct net_device *ethnl_dev_get(struct genl_info *info, struct nlattr *nest);
 int ethnl_fill_dev(struct sk_buff *msg, struct net_device *dev, u16 attrtype);
@@ -296,6 +297,7 @@ int ethnl_set_settings(struct sk_buff *skb, struct genl_info *info);
 int ethnl_set_params(struct sk_buff *skb, struct genl_info *info);
 int ethnl_act_nway_rst(struct sk_buff *skb, struct genl_info *info);
 int ethnl_act_phys_id(struct sk_buff *skb, struct genl_info *info);
+int ethnl_act_reset(struct sk_buff *skb, struct genl_info *info);
 
 /* notify handlers */
 
@@ -304,5 +306,7 @@ void ethnl_nwayrst_notify(struct net_device *dev,
 			  u32 req_mask, const void *data);
 void ethnl_physid_notify(struct net_device *dev, struct netlink_ext_ack *extack,
 			 unsigned int cmd, u32 req_mask, const void *data);
+void ethnl_reset_notify(struct net_device *dev, struct netlink_ext_ack *extack,
+			unsigned int cmd, u32 req_mask, const void *data);
 
 #endif /* _NET_ETHTOOL_NETLINK_H */

@@ -24,6 +24,7 @@ enum {
 	ETHNL_CMD_SET_PARAMS,
 	ETHNL_CMD_ACT_NWAY_RST,
 	ETHNL_CMD_ACT_PHYS_ID,
+	ETHNL_CMD_ACT_RESET,
 
 	__ETHNL_CMD_CNT,
 	ETHNL_CMD_MAX = (__ETHNL_CMD_CNT - 1)
@@ -428,6 +429,21 @@ enum {
 
 	__ETHA_PHYSID_CNT,
 	ETHA_PHYSID_MAX = (__ETHA_PHYSID_CNT - 1)
+};
+
+/* ACT_RESET */
+
+enum {
+	ETHA_RESET_UNSPEC,
+	ETHA_RESET_DEV,				/* nest - ETHA_DEV_* */
+	ETHA_RESET_COMPACT,			/* flag */
+	ETHA_RESET_ALL,				/* flag */
+	ETHA_RESET_ALL_DEDICATED,		/* flag */
+	ETHA_RESET_DEDICATED,			/* bitset */
+	ETHA_RESET_SHARED,			/* bitset */
+
+	__ETHA_RESET_CNT,
+	ETHA_RESET_MAX = (__ETHA_RESET_CNT - 1)
 };
 
 /* generic netlink info */

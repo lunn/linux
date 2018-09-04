@@ -592,6 +592,29 @@ other ACT_PHYS_ID requests for any device fail with EBUSY. The same holds for
 requests using ETHTOOL_PHYS_ID ioctl command.
 
 
+ACT_RESET
+---------
+
+Reset whole device or selected components (equivalent of ETHTOOL_RESET).
+
+Request contents:
+
+    ETHA_RESET_DEV		(nested)	device identification
+    ETHA_RESET_COMPACT		(flag)		request compact bitmaps
+    ETHA_RESET_ALL		(flag)		reset all compontents
+    ETHA_RESET_ALL_DEDICATED	(flag)		reset all dedicated components
+    ETHA_RESET_DEDICATED	(bitset)	dedicated components to reset
+    ETHA_RESET_SHARED		(bitset)	shared components to reset
+
+Masks for both bitsets are ignored. When ETHA_RESET_ALL_DEDICATED flag is
+present, it overrides ETHA_RESET_DEDICATED. When ETHA_RESET_ALL flag is
+present, it overrides both ETHA_RESET_DEDICATED and ETHA_RESET_SHARED.
+
+If the request is successful, a message in the same format is returned,
+indicating which components _were_ actually reset (this is different from
+ioctl interface). The same message is also broadcasted as a notification.
+
+
 Request translation
 -------------------
 
@@ -651,7 +674,7 @@ ETHTOOL_GRXCLSRLALL		n/a
 ETHTOOL_SRXCLSRLDEL		n/a
 ETHTOOL_SRXCLSRLINS		n/a
 ETHTOOL_FLASHDEV		n/a
-ETHTOOL_RESET			n/a
+ETHTOOL_RESET			ETHNL_CMD_ACT_RESET
 ETHTOOL_SRXNTUPLE		n/a
 ETHTOOL_GRXNTUPLE		n/a
 ETHTOOL_GSSET_INFO		ETHNL_CMD_GET_STRSET

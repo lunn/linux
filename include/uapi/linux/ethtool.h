@@ -567,6 +567,7 @@ struct ethtool_pauseparam {
  * @ETH_SS_TSTAMP_TX_TYPE: timestamping Tx type names
  * @ETH_SS_TSTAMP_RX_FILTER: timestamping Rx filter names
  * @ETH_SS_LINK_MODES: link mode names
+ * @ETH_SS_RESET_FLAGS: components for device reset
  */
 enum ethtool_stringset {
 	ETH_SS_TEST		= 0,
@@ -582,6 +583,7 @@ enum ethtool_stringset {
 	ETH_SS_TSTAMP_TX_TYPE,
 	ETH_SS_TSTAMP_RX_FILTER,
 	ETH_SS_LINK_MODES,
+	ETH_SS_RESET_FLAGS,
 
 	ETH_SS_COUNT
 };
@@ -1743,6 +1745,7 @@ enum ethtool_reset_flags {
 	ETH_RESET_ALL		= 0xffffffff,	/* All components used by this
 						 * interface, even if shared */
 };
+#define ETH_RESET_NFLAGS 9
 #define ETH_RESET_SHARED_SHIFT	16
 
 

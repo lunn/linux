@@ -1188,6 +1188,7 @@ static int ethtool_get_regs(struct net_device *dev, char __user *useraddr)
 static int ethtool_reset(struct net_device *dev, char __user *useraddr)
 {
 	struct ethtool_value reset;
+	u32 reset_flags;
 	int ret;
 
 	if (!dev->ethtool_ops->reset)
@@ -1196,9 +1197,13 @@ static int ethtool_reset(struct net_device *dev, char __user *useraddr)
 	if (copy_from_user(&reset, useraddr, sizeof(reset)))
 		return -EFAULT;
 
+	reset_flags = reset.data;
 	ret = dev->ethtool_ops->reset(dev, &reset.data);
 	if (ret)
 		return ret;
+	reset_flags &= ~reset.data;
+	if (reset_flags)
+		ethtool_notify(dev, NULL, ETHNL_CMD_ACT_RESET, 0, &reset_flags);
 
 	if (copy_to_user(useraddr, &reset, sizeof(reset)))
 		return -EFAULT;
