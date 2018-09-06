@@ -577,6 +577,10 @@
 			compatible = "zii,rave-sp-pwrbutton";
 		};
 
+		leds {
+			compatible = "zii,rave-sp-leds-rdu1";
+		};
+
 		eeprom@a3 {
 			compatible = "zii,rave-sp-eeprom";
 			reg = <0xa3 0x2000>;
