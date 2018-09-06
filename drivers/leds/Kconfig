@@ -829,6 +829,14 @@ config LEDS_RAVE_SP
 	  This option enables support for LEDs connected to RAVE SP
 	  devices.
 
+config LEDS_RAVE_SP_RDU1
+	tristate "LED support for RAVE SP RDU1"
+	depends on LEDS_CLASS && RAVE_SP_CORE
+	help
+	  This option enables support for LEDs connected to RAVE SP
+	  RDU1 device. RDU1's protocol to control LEDs is different
+	  from later devices, thus it is supported by a separate driver.
+
 comment "LED Triggers"
 source "drivers/leds/trigger/Kconfig"
 
