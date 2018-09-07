@@ -773,7 +773,7 @@ static const struct nla_policy set_settings_policy[ETHTOOL_A_SETTINGS_MAX + 1] =
 	[ETHTOOL_A_SETTINGS_WOL]		= { .type = NLA_NESTED },
 	[ETHTOOL_A_SETTINGS_DEBUG]		= { .type = NLA_NESTED },
 	[ETHTOOL_A_SETTINGS_FEATURES]		= { .type = NLA_NESTED },
-	[ETHTOOL_A_SETTINGS_PRIV_FLAGS]		= { .type = NLA_REJECT },
+	[ETHTOOL_A_SETTINGS_PRIV_FLAGS]		= { .type = NLA_NESTED },
 };
 
 static int ethnl_set_link_ksettings(struct genl_info *info,
@@ -1126,6 +1126,39 @@ err:
 	return 0;
 }
 
+static int update_priv_flags(struct genl_info *info, struct net_device *dev,
+			     const struct nlattr *bitset, bool *changed)
+{
+	const struct ethtool_ops *ops = dev->ethtool_ops;
+	unsigned int nflags;
+	void *names = NULL;
+	bool compact;
+	u32 flags;
+	int ret;
+
+	if (!ops->get_priv_flags || !ops->set_priv_flags)
+		return -EOPNOTSUPP;
+	ret = ethnl_bitset_is_compact(bitset, &compact);
+	if (ret < 0)
+		return ret;
+	ret = get_priv_flags_info(dev, &nflags, compact ? NULL : &names);
+	if (ret < 0)
+		return ret;
+	flags = ops->get_priv_flags(dev);
+
+	*changed = ethnl_update_bitset32(&flags, NULL, nflags, bitset, &ret,
+					 names, true, info);
+	if (ret < 0)
+		goto out_free;
+	if (*changed)
+		ret = ops->set_priv_flags(dev, flags);
+
+out_free:
+	if (!compact)
+		kfree(names);
+	return ret;
+}
+
 int ethnl_set_settings(struct sk_buff *skb, struct genl_info *info)
 {
 	struct nlattr *tb[ETHTOOL_A_SETTINGS_MAX + 1];
@@ -1178,6 +1211,15 @@ int ethnl_set_settings(struct sk_buff *skb, struct genl_info *info)
 				      &mod);
 		if (mod)
 			req_mask |= ETHTOOL_IM_SETTINGS_FEATURES;
+		if (ret < 0)
+			goto out_ops;
+	}
+	if (tb[ETHTOOL_A_SETTINGS_PRIV_FLAGS]) {
+		ret = update_priv_flags(info, dev,
+					tb[ETHTOOL_A_SETTINGS_PRIV_FLAGS],
+					&mod);
+		if (mod)
+			req_mask |= ETHTOOL_IM_SETTINGS_PRIVFLAGS;
 		if (ret < 0)
 			goto out_ops;
 	}
