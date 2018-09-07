@@ -373,6 +373,7 @@ to be passed with SET_SETTINGS request:
     ETHA_SETTINGS_FEATURES	(nested)	device features
         ETHA_FEATURES_WANTED		(bitset)	wanted features
         ETHA_FEATURES_WANT_DIFF		(flag)		actual diff
+    ETHA_SETTINGS_PRIV_FLAGS	(bitset)	device private flags
 
 ETHA_LINKMODES_OURS bit set allows setting advertised link modes. If
 autonegotiation is on (either set now or kept from before), advertised modes
@@ -451,7 +452,7 @@ ETHTOOL_SGSO			ETHNL_CMD_SET_SETTINGS
 ETHTOOL_GFLAGS			ETHNL_CMD_GET_SETTINGS
 ETHTOOL_SFLAGS			ETHNL_CMD_SET_SETTINGS
 ETHTOOL_GPFLAGS			ETHNL_CMD_GET_SETTINGS
-ETHTOOL_SPFLAGS			n/a
+ETHTOOL_SPFLAGS			ETHNL_CMD_SET_SETTINGS
 ETHTOOL_GRXFH			n/a
 ETHTOOL_SRXFH			n/a
 ETHTOOL_GGRO			ETHNL_CMD_GET_SETTINGS
