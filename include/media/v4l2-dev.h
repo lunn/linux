@@ -533,4 +533,28 @@ static inline int video_is_registered(struct video_device *vdev)
 	return test_bit(V4L2_FL_REGISTERED, &vdev->flags);
 }
 
+struct v4l2_stats {
+	struct kobject	kobj;
+	spinlock_t	lock;
+	uint64_t	active_time_us;
+	ktime_t		active_ts;
+	bool		active;
+};
+
+static inline void __v4l2_stats_start(struct v4l2_stats *stats, ktime_t now)
+{
+	stats->active_ts = now;
+	stats->active = true;
+}
+
+static inline void __v4l2_stats_stop(struct v4l2_stats *stats, ktime_t now)
+{
+	stats->active_time_us += ktime_to_us(ktime_sub(now, stats->active_ts));
+	stats->active_ts = now;
+	stats->active = false;
+}
+
+struct v4l2_stats *v4l2_register_stats(const char *name);
+void v4l2_unregister_stats(struct v4l2_stats *stats);
+
 #endif /* _V4L2_DEV_H */
