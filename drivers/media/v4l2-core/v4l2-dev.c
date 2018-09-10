@@ -1055,6 +1055,88 @@ void video_unregister_device(struct video_device *vdev)
 }
 EXPORT_SYMBOL(video_unregister_device);
 
+static void v4l2_stats_kobj_release(struct kobject *kobj)
+{
+       struct v4l2_stats *stats = container_of(kobj, struct v4l2_stats, kobj);
+
+       kfree(stats);
+}
+
+static struct attribute v4l2_stats_active = {
+	.name = "active_us",
+	.mode = S_IRUGO
+};
+
+static struct attribute *v4l2_stats_attrs[] = {
+	&v4l2_stats_active,
+	NULL
+};
+
+static ssize_t v4l2_stats_show(struct kobject *kobj, struct attribute *attr,
+			       char *buffer)
+{
+	struct v4l2_stats *stats = container_of(kobj, struct v4l2_stats, kobj);
+	unsigned long flags;
+	uint64_t val = 0;
+
+	spin_lock_irqsave(&stats->lock, flags);
+
+	val = stats->active_time_us;
+	if (stats->active)
+		val += ktime_to_us(ktime_sub(ktime_get(), stats->active_ts));
+
+	spin_unlock_irqrestore(&stats->lock, flags);
+
+	return snprintf(buffer, PAGE_SIZE, "%llu\n", val);
+}
+
+static const struct sysfs_ops v4l2_stats_ops = {
+	.show = &v4l2_stats_show,
+};
+
+static struct kobj_type v4l2_stats_kobj_type = {
+	.release = v4l2_stats_kobj_release,
+	.sysfs_ops = &v4l2_stats_ops,
+	.default_attrs = v4l2_stats_attrs,
+};
+
+struct device_type v4l2_stats_type = {
+	.name = "stats",
+};
+
+static struct device v4l2_stats_device = {
+	.class = &video_class,
+	.type = &v4l2_stats_type,
+};
+
+struct v4l2_stats *v4l2_register_stats(const char *name)
+{
+	struct v4l2_stats *stats;
+	int err;
+
+	stats = kzalloc(sizeof(*stats), GFP_KERNEL);
+	if (!stats)
+		return ERR_PTR(-ENOMEM);
+
+	spin_lock_init(&stats->lock);
+	err = kobject_init_and_add(&stats->kobj, &v4l2_stats_kobj_type,
+				   &v4l2_stats_device.kobj, "%s", name);
+	if (err)
+		return ERR_PTR(err);
+
+	return stats;
+}
+EXPORT_SYMBOL_GPL(v4l2_register_stats);
+
+void v4l2_unregister_stats(struct v4l2_stats *stats)
+{
+	if (!stats)
+		return;
+
+	kobject_put(&stats->kobj);
+}
+EXPORT_SYMBOL_GPL(v4l2_unregister_stats);
+
 /*
  *	Initialise video for linux
  */
@@ -1078,6 +1160,20 @@ static int __init videodev_init(void)
 		return -EIO;
 	}
 
+	ret = dev_set_name(&v4l2_stats_device, "stats");
+	if (ret) {
+		class_unregister(&video_class);
+		unregister_chrdev_region(dev, VIDEO_NUM_DEVICES);
+		return ret;
+	}
+
+	ret = device_register(&v4l2_stats_device);
+	if (ret < 0) {
+		class_unregister(&video_class);
+		unregister_chrdev_region(dev, VIDEO_NUM_DEVICES);
+		return -EIO;
+	}
+
 	return 0;
 }
 
@@ -1085,6 +1181,7 @@ static void __exit videodev_exit(void)
 {
 	dev_t dev = MKDEV(VIDEO_MAJOR, 0);
 
+	device_unregister(&v4l2_stats_device);
 	class_unregister(&video_class);
 	unregister_chrdev_region(dev, VIDEO_NUM_DEVICES);
 }
