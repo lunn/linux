@@ -136,6 +136,8 @@ List of message types
     ETHNL_CMD_GET_PARAMS
     ETHNL_CMD_SET_PARAMS
     ETHNL_CMD_ACT_NWAY_RST
+    ETHNL_CMD_GET_RXFLOW
+    ETHNL_CMD_SET_RXFLOW		response only
 
 All constants use ETHNL_CMD_ prefix, usually followed by "GET", "SET" or "ACT"
 to indicate the type.
@@ -615,6 +617,118 @@ indicating which components _were_ actually reset (this is different from
 ioctl interface). The same message is also broadcasted as a notification.
 
 
+GET_RXFLOW
+----------
+
+Request for receive flow hashing options provided by legacy commands
+ETHTOOL_GRSSH and ETHTOOL_GRXFHINDIR. Request contents:
+
+    ETHA_RXFLOW_DEV		(nested)	device identification
+    ETHA_RXFLOW_INFOMASK	(u32)		info mask
+    ETHA_RXFLOW_COMPACT		(flag)		request compact bitsets
+    ETHA_RXFLOW_CTXOP		(u32)		context operation
+    ETHA_RXFLOW_CONTEXT		(u32)		context id
+
+Info mask bits:
+
+    ETH_RXFLOW_IM_HASHFN		hash function
+    ETH_RXFLOW_IM_HKEY			hash key
+    ETH_RXFLOW_IM_INDTBL		indirection table
+
+If ETHA_RXFLOW_CONTEXT is omitted or zero, data for main context are returned.
+Context id of ETH_RXFLOW_CTXOP_NEW (0xffffffff) is not allowed for
+compatibility reasons. Note that most NICs do not support multiple contexts.
+
+Reply contents:
+
+    ETHA_RXFLOW_DEV		(nested)	device identification
+    ETHA_RXFLOW_CONTEXT		(u32)		context id (only if not main)
+    ETHA_RXFLOW_NRINGS		(u32)		number of Rx rings
+    ETHA_RXFLOW_HASH_FN		(bitset)	hash function(s)
+    ETHA_RXFLOW_HASH_KEY	(binary)	hash key
+    ETHA_RXFLOW_HASH_OPTS	(nested)	flow hash options
+        ETHA_RXHASHOPTS_OPT	    (nested)	    hash fields for a flow type
+	    ETHA_RXHASHOPT_FLOWTYPE	(u32)		flow type
+	    ETHA_RXHASHOPT_FIELDS	(bitfield32)	fields used for hash
+	    ETHA_RXHASHOPT_DISCARD	(flag)		discard all packets
+    ETHA_RXFLOW_INDTBL_SIZE	(u32)		indirection table size
+    ETHA_RXFLOW_INDIR_TBL	(nested)	indirection table
+
+ETHA_RXFLOW_NRINGS is always present in the reply (regardless of request info
+mask). For ETHA_RXFLOW_HASH_FN, mask contains all values supported by kernel,
+value has the bit for active hash function set.
+
+ETHA_RXFLOW_HASH_OPTS contains a series of ETHA_RXHASHOPTS_OPT attributes.
+Each describes header fields used to calculate the hash for flow type
+determined by ETHA_RXHASHOPT_FLOWTYPE (*_V{4,6}_FLOW constants). Flag
+ETHA_RXHASHOPT_DISCARD means that all packets of this type are dropped,
+othewise ETHA_RXHASHOPT_FIELDS lists fields used for hash (selector has bits
+for all recognized fields set).
+
+ETHA_RXFLOW_INDIR_TBL is a nested attribute consisting of a series of
+"patches" of these types:
+
+    ETHA_INDTBL_BLOCK32			block of 32-bit values
+    ETHA_INDTBL_BLOCK16			block of 16-bit values
+    ETHA_INDTBL_BLOCK8			block of 8-bit values
+    ETHA_INDTBL_PATTERN			block cycling over an interval
+    ETHA_INDTBL_WEIGHTS			divide table according to weights
+
+Currently kernel only uses one patch for the whole table which is
+ETHA_INDTBL_BLOCK32, ETHA_INDTBL_BLOCK16 or ETHA_INDTBL_BLOCK8, depending on
+the number of rings (smallest usable size is used). Userspace applications
+should not rely on this, though, as the behaviour may change in the future.
+
+Code interpreting indirection table starts with table filled with zeros and
+then applies patches in the order in which they appear in the message.
+
+ETHA_INDTBL_BLOCK32 is a patch which overwrites a contiguous block in the
+table. Allowed attributes are
+
+    ETHA_ITBLK_START		(u32)		starting offset of the block
+    ETHA_ITBLK_LEN		(u32)		block length
+    ETHA_ITBLK_DATA		(binary)	values to fill into the block
+
+If ETHA_ITBLK_START is omitted, 0 is used. If ETHA_ITBLK_LEN is omitted, the
+block is assumed to span to the end of the table. ETHA_ITBLK_DATA consists of
+an array of unsigned 32-bit values which are copied into the table starting at
+the offset determined by ETHA_ITBLK_START (or zero). If the array is longer
+than block length, it is truncated. If the array is shorted, its copies are
+repeated to fill the whole block.
+
+ETHA_INDTBL_BLOCK16 and ETHA_INDTBL_BLOCK8 are interpreted in the same way
+except ETHA_ITBLK_DATA consists of an array of u16 and u8 values,
+respectively.
+
+ETHA_INDTBL_PATTERN is a patch which overwrites a contiguous block by numbers
+cycling over an interval. Allowed attributes are
+
+    ETHA_ITPAT_START		(u32)		starting offset of the block
+    ETHA_ITPAT_LEN		(u32)		block length
+    ETHA_ITPAT_MIN_RING		(u32)		minimum ring number to use
+    ETHA_ITPAT_MAX_RING		(u32)		maximum ring number to use
+    ETHA_ITPAT_OFFSET		(u32)		offset to shift values by
+
+ETHA_ITPAT_START and ETHA_ITPAT_END have the same meaning and defaults as
+ETHA_ITBLK_* above. The block is filled by repeating values from
+ETHA_ITPAT_MIN_RING (defaults to 0) to ETHA_ITPAT_MAX_RING (defaults to
+maximum ring number). By default, the starting value is ETHA_ITPAT_MIN_RING;
+if ETHA_ITPAT_OFFSET is used, its value is added (modulo interval length).
+
+ETHA_INDTBL_WEIGHTS divides the whole table according to specified weights
+(the exact result is supposed to be the same as traditional code for "weight"
+option of "ethtool -X" produces). Allowed values are
+
+    ETHA_ITWGHT_VALUES		(binary)	values to use
+    ETHA_ITWGHT_WEIGHTS		(binary)	weights to divide by
+
+ETHA_ITWGHT_WEIGHTS is an array of u32 weights. The sum of all weights must be
+strictly positive and must not exceed table size. If ETHA_ITWGHT_VALUES is
+present, it must be an u32 array of equal size with values (ring numbers)
+these weights correspond to. If ETHA_ITWGHT_VALUES is omitted, values from 0
+to number of weights minus one are used.
+
+
 Request translation
 -------------------
 
@@ -663,11 +777,11 @@ ETHTOOL_GFLAGS			ETHNL_CMD_GET_SETTINGS
 ETHTOOL_SFLAGS			ETHNL_CMD_SET_SETTINGS
 ETHTOOL_GPFLAGS			ETHNL_CMD_GET_SETTINGS
 ETHTOOL_SPFLAGS			ETHNL_CMD_SET_SETTINGS
-ETHTOOL_GRXFH			n/a
+ETHTOOL_GRXFH			ETHNL_CMD_GET_RXFLOW
 ETHTOOL_SRXFH			n/a
 ETHTOOL_GGRO			ETHNL_CMD_GET_SETTINGS
 ETHTOOL_SGRO			ETHNL_CMD_SET_SETTINGS
-ETHTOOL_GRXRINGS		n/a
+ETHTOOL_GRXRINGS		ETHNL_CMD_GET_RXFLOW
 ETHTOOL_GRXCLSRLCNT		n/a
 ETHTOOL_GRXCLSRULE		n/a
 ETHTOOL_GRXCLSRLALL		n/a
@@ -678,7 +792,7 @@ ETHTOOL_RESET			ETHNL_CMD_ACT_RESET
 ETHTOOL_SRXNTUPLE		n/a
 ETHTOOL_GRXNTUPLE		n/a
 ETHTOOL_GSSET_INFO		ETHNL_CMD_GET_STRSET
-ETHTOOL_GRXFHINDIR		n/a
+ETHTOOL_GRXFHINDIR		ETHNL_CMD_GET_RXFLOW
 ETHTOOL_SRXFHINDIR		n/a
 ETHTOOL_GFEATURES		ETHNL_CMD_GET_SETTINGS
 ETHTOOL_SFEATURES		ETHNL_CMD_SET_SETTINGS
@@ -692,7 +806,7 @@ ETHTOOL_GMODULEINFO		n/a
 ETHTOOL_GMODULEEEPROM		n/a
 ETHTOOL_GEEE			ETHNL_CMD_GET_PARAMS
 ETHTOOL_SEEE			ETHNL_CMD_SET_PARAMS
-ETHTOOL_GRSSH			n/a
+ETHTOOL_GRSSH			ETHNL_CMD_GET_RXFLOW
 ETHTOOL_SRSSH			n/a
 ETHTOOL_GTUNABLE		n/a
 ETHTOOL_STUNABLE		n/a

@@ -292,6 +292,7 @@ extern const struct get_request_ops strset_request_ops;
 extern const struct get_request_ops info_request_ops;
 extern const struct get_request_ops settings_request_ops;
 extern const struct get_request_ops params_request_ops;
+extern const struct get_request_ops rxflow_request_ops;
 
 int ethnl_set_settings(struct sk_buff *skb, struct genl_info *info);
 int ethnl_set_params(struct sk_buff *skb, struct genl_info *info);

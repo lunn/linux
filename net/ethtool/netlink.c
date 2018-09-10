@@ -236,6 +236,7 @@ const struct get_request_ops *get_requests[__ETHNL_CMD_CNT] = {
 	[ETHNL_CMD_GET_INFO]		= &info_request_ops,
 	[ETHNL_CMD_GET_SETTINGS]	= &settings_request_ops,
 	[ETHNL_CMD_GET_PARAMS]		= &params_request_ops,
+	[ETHNL_CMD_GET_RXFLOW]		= &rxflow_request_ops,
 };
 
 /**
@@ -710,6 +711,13 @@ static const struct genl_ops ethtool_genl_ops[] = {
 		.cmd	= ETHNL_CMD_ACT_RESET,
 		.flags	= GENL_ADMIN_PERM,
 		.doit	= ethnl_act_reset,
+	},
+	{
+		.cmd	= ETHNL_CMD_GET_RXFLOW,
+		.doit	= ethnl_get_doit,
+		.start	= ethnl_get_start,
+		.dumpit	= ethnl_get_dumpit,
+		.done	= ethnl_get_done,
 	},
 };
 
