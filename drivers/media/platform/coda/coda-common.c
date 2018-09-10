@@ -2975,9 +2975,21 @@ static void coda_fw_callback(const struct firmware *fw, void *context)
 		}
 	}
 
+	dev->bit_stats = v4l2_register_stats("coda-bit");
+	if (IS_ERR(dev->bit_stats))
+		goto rel_vfd;
+
+	if (dev->devtype->product == CODA_960) {
+		dev->jpeg_stats = v4l2_register_stats("coda-jpeg");
+		if (IS_ERR(dev->jpeg_stats))
+			goto unreg_bit;
+	}
+
 	pm_runtime_put_sync(dev->dev);
 	return;
 
+unreg_bit:
+	v4l2_unregister_stats(dev->bit_stats);
 rel_vfd:
 	while (--i >= 0)
 		video_unregister_device(&dev->vfd[i]);
@@ -3267,6 +3279,9 @@ static int coda_remove(struct platform_device *pdev)
 	struct coda_dev *dev = platform_get_drvdata(pdev);
 	int i;
 
+	if (dev->devtype->product == CODA_960)
+		v4l2_unregister_stats(dev->jpeg_stats);
+	v4l2_unregister_stats(dev->bit_stats);
 	for (i = 0; i < ARRAY_SIZE(dev->vfd); i++) {
 		if (video_get_drvdata(&dev->vfd[i]))
 			video_unregister_device(&dev->vfd[i]);
