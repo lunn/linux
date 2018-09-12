@@ -498,6 +498,7 @@ static int imx_gpc_probe(struct platform_device *pdev)
 
 			pd_pdev->dev.parent = &pdev->dev;
 			pd_pdev->dev.of_node = np;
+			pd_pdev->dev.dma_mask = &pd_pdev->dev.coherent_dma_mask;
 
 			ret = platform_device_add(pd_pdev);
 			if (ret) {
