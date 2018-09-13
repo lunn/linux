@@ -12,6 +12,7 @@
 #include <linux/crc-ccitt.h>
 #include <linux/delay.h>
 #include <linux/export.h>
+#include <linux/ihex.h>
 #include <linux/init.h>
 #include <linux/slab.h>
 #include <linux/kernel.h>
@@ -146,6 +147,33 @@ struct rave_sp_status {
 	u8  periph_power_shutoff;
 } __packed;
 
+struct rave_sp_booloader_query_device_response {
+	u8  command;
+	u8  device_type;
+	struct rave_sp_version bootloader;
+	u8  is_app_valid;
+	u16 app_crc;
+	u32 app_start_addr;
+	u32 config_words_start;
+} __packed;
+
+#define RAVE_SP_WDT_FIRMWARE_DATA_PAYLOAD_SIZE	56
+
+struct rave_sp_firmware_data {
+	u8 command;
+	u32 address;
+	u8 size;
+	u8 payload[RAVE_SP_WDT_FIRMWARE_DATA_PAYLOAD_SIZE];
+} __packed;
+
+enum rave_sp_bootloader_command {
+       RAVE_SP_BOOTLOADER_CMD_QUERY_DEVICE     = 0xA1,
+       RAVE_SP_BOOTLOADER_CMD_ERASE_APP        = 0xA3,
+       RAVE_SP_BOOTLOADER_CMD_PROGRAM_DEVICE   = 0xA4,
+       RAVE_SP_BOOTLOADER_CMD_PROGRAM_COMPLETE = 0xA5,
+       RAVE_SP_BOOTLOADER_CMD_READ_APP         = 0xA6,
+};
+
 /**
  * struct rave_sp_variant_cmds - Variant specific command routines
  *
@@ -168,6 +196,15 @@ struct rave_sp_variant {
 	const struct rave_sp_checksum *checksum;
 	struct rave_sp_variant_cmds cmd;
 };
+
+struct rave_sp_update_state {
+	u32 start;
+	u32 end;
+	size_t size;
+	size_t progress;
+};
+
+#define RAVE_SP_FLAG_BOOTLOADER_MODE	BIT(0)
 
 /**
  * struct rave_sp - RAVE supervisory processor core
@@ -198,7 +235,105 @@ struct rave_sp {
 
 	const char *part_number_firmware;
 	const char *part_number_bootloader;
+
+	unsigned long flags;
+
+	struct mutex update_lock;
+	atomic_t update_status;
 };
+
+static int rave_sp_update_firmware(struct rave_sp *, const struct firmware *);
+static int rave_sp_switch_to_bootloader(struct rave_sp *);
+
+static ssize_t rave_sp_store_update_fw(struct device *dev,
+				       struct device_attribute *attr,
+				       const char *buf, size_t count)
+{
+	struct rave_sp *sp = dev_get_drvdata(dev);
+	int ret, err;
+
+	mutex_lock(&sp->update_lock);
+
+	if (rave_sp_is_in_bootloader_mode(sp)) {
+		const struct firmware *firmware;
+
+		ret = request_ihex_firmware(&firmware, buf, dev);
+		if (!ret) {
+			ret = rave_sp_update_firmware(sp, firmware);
+			release_firmware(firmware);
+		}
+	} else {
+		devm_of_platform_depopulate(dev);
+
+		ret = rave_sp_switch_to_bootloader(sp);
+		if (ret)
+			dev_err(dev, "Failed to switch to bootloader mode\n");
+		/*
+		 * In the event of above call to
+		 * rave_sp_start_update() failing we still want to try
+		 * to populate all of the platform devices back, so
+		 * we'd not end up not having watchdog petting driver.
+		 */
+		err = devm_of_platform_populate(dev);
+		if (err)
+			dev_err(dev, "Failed to populate devices\n");
+
+		ret = ret ?: err;
+	}
+
+	mutex_unlock(&sp->update_lock);
+
+	return ret ?: count;
+}
+
+static DEVICE_ATTR(update_fw, S_IWUSR, NULL, rave_sp_store_update_fw);
+
+static ssize_t update_fw_status_show(struct device *dev,
+				     struct device_attribute *attr, char *buf)
+{
+	struct rave_sp *sp = dev_get_drvdata(dev);
+
+	return sprintf(buf, "%d\n", atomic_read(&sp->update_status));
+}
+
+static DEVICE_ATTR_RO(update_fw_status);
+
+static struct attribute *rave_sp_attrs[] = {
+	&dev_attr_update_fw.attr,
+	&dev_attr_update_fw_status.attr,
+	NULL,
+};
+
+struct attribute_group rave_sp_group = {
+	.attrs = rave_sp_attrs,
+};
+
+static void devm_rave_sp_sysfs_group_release(struct device *dev, void *res)
+{
+	sysfs_remove_group(&dev->kobj, &rave_sp_group);
+}
+
+static int devm_rave_sysfs_create_group(struct rave_sp *sp)
+{
+	struct rave_sp **rc;
+	struct device *dev = &sp->serdev->dev;
+	int ret;
+
+	rc = devres_alloc(devm_rave_sp_sysfs_group_release, sizeof(*rc),
+			  GFP_KERNEL);
+	if (!rc)
+		return -ENOMEM;
+
+	ret = sysfs_create_group(&dev->kobj, &rave_sp_group);
+	if (!ret) {
+		*rc = sp;
+		devres_add(dev, rc);
+	} else {
+		devres_free(rc);
+	}
+
+	return ret;
+}
 
 static bool rave_sp_id_is_event(u8 code)
 {
@@ -640,6 +775,8 @@ static int rave_sp_default_cmd_translate(enum rave_sp_command command)
 		return 0x1F;
 	case RAVE_SP_CMD_RMB_EEPROM:
 		return 0x20;
+	case RAVE_SP_CMD_BOOTLOADER:
+		return 0x2A;
 	default:
 		return -EINVAL;
 	}
@@ -765,6 +902,268 @@ static const struct serdev_device_ops rave_sp_serdev_device_ops = {
 	.write_wakeup = serdev_device_write_wakeup,
 };
 
+static void rave_sp_set_update_fw_status(struct rave_sp *sp, int status)
+{
+	struct device *dev = &sp->serdev->dev;
+
+	atomic_set(&sp->update_status, status);
+	sysfs_notify(&dev->kobj, NULL, "update_fw_status");
+}
+
+bool rave_sp_is_in_bootloader_mode(struct rave_sp *sp)
+{
+	return test_bit(RAVE_SP_FLAG_BOOTLOADER_MODE, &sp->flags);
+}
+EXPORT_SYMBOL_GPL(rave_sp_is_in_bootloader_mode);
+
+static int rave_sp_switch_to_bootloader(struct rave_sp *sp)
+{
+	u8 cmd[] = {
+		[0] = RAVE_SP_CMD_JUMP_TO_BOOTLOADER,
+		/*
+		 * Even though this is a no-responce command ACK-ID is
+		 * still expected to be present in command
+		 * payload. Since it's there only for correct layout's
+		 * sake pass a 0, instead of trying to obtain a proper
+		 * ACK id from corresponding atomic counter.
+		 */
+		[1] = 0,
+	};
+	int ret;
+
+	ret = rave_sp_write(sp, cmd, sizeof(cmd));
+	if (ret)
+		return ret;
+	/*
+	 * Arbitrary sleep delay to wait for bootloader firmware to boot
+	 */
+	msleep(1000);
+	set_bit(RAVE_SP_FLAG_BOOTLOADER_MODE, &sp->flags);
+
+	return 0;
+}
+
+static int rave_sp_query_device(struct rave_sp *sp,
+				struct rave_sp_update_state *update)
+{
+	struct rave_sp_booloader_query_device_response r;
+	struct device *dev = &sp->serdev->dev;
+	u8 cmd[] = {
+		[0] = RAVE_SP_CMD_BOOTLOADER,
+		[1] = 0,
+		[2] = RAVE_SP_BOOTLOADER_CMD_QUERY_DEVICE,
+	};
+	int ret;
+
+	ret = rave_sp_exec(sp, cmd, sizeof(cmd), &r, sizeof(r));
+	if (ret)
+		return ret;
+
+	update->start = r.app_start_addr;
+	/*
+	 * Unfortunately QUERY_DEVICE command does not explicitly
+	 * report the last address we can programm, however all types
+	 * for PIC MCU used for RAVE SP share the same relationship
+	 * between that and the start of config word region.
+	 */
+	update->end   = r.config_words_start - 0xff8;
+
+	dev_dbg(dev, "device type:         %02x\n", r.device_type);
+	dev_dbg(dev, "bootloader hardware: %02d\n", r.bootloader.hardware);
+	dev_dbg(dev, "bootloader major:    %02d\n", r.bootloader.major);
+	dev_dbg(dev, "bootloader minor:    %02d\n", r.bootloader.minor);
+	dev_dbg(dev, "bootloader letters:  %c%c\n", r.bootloader.letter[0],
+		r.bootloader.letter[1]);
+	dev_dbg(dev, "is app valid:        %02x\n", r.is_app_valid);
+	dev_dbg(dev, "app crc:             %04x\n", r.app_crc);
+	dev_dbg(dev, "app start addr:      %08x\n", r.app_start_addr);
+	dev_dbg(dev, "config words start:  %08x\n", r.config_words_start);
+
+	return 0;
+}
+
+static int rave_sp_program_complete(struct rave_sp *sp)
+{
+	u8 cmd[] = {
+		[0] = RAVE_SP_CMD_BOOTLOADER,
+		[1] = 0,
+		[2] = RAVE_SP_BOOTLOADER_CMD_PROGRAM_COMPLETE,
+	};
+
+	return rave_sp_exec(sp, cmd, sizeof(cmd), NULL, 0);
+}
+
+static int rave_sp_erase_app(struct rave_sp *sp)
+{
+	u8 cmd[] = {
+		[0] = RAVE_SP_CMD_BOOTLOADER,
+		[1] = 0,
+		[2] = RAVE_SP_BOOTLOADER_CMD_ERASE_APP,
+	};
+
+	return rave_sp_exec(sp, cmd, sizeof(cmd), NULL, 0);
+}
+
+static int rave_sp_program_ihex_record(struct rave_sp *sp,
+				       struct rave_sp_update_state *update,
+				       const struct ihex_binrec *rec)
+{
+	struct device *dev = &sp->serdev->dev;
+	u8 cmd[2 + sizeof(struct rave_sp_firmware_data)] = {
+		[0] = RAVE_SP_CMD_BOOTLOADER,
+		[1] = 0,
+	};
+	struct rave_sp_firmware_data *fwdata = (void *)&cmd[2];
+	size_t residue = be16_to_cpu(rec->len);
+	u32 address = be32_to_cpu(rec->addr);
+	const u8 *data = rec->data;
+	size_t chunk;
+	int ret;
+
+	do {
+		size_t status;
+
+		chunk = min(residue, sizeof(fwdata->payload));
+		/*
+		 * All firmware addresses are specified in units of
+		 * 16-bit words
+		 */
+		fwdata->address = address / 2;
+		/*
+		 * If the chunk we are about to program crosses
+		 * starting point of allowed range we artificially
+		 * split it in two by shrinking immediate write size
+		 * to cover only the porting that lies completely
+		 * outsize
+		 */
+		if (fwdata->address < update->start &&
+		    fwdata->address + chunk / 2 > update->start)
+			chunk = (update->start - fwdata->address) * 2;
+		/*
+		 * Bootloader will ignore all of the requests to write
+		 * data whose start addresses fall outside of the
+		 * [update->start; update->end) region.
+		 */
+		if (update->start <= fwdata->address &&
+		    fwdata->address <= update->end) {
+
+			fwdata->size = chunk;
+			fwdata->command =
+				RAVE_SP_BOOTLOADER_CMD_PROGRAM_DEVICE;
+
+			memcpy(fwdata->payload, data, chunk);
+
+			print_hex_dump_debug("programmed chunk: ",
+					     DUMP_PREFIX_NONE,
+					     16, 1, data, chunk, false);
+
+			ret = rave_sp_exec(sp, cmd, sizeof(cmd), NULL, 0);
+			if (ret)
+				return ret;
+			/*
+			 * Second, read it back and verify contents
+			 */
+			fwdata->command = RAVE_SP_BOOTLOADER_CMD_READ_APP;
+
+			ret = rave_sp_exec(sp, cmd,
+					   sizeof(cmd) -
+					   sizeof(fwdata->payload),
+					   fwdata,
+					   sizeof(fwdata->command) +
+					   sizeof(fwdata->size) +
+					   sizeof(fwdata->address) +
+					   chunk);
+			if (ret)
+				return ret;
+
+			print_hex_dump_debug("read chunk: ", DUMP_PREFIX_NONE,
+					     16, 1, fwdata->payload,
+					     fwdata->size, false);
+
+			if (memcmp(data, fwdata->payload, chunk)) {
+				dev_err(dev,
+					"Programmed data @0x%08x "
+					"doesn't match\n",
+					fwdata->address);
+				return -EIO;
+			}
+		}
+
+		residue -= chunk;
+		address += chunk;
+		data    += chunk;
+
+		update->progress += chunk;
+		status = (update->progress * 100) / update->size;
+		/*
+		 * We only go up to 99 here and reserve 100 to
+		 * indicate completion of the last step of firmware
+		 * update process done by
+		 * rave_sp_wdt_program_complete()
+		 */
+		status = min(status, (size_t)99U);
+
+		rave_sp_set_update_fw_status(sp, status);
+	} while (residue);
+
+	return 0;
+}
+
+static size_t rave_sp_firmware_size(const struct firmware *firmware)
+{
+	const struct ihex_binrec *rec;
+	size_t size = 0;
+
+	for (rec = (void *)firmware->data; rec; rec = ihex_next_binrec(rec))
+		size += be16_to_cpu(rec->len);
+
+	return size;
+}
+
+static int rave_sp_update_firmware(struct rave_sp *sp,
+				   const struct firmware *firmware)
+{
+	struct device *dev = &sp->serdev->dev;
+	struct rave_sp_update_state update = {
+		.progress = 0,
+		.size = rave_sp_firmware_size(firmware),
+	};
+	const struct ihex_binrec *rec;
+	int ret;
+
+	rave_sp_set_update_fw_status(sp, 0);
+
+	ret = rave_sp_query_device(sp, &update);
+	if (ret) {
+		dev_err(dev, "Failed to query device\n");
+		return ret;
+	}
+
+	ret = rave_sp_erase_app(sp);
+	if (ret) {
+		dev_err(dev, "Failed to erase device\n");
+		return ret;
+	}
+
+	for (rec = (void *)firmware->data; rec; rec = ihex_next_binrec(rec)) {
+		ret = rave_sp_program_ihex_record(sp, &update, rec);
+		if (ret) {
+			dev_err(dev, "Failed to program device\n");
+			return ret;
+		}
+	}
+
+	ret = rave_sp_program_complete(sp);
+	if (ret) {
+		dev_err(dev, "Failed to write CRC\n");
+		return ret;
+	}
+
+	rave_sp_set_update_fw_status(sp, 100);
+
+	return ret;
+}
+
 static int rave_sp_probe(struct serdev_device *serdev)
 {
 	struct device *dev = &serdev->dev;
@@ -794,6 +1193,8 @@ static int rave_sp_probe(struct serdev_device *serdev)
 	mutex_init(&sp->reply_lock);
 	BLOCKING_INIT_NOTIFIER_HEAD(&sp->event_notifier_list);
 
+	mutex_init(&sp->update_lock);
+
 	serdev_device_set_client_ops(serdev, &rave_sp_serdev_device_ops);
 	ret = devm_serdev_device_open(dev, serdev);
 	if (ret)
@@ -821,6 +1222,12 @@ static int rave_sp_probe(struct serdev_device *serdev)
 	 */
 	dev_info(dev, "Firmware version: %s",   sp->part_number_firmware);
 	dev_info(dev, "Bootloader version: %s", sp->part_number_bootloader);
+
+	ret = devm_rave_sysfs_create_group(sp);
+	if (ret) {
+		dev_warn(dev, "Failed to create sysfs group: %d\n", ret);
+		return ret;
+	}
 
 	return devm_of_platform_populate(dev);
 }
