@@ -26,6 +26,8 @@ enum rave_sp_command {
 	RAVE_SP_CMD_RESET			= 0xA7,
 	RAVE_SP_CMD_RESET_REASON		= 0xA8,
 
+	RAVE_SP_CMD_JUMP_TO_BOOTLOADER		= 0xB0,
+	RAVE_SP_CMD_BOOTLOADER			= 0xB1,
 	RAVE_SP_CMD_REQ_COPPER_REV		= 0xB6,
 	RAVE_SP_CMD_GET_I2C_DEVICE_STATUS	= 0xBA,
 	RAVE_SP_CMD_GET_SP_SILICON_REV		= 0xB9,
@@ -58,5 +60,7 @@ int rave_sp_exec(struct rave_sp *sp,
 struct device;
 int devm_rave_sp_register_event_notifier(struct device *dev,
 					 struct notifier_block *nb);
+
+bool rave_sp_is_in_bootloader_mode(struct rave_sp *sp);
 
 #endif /* _LINUX_RAVE_SP_H_ */
