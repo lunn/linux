@@ -137,7 +137,7 @@ List of message types
     ETHNL_CMD_SET_PARAMS
     ETHNL_CMD_ACT_NWAY_RST
     ETHNL_CMD_GET_RXFLOW
-    ETHNL_CMD_SET_RXFLOW		response only
+    ETHNL_CMD_SET_RXFLOW
 
 All constants use ETHNL_CMD_ prefix, usually followed by "GET", "SET" or "ACT"
 to indicate the type.
@@ -729,6 +729,43 @@ these weights correspond to. If ETHA_ITWGHT_VALUES is omitted, values from 0
 to number of weights minus one are used.
 
 
+SET_RXFLOW
+----------
+
+Request to update flow hashing options, corresponds to legacy commands
+ETHTOOL_SRSSH and ETHTOOL_SRXFHINDIR. Request contents:
+
+    ETHA_RXFLOW_DEV		(nested)	device identification
+    ETHA_RXFLOW_CTXOP		(u32)		context operation
+    ETHA_RXFLOW_CONTEXT		(u32)		RSS context
+    ETHA_RXFLOW_HASH_FN		(bitset)	hash function(s)
+    ETHA_RXFLOW_HASH_KEY	(binary)	hash key
+    ETHA_RXFLOW_INDIR_TBL	(nested)	indirection table description
+
+Values of ETH_RXFLOW_CTXOP:
+
+    ETH_RXFLOW_CTXOP_SET		set values for a context (default)
+    ETH_RXFLOW_CTXOP_NEW		add new RSS context
+    ETH_RXFLOW_CTXOP_DEL		delete a context
+
+If ETH_RXFLOW_CTXOP is omitted or equal to ETH_RXFLOW_CTXOP_SET, request
+updates values of an existing RSS context. If ETHA_RXFLOW_CONTEXT is omitted
+or zero, main context is updated. ETHA_RXFLOW_HASH_FN (bitset) specifies hash
+function(s) to use, ETHA_RXFLOW_HASH_KEY hash key (length must match) and
+ETHA_RXFLOW_INDIR_TBL requested indirection table in the way described above.
+
+ETH_RXFLOW_CTXOP equal to ETH_RXFLOW_CTXOP_NEW works in the same way except
+ETHA_RXFLOW_CONTEXT must not be present and a new RSS context is created (if
+supported by NIC driver). An ETHNL_CMD_SET_RXFLOW message is sent as a reply,
+containing only ETHA_RXFLOW_DEV, ETHA_RXFLOW_CTXOP (= ETH_RXFLOW_CTXOP_NEW)
+and ETHA_RXFLOW_CONTEXT (with new context id).
+
+ETHA_RXFLOW_CTXOP equal to ETH_RXFLOW_CTXOP_DEL requests context deletion
+(if supported by NIC driver). Request must have ETHA_RXFLOW_CONTEXT (which is
+not zero) and must not contain ETHA_RXFLOW_HASH_FN, ETHA_RXFLOW_HASH_KEY or
+ETHA_RXFLOW_INDIR_TBL.
+
+
 Request translation
 -------------------
 
@@ -793,7 +830,7 @@ ETHTOOL_SRXNTUPLE		n/a
 ETHTOOL_GRXNTUPLE		n/a
 ETHTOOL_GSSET_INFO		ETHNL_CMD_GET_STRSET
 ETHTOOL_GRXFHINDIR		ETHNL_CMD_GET_RXFLOW
-ETHTOOL_SRXFHINDIR		n/a
+ETHTOOL_SRXFHINDIR		ETHNL_CMD_SET_RXFLOW
 ETHTOOL_GFEATURES		ETHNL_CMD_GET_SETTINGS
 ETHTOOL_SFEATURES		ETHNL_CMD_SET_SETTINGS
 ETHTOOL_GCHANNELS		ETHNL_CMD_GET_PARAMS
@@ -807,7 +844,7 @@ ETHTOOL_GMODULEEEPROM		n/a
 ETHTOOL_GEEE			ETHNL_CMD_GET_PARAMS
 ETHTOOL_SEEE			ETHNL_CMD_SET_PARAMS
 ETHTOOL_GRSSH			ETHNL_CMD_GET_RXFLOW
-ETHTOOL_SRSSH			n/a
+ETHTOOL_SRSSH			ETHNL_CMD_SET_RXFLOW
 ETHTOOL_GTUNABLE		n/a
 ETHTOOL_STUNABLE		n/a
 ETHTOOL_GPHYSTATS		n/a
