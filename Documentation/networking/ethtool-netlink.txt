@@ -133,7 +133,7 @@ List of message types
     ETHNL_CMD_SET_PARAMS
     ETHNL_CMD_ACT_NWAY_RST
     ETHNL_CMD_GET_RXFLOW
-    ETHNL_CMD_SET_RXFLOW		response only
+    ETHNL_CMD_SET_RXFLOW
 
 All constants use ETHNL_CMD_ prefix, usually followed by "GET", "SET" or "ACT"
 to indicate the type.
@@ -730,6 +730,46 @@ values (ring numbers) these weights correspond to. If ETHTOOL_A_ITWGHT_VALUES
 is omitted, values from 0 to number of weights minus one are used.
 
 
+SET_RXFLOW
+----------
+
+Request to update flow hashing options, corresponds to legacy commands
+ETHTOOL_SRSSH and ETHTOOL_SRXFHINDIR. Request contents:
+
+    ETHTOOL_A_RXFLOW_DEV		(nested)	device identification
+    ETHTOOL_A_RXFLOW_CTXOP		(u32)		context operation
+    ETHTOOL_A_RXFLOW_CONTEXT		(u32)		RSS context
+    ETHTOOL_A_RXFLOW_HASH_FN		(bitset)	hash function(s)
+    ETHTOOL_A_RXFLOW_HASH_KEY		(binary)	hash key
+    ETHTOOL_A_RXFLOW_INDIR_TBL		(nested)	indirection table description
+
+Values of ETHTOOL_A__RXFLOW_CTXOP:
+
+    ETHTOOL_RXFLOW_CTXOP_SET		set values for a context (default)
+    ETHTOOL_RXFLOW_CTXOP_NEW		add new RSS context
+    ETHTOOL_RXFLOW_CTXOP_DEL		delete a context
+
+If ETHTOOL_A_RXFLOW_CTXOP is omitted or equal to ETHTOOL_RXFLOW_CTXOP_SET,
+request updates values of an existing RSS context. If ETHTOOL_A_RXFLOW_CONTEXT
+is omitted or zero, main context is updated. ETHTOOL_A_RXFLOW_HASH_FN (bitset)
+specifies hash function(s) to use, ETHTOOL_A_RXFLOW_HASH_KEY hash key (length
+must match) and ETHTOOL_A_RXFLOW_INDIR_TBL requested indirection table in the
+way described above.
+
+ETHTOOL_A_RXFLOW_CTXOP equal to ETHTOOL_RXFLOW_CTXOP_NEW works in the same way
+except ETHTOOL_A_RXFLOW_CONTEXT must not be present and a new RSS context is
+created (if supported by NIC driver). An ETHNL_CMD_SET_RXFLOW message is sent
+as a reply, containing only ETHTOOL_A_RXFLOW_DEV, ETHTOOL_A_RXFLOW_CTXOP
+(equal to ETHTOOL_RXFLOW_CTXOP_NEW) and ETHTOOL_A_RXFLOW_CONTEXT (with new
+context id).
+
+ETHTOOL_A_RXFLOW_CTXOP equal to ETHTOOL_RXFLOW_CTXOP_DEL requests context
+deletion (if supported by NIC driver). Request must have
+ETHTOOL_A_RXFLOW_CONTEXT (which is not zero) and must not contain
+ETHTOOL_A_RXFLOW_HASH_FN, ETHTOOL_A_RXFLOW_HASH_KEY or
+ETHTOOL_A_RXFLOW_INDIR_TBL.
+
+
 Request translation
 -------------------
 
@@ -794,7 +834,7 @@ ETHTOOL_SRXNTUPLE		n/a
 ETHTOOL_GRXNTUPLE		n/a
 ETHTOOL_GSSET_INFO		ETHNL_CMD_GET_STRSET
 ETHTOOL_GRXFHINDIR		ETHNL_CMD_GET_RXFLOW
-ETHTOOL_SRXFHINDIR		n/a
+ETHTOOL_SRXFHINDIR		ETHNL_CMD_SET_RXFLOW
 ETHTOOL_GFEATURES		ETHNL_CMD_GET_SETTINGS
 ETHTOOL_SFEATURES		ETHNL_CMD_SET_SETTINGS
 ETHTOOL_GCHANNELS		ETHNL_CMD_GET_PARAMS
@@ -808,7 +848,7 @@ ETHTOOL_GMODULEEEPROM		n/a
 ETHTOOL_GEEE			ETHNL_CMD_GET_PARAMS
 ETHTOOL_SEEE			ETHNL_CMD_SET_PARAMS
 ETHTOOL_GRSSH			ETHNL_CMD_GET_RXFLOW
-ETHTOOL_SRSSH			n/a
+ETHTOOL_SRSSH			ETHNL_CMD_SET_RXFLOW
 ETHTOOL_GTUNABLE		n/a
 ETHTOOL_STUNABLE		n/a
 ETHTOOL_GPHYSTATS		n/a
