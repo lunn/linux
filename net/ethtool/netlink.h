@@ -309,5 +309,7 @@ void ethnl_physid_notify(struct net_device *dev, struct netlink_ext_ack *extack,
 			 unsigned int cmd, u32 req_mask, const void *data);
 void ethnl_reset_notify(struct net_device *dev, struct netlink_ext_ack *extack,
 			unsigned int cmd, u32 req_mask, const void *data);
+void ethnl_rxflow_notify(struct net_device *dev, struct netlink_ext_ack *extack,
+			 unsigned int cmd, u32 req_mask, const void *data);
 
 #endif /* _NET_ETHTOOL_NETLINK_H */

@@ -566,6 +566,7 @@ ethnl_notify_handler_t ethnl_notify_handlers[] = {
 	[ETHNL_CMD_ACT_NWAY_RST]	= ethnl_nwayrst_notify,
 	[ETHNL_CMD_ACT_PHYS_ID]		= ethnl_physid_notify,
 	[ETHNL_CMD_ACT_RESET]		= ethnl_reset_notify,
+	[ETHNL_CMD_SET_RXFLOW]		= ethnl_rxflow_notify,
 };
 
 void ethtool_notify(struct net_device *dev, struct netlink_ext_ack *extack,

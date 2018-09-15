@@ -461,3 +461,73 @@ const struct get_request_ops rxflow_request_ops = {
 	.fill_reply		= fill_rxflow,
 	.cleanup		= rxflow_cleanup,
 };
+
+void ethnl_rxflow_notify(struct net_device *dev,
+			 struct netlink_ext_ack *extack, unsigned int cmd,
+			 u32 req_mask, const void *_data)
+{
+	const struct ethtool_rxflow_notification_info *ninfo = _data;
+	struct common_req_info *req_info;
+	struct rxflow_data data = {};
+	struct sk_buff *skb;
+	void *msg_payload;
+	int msg_len;
+	int ret;
+
+	req_info = &data.reqinfo_base;
+	req_info->reply_data = &data.repdata_base;
+	req_info->dev = dev;
+	req_info->req_mask = req_mask;
+	req_info->compact = true;
+	data.repdata_base.dev = dev;
+	if (ninfo) {
+		data.req_context = ninfo->context;
+		data.req_flow_type = ninfo->flow_type;
+	}
+
+	ret = prepare_rxflow(req_info, NULL);
+	if (ret < 0)
+		goto err_data;
+	msg_len = rxflow_size(req_info);
+	if (msg_len < 0)
+		goto err_data;
+	skb = genlmsg_new(msg_len, GFP_KERNEL);
+	if (!skb)
+		goto err_data;
+	msg_payload = genlmsg_put(skb, 0, ++ethnl_bcast_seq,
+				  &ethtool_genl_family, 0,
+				  ETHNL_CMD_SET_RXFLOW);
+	if (!msg_payload)
+		goto err_skb;
+
+	ret = ethnl_fill_dev(skb, dev, ETHA_RXFLOW_DEV);
+	if (ret < 0)
+		goto err_skb;
+	if (ninfo) {
+		ret = -EMSGSIZE;
+		if (ninfo->ctx_op &&
+		    nla_put_u32(skb, ETHA_RXFLOW_CTXOP, ninfo->ctx_op))
+			goto err_skb;
+	}
+
+	if (ninfo && ninfo->ctx_op == ETH_RXFLOW_CTXOP_DEL) {
+		ret = -EMSGSIZE;
+		if (nla_put_u32(skb, ETHA_RXFLOW_CONTEXT, ninfo->context))
+			goto err_skb;
+	} else {
+		ret = fill_rxflow(skb, req_info);
+		if (ret < 0)
+			goto err_skb;
+	}
+	rxflow_cleanup(req_info);
+	genlmsg_end(skb, msg_payload);
+
+	genlmsg_multicast(&ethtool_genl_family, skb, 0, ETHNL_MCGRP_MONITOR,
+			  GFP_KERNEL);
+	return;
+
+err_skb:
+	nlmsg_free(skb);
+err_data:
+	rxflow_cleanup(req_info);
+}

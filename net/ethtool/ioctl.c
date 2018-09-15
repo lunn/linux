@@ -716,6 +716,7 @@ out:
 static noinline_for_stack int ethtool_set_rxnfc(struct net_device *dev,
 						u32 cmd, void __user *useraddr)
 {
+	struct ethtool_rxflow_notification_info notify_info = {};
 	struct ethtool_rxnfc info;
 	size_t info_size = sizeof(info);
 	int rc;
@@ -734,10 +735,16 @@ static noinline_for_stack int ethtool_set_rxnfc(struct net_device *dev,
 	if (copy_from_user(&info, useraddr, info_size))
 		return -EFAULT;
 
+	if ((cmd != ETHTOOL_SRXFH) && (info.flow_type & FLOW_RSS))
+		notify_info.context = info.rss_context;
+	notify_info.flow_type = info.flow_type;
 	rc = dev->ethtool_ops->set_rxnfc(dev, &info);
 	if (rc)
 		return rc;
 
+	if (cmd == ETHTOOL_SRXFH)
+		ethtool_notify(dev, NULL, ETHNL_CMD_SET_RXFLOW,
+			       ETH_RXFLOW_IM_HASHOPTS, &notify_info);
 	if (cmd == ETHTOOL_SRXCLSRLINS &&
 	    copy_to_user(useraddr, &info, info_size))
 		return -EFAULT;
@@ -942,6 +949,8 @@ static noinline_for_stack int ethtool_set_rxfh_indir(struct net_device *dev,
 	ret = ops->set_rxfh(dev, indir, NULL, ETH_RSS_HASH_NO_CHANGE);
 	if (ret)
 		goto out;
+	ethtool_notify(dev, NULL, ETHNL_CMD_SET_RXFLOW, ETH_RXFLOW_IM_INDTBL,
+		       NULL);
 
 	/* indicate whether rxfh was set to default */
 	if (user_size == 0)
@@ -1037,6 +1046,9 @@ static noinline_for_stack int ethtool_set_rxfh(struct net_device *dev,
 					       void __user *useraddr)
 {
 	int ret;
+	struct ethtool_rxflow_notification_info notify_info = {
+		.ctx_op		= ETH_RXFLOW_CTXOP_SET,
+	};
 	const struct ethtool_ops *ops = dev->ethtool_ops;
 	struct ethtool_rxnfc rx_rings;
 	struct ethtool_rxfh rxfh;
@@ -1046,6 +1058,7 @@ static noinline_for_stack int ethtool_set_rxfh(struct net_device *dev,
 	u8 *rss_config;
 	u32 rss_cfg_offset = offsetof(struct ethtool_rxfh, rss_config[0]);
 	bool delete = false;
+	u32 notify_mask = 0;
 
 	if (!ops->get_rxnfc || !ops->set_rxfh)
 		return -EOPNOTSUPP;
@@ -1076,8 +1089,18 @@ static noinline_for_stack int ethtool_set_rxfh(struct net_device *dev,
 	     rxfh.key_size == 0 && rxfh.hfunc == ETH_RSS_HASH_NO_CHANGE))
 		return -EINVAL;
 
-	if (rxfh.indir_size != ETH_RXFH_INDIR_NO_CHANGE)
+	if (rxfh.hfunc != ETH_RSS_HASH_NO_CHANGE)
+		notify_mask |= ETH_RXFLOW_IM_HASHFN;
+	if (rxfh.key_size)
+		notify_mask |= ETH_RXFLOW_IM_HKEY;
+	if (rxfh.indir_size != ETH_RXFH_INDIR_NO_CHANGE) {
 		indir_bytes = dev_indir_size * sizeof(indir[0]);
+		notify_mask |= ETH_RXFLOW_IM_INDTBL;
+	}
+	if (rxfh.rss_context == ETH_RXFH_CONTEXT_ALLOC)
+		notify_info.ctx_op = ETH_RXFLOW_CTXOP_NEW;
+	else
+		notify_info.context = rxfh.rss_context;
 
 	rss_config = kzalloc(indir_bytes + rxfh.key_size, GFP_USER);
 	if (!rss_config)
@@ -1107,6 +1130,7 @@ static noinline_for_stack int ethtool_set_rxfh(struct net_device *dev,
 			for (i = 0; i < dev_indir_size; i++)
 				indir[i] = ethtool_rxfh_indir_default(i, rx_rings.data);
 		} else {
+			notify_info.ctx_op = ETH_RXFLOW_CTXOP_DEL;
 			delete = true;
 		}
 	}
@@ -1128,6 +1152,12 @@ static noinline_for_stack int ethtool_set_rxfh(struct net_device *dev,
 		ret = ops->set_rxfh(dev, indir, hkey, rxfh.hfunc);
 	if (ret)
 		goto out;
+	if (notify_mask) {
+		if (notify_info.ctx_op == ETH_RXFLOW_CTXOP_NEW)
+			notify_info.context = rxfh.rss_context;
+		ethtool_notify(dev, NULL, ETHNL_CMD_SET_RXFLOW, notify_mask,
+			       &notify_info);
+	}
 
 	if (copy_to_user(useraddr + offsetof(struct ethtool_rxfh, rss_context),
 			 &rxfh.rss_context, sizeof(rxfh.rss_context)))

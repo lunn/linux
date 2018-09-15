@@ -14,4 +14,10 @@ enum ethtool_multicast_groups {
 	ETHNL_MCGRP_MONITOR,
 };
 
+struct ethtool_rxflow_notification_info {
+	u32	ctx_op;
+	u32	context;
+	u32	flow_type;
+};
+
 #endif /* _LINUX_ETHTOOL_NETLINK_H_ */
