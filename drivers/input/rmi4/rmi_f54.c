@@ -280,10 +280,10 @@ static int rmi_f54_queue_setup(struct vb2_queue *q, unsigned int *nbuffers,
 	struct f54_data *f54 = q->drv_priv;
 
 	if (*nplanes)
-		return sizes[0] < rmi_f54_get_report_size(f54) ? -EINVAL : 0;
+		return sizes[0] < f54->format.sizeimage ? -EINVAL : 0;
 
 	*nplanes = 1;
-	sizes[0] = rmi_f54_get_report_size(f54);
+	sizes[0] = f54->format.sizeimage;
 
 	return 0;
 }
@@ -291,10 +291,12 @@ static int rmi_f54_queue_setup(struct vb2_queue *q, unsigned int *nbuffers,
 static void rmi_f54_buffer_queue(struct vb2_buffer *vb)
 {
 	struct f54_data *f54 = vb2_get_drv_priv(vb->vb2_queue);
-	u16 *ptr;
+	u8 *ptr;
 	enum vb2_buffer_state state;
 	enum rmi_f54_report_type reptype;
+	unsigned bytesperline;
 	int ret;
+	int y;
 
 	mutex_lock(&f54->status_mutex);
 
@@ -337,8 +339,17 @@ static void rmi_f54_buffer_queue(struct vb2_buffer *vb)
 		goto data_done;
 	}
 
-	memcpy(ptr, f54->report_data, f54->report_size);
-	vb2_set_plane_payload(vb, 0, rmi_f54_get_report_size(f54));
+	if (f54->format.pixelformat == V4L2_TCH_FMT_DELTA_TD08)
+		bytesperline = f54->format.width;
+	else
+		bytesperline = f54->format.width * sizeof(u16);
+
+	for (y = 0; y < f54->format.height; y++) {
+		memcpy(ptr +
+		       (f54->format.height - y - 1) * f54->format.bytesperline,
+		       f54->report_data + y * bytesperline, bytesperline);
+	}
+	vb2_set_plane_payload(vb, 0, f54->format.sizeimage);
 	state = VB2_BUF_STATE_DONE;
 
 data_done:
@@ -419,8 +430,11 @@ static int rmi_f54_set_input(struct f54_data *f54, unsigned int i)
 	f->height = tx;
 	f->field = V4L2_FIELD_NONE;
 	f->colorspace = V4L2_COLORSPACE_RAW;
-	f->bytesperline = f->width * sizeof(u16);
-	f->sizeimage = f->width * f->height * sizeof(u16);
+	if (f->pixelformat == V4L2_TCH_FMT_DELTA_TD08)
+		f->bytesperline = round_up(f->width, 32);
+	else
+		f->bytesperline = round_up(f->width * sizeof(u16), 32);
+	f->sizeimage = f->height * f->bytesperline;
 
 	return 0;
 }
