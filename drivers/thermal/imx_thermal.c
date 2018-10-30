@@ -202,7 +202,7 @@ static struct thermal_soc_data thermal_imx7d_data = {
 
 struct imx_thermal_data {
 	struct cpufreq_policy *policy;
-	struct thermal_zone_device *tz;
+	struct thermal_zone_device *tz, *sensor;
 	struct thermal_cooling_device *cdev;
 	enum thermal_device_mode mode;
 	struct regmap *tempmon;
@@ -336,6 +336,13 @@ static int imx_get_temp(struct thermal_zone_device *tz, int *temp)
 	}
 
 	return 0;
+}
+
+static int imx_of_sensor_get_temp(void *data, int *temp)
+{
+	struct imx_thermal_data *thermal_data = data;
+
+	return imx_get_temp(thermal_data->tz, temp);
 }
 
 static int imx_get_mode(struct thermal_zone_device *tz,
@@ -480,6 +487,10 @@ static struct thermal_zone_device_ops imx_tz_ops = {
 	.get_trip_temp = imx_get_trip_temp,
 	.get_crit_temp = imx_get_crit_temp,
 	.set_trip_temp = imx_set_trip_temp,
+};
+
+static const struct thermal_zone_of_device_ops imx_tz_of_ops = {
+	.get_temp = imx_of_sensor_get_temp,
 };
 
 static int imx_init_calib(struct platform_device *pdev, u32 ocotp_ana1)
@@ -816,6 +827,9 @@ static int imx_thermal_probe(struct platform_device *pdev)
 		goto clk_disable;
 	}
 
+	data->sensor = thermal_zone_of_sensor_register(&pdev->dev, 0, data,
+						       &imx_tz_of_ops);
+
 	dev_info(&pdev->dev, "%s CPU temperature grade - max:%dC"
 		 " critical:%dC passive:%dC\n", data->temp_grade,
 		 data->temp_max / 1000, data->temp_critical / 1000,
@@ -871,6 +885,7 @@ static int imx_thermal_remove(struct platform_device *pdev)
 	if (!IS_ERR(data->thermal_clk))
 		clk_disable_unprepare(data->thermal_clk);
 
+	thermal_zone_of_sensor_unregister(&pdev->dev, data->sensor);
 	thermal_zone_device_unregister(data->tz);
 	cpufreq_cooling_unregister(data->cdev);
 	cpufreq_cpu_put(data->policy);
