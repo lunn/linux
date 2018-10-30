@@ -5,6 +5,7 @@
 
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/sound/fsl-imx-audmux.h>
+#include <dt-bindings/thermal/thermal.h>
 
 / {
 	chosen {
@@ -225,6 +226,72 @@
 		compatible = "fixed-clock";
 		#clock-cells = <0>;
 		clock-frequency = <19200000>;
+	};
+
+	thermal-zones {
+		soc-thermal {
+			polling-delay-passive = <1000>;
+			polling-delay = <5000>;
+
+			thermal-sensors = <&tempmon>;
+
+			trips {
+				cpu_throttle_light: cpu-throttle-light {
+					temperature = <85000>;
+					hysteresis = <2000>;
+					type = "passive";
+				};
+
+				soc_throttle_light: soc-throttle-light {
+					temperature = <87500>;
+					hysteresis = <2000>;
+					type = "passive";
+				};
+
+				soc_throttle_heavy: soc-throttle-heavy {
+					temperature = <90000>;
+					hysteresis = <2000>;
+					type = "passive";
+				};
+			};
+
+			cooling-maps {
+				map-cpu-only-light {
+					trip = <&cpu_throttle_light>;
+					cooling-device = <&cpu0 THERMAL_NO_LIMIT 1>;
+				};
+
+				map-cpu-light {
+					trip = <&soc_throttle_light>;
+					cooling-device = <&cpu0 THERMAL_NO_LIMIT 1>;
+				};
+
+				map-gpu2d-light {
+					trip = <&soc_throttle_light>;
+					cooling-device = <&gpu_2d THERMAL_NO_LIMIT 1>;
+				};
+
+				map-gpu3d-light {
+					trip = <&soc_throttle_light>;
+					cooling-device = <&gpu_3d THERMAL_NO_LIMIT 1>;
+				};
+
+				map-cpu-heavy {
+					trip = <&soc_throttle_heavy>;
+					cooling-device = <&cpu0 1 THERMAL_NO_LIMIT>;
+				};
+
+				map-gpu2d-heavy {
+					trip = <&soc_throttle_heavy>;
+					cooling-device = <&gpu_2d 1 THERMAL_NO_LIMIT>;
+				};
+
+				map-gpu3d-heavy {
+					trip = <&soc_throttle_heavy>;
+					cooling-device = <&gpu_3d 1 THERMAL_NO_LIMIT>;
+				};
+			};
+		};
 	};
 };
 
