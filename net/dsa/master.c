@@ -158,8 +158,20 @@ static void dsa_master_ethtool_teardown(struct net_device *dev)
 	cpu_dp->orig_ethtool_ops = NULL;
 }
 
+void dsa_master_increase_mtu(struct net_device *dev, struct dsa_port *cpu_dp)
+{
+	int err;
+
+	err = dev_set_mtu(dev, ETH_MAX_MTU + cpu_dp->tag_ops->overhead);
+	if (err)
+		netdev_warn(dev,
+			    "Unable to set MTU to include for DSA overheads\n");
+}
+
 int dsa_master_setup(struct net_device *dev, struct dsa_port *cpu_dp)
 {
+	dsa_master_increase_mtu(dev,  cpu_dp);
+
 	/* If we use a tagging format that doesn't have an ethertype
 	 * field, make sure that all packets from this point on get
 	 * sent to the tag format's receive function.
