@@ -99,4 +99,5 @@ static struct sk_buff *ksz_rcv(struct sk_buff *skb, struct net_device *dev,
 const struct dsa_device_ops ksz_netdev_ops = {
 	.xmit	= ksz_xmit,
 	.rcv	= ksz_rcv,
+	.overhead = max(KSZ_INGRESS_TAG_LEN, KSZ_EGRESS_TAG_LEN),
 };
