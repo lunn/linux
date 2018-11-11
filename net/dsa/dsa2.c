@@ -417,6 +417,20 @@ static void dsa_ds_unapply(struct dsa_switch_tree *dst, struct dsa_switch *ds)
 
 }
 
+void dsa_master_set_mtu(struct net_device *dev, struct dsa_switch_tree *dst)
+{
+	unsigned int mtu = ETH_DATA_LEN + dst->tag_ops->overhead;
+	int err;
+
+	rtnl_lock();
+	if (mtu <= dev->max_mtu) {
+		err = dev_set_mtu(dev, mtu);
+		if (err)
+			netdev_dbg(dev, "Unable to set MTU to include for DSA overheads\n");
+	}
+	rtnl_unlock();
+}
+
 static int dsa_dst_apply(struct dsa_switch_tree *dst)
 {
 	struct dsa_switch *ds;
@@ -438,6 +452,8 @@ static int dsa_dst_apply(struct dsa_switch_tree *dst)
 		if (err)
 			return err;
 	}
+
+	dsa_master_set_mtu(dst->cpu_dp->netdev, dst);
 
 	/* If we use a tagging format that doesn't have an ethertype
 	 * field, make sure that all packets from this point on get
