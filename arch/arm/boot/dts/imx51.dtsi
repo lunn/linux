@@ -640,6 +640,16 @@
 				iram = <&iram>;
 			};
 
+			scc: crypto@83fb4000 {
+				compatible = "fsl,imx51-scc";
+				reg = <0x83fb4000 0x4000>;
+				interrupts = <21 22>;
+				clocks = <&clks IMX5_CLK_SCC2_IPG_GATE>,
+					 <&clks IMX5_CLK_SAHARA_IPG_GATE>;
+				clock-names = "ipg", "ahb";
+				iram = <&iram>;
+			};
+
 			sahara: crypto@83ff8000 {
 				compatible = "fsl,imx53-sahara", "fsl,imx51-sahara";
 				reg = <0x83ff8000 0x4000>;
