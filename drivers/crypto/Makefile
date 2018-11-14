@@ -20,6 +20,7 @@ obj-$(CONFIG_CRYPTO_DEV_IXP4XX) += ixp4xx_crypto.o
 obj-$(CONFIG_CRYPTO_DEV_MARVELL_CESA) += marvell/
 obj-$(CONFIG_CRYPTO_DEV_MEDIATEK) += mediatek/
 obj-$(CONFIG_CRYPTO_DEV_MXS_DCP) += mxs-dcp.o
+obj-$(CONFIG_CRYPTO_DEV_MXC_SCC2) += mxc-scc2.o
 obj-$(CONFIG_CRYPTO_DEV_NIAGARA2) += n2_crypto.o
 n2_crypto-y := n2_core.o n2_asm.o
 obj-$(CONFIG_CRYPTO_DEV_NX) += nx/
