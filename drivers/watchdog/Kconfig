@@ -1308,6 +1308,18 @@ config SMSC37B787_WDT
 
 	  Most people will say N.
 
+config TQMX86_WDT
+	tristate "TQ-Systems TQMX86 Watchdog Timer"
+	depends on X86
+	help
+	This is the driver for the hardware watchdog timer in the TQMN86 IO
+	on controller found on some of their ComExpress Modules.
+
+	To compile this driver as a module, choose M here; the module
+	will be called via_wdt.
+
+	Most people will say N.
+
 config VIA_WDT
 	tristate "VIA Watchdog Timer"
 	depends on X86 && PCI
