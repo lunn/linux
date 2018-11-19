@@ -754,6 +754,16 @@ config INPUT_IMS_PCU
 	  To compile this driver as a module, choose M here: the module will be
 	  called ims_pcu.
 
+config INPUT_ZII_PCU_T2
+	tristate "ZII Passenger Control Unit Type 2 driver"
+	depends on USB
+	depends on LEDS_CLASS
+	help
+	  Say Y here if you have system with ZII RAVE Passenger Control Unit 2.
+
+	  To compile this driver as a module, choose M here: the module will be
+	  called zii_pcu_t2.
+
 config INPUT_CMA3000
 	tristate "VTI CMA3000 Tri-axis accelerometer"
 	help
