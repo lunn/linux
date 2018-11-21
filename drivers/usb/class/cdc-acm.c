@@ -1856,6 +1856,15 @@ static const struct usb_device_id acm_ids[] = {
 	},
 #endif
 
+#if IS_ENABLED(CONFIG_INPUT_ZII_PCU_T2)
+	{ USB_DEVICE(0x2e81, 0x0003),	/* Application mode */
+	.driver_info = IGNORE_DEVICE,
+	},
+	{ USB_DEVICE(0x2e81, 0x0004),	/* Bootloader mode */
+	.driver_info = IGNORE_DEVICE,
+	},
+#endif
+
 	/*Samsung phone in firmware update mode */
 	{ USB_DEVICE(0x04e8, 0x685d),
 	.driver_info = IGNORE_DEVICE,
