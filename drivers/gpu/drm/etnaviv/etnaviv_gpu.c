@@ -1003,6 +1003,7 @@ void etnaviv_gpu_recover_hang(struct etnaviv_gpu *gpu)
 /* fence object management */
 struct etnaviv_fence {
 	struct etnaviv_gpu *gpu;
+	struct spinlock lock;
 	struct dma_fence base;
 };
 
@@ -1059,8 +1060,9 @@ static struct dma_fence *etnaviv_gpu_fence_alloc(struct etnaviv_gpu *gpu)
 		return NULL;
 
 	f->gpu = gpu;
+	spin_lock_init(&f->lock);
 
-	dma_fence_init(&f->base, &etnaviv_fence_ops, &gpu->fence_spinlock,
+	dma_fence_init(&f->base, &etnaviv_fence_ops, &f->lock,
 		       gpu->fence_context, ++gpu->next_fence);
 
 	return &f->base;
@@ -1639,7 +1641,6 @@ static int etnaviv_gpu_bind(struct device *dev, struct device *master,
 	gpu->drm = drm;
 	gpu->fence_context = dma_fence_context_alloc(1);
 	idr_init(&gpu->fence_idr);
-	spin_lock_init(&gpu->fence_spinlock);
 
 	INIT_WORK(&gpu->sync_point_work, sync_point_worker);
 	init_waitqueue_head(&gpu->fence_event);
