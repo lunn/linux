@@ -121,7 +121,6 @@ struct etnaviv_gpu {
 	u32 completed_fence;
 	wait_queue_head_t fence_event;
 	u64 fence_context;
-	spinlock_t fence_spinlock;
 
 	/* worker for handling 'sync' points: */
 	struct work_struct sync_point_work;
