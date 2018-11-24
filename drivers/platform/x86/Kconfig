@@ -1274,6 +1274,29 @@ config I2C_MULTI_INSTANTIATE
 	  To compile this driver as a module, choose M here: the module
 	  will be called i2c-multi-instantiate.
 
+config ZII_RAP
+	tristate "Zodiac RAVE Access Point"
+	select PHYLIB
+	select MDIO_BITBANG
+	select MDIO_GPIO
+	select NET_DSA_MV88E6XXX
+	select MARVELL_PHY
+	select GPIOLIB
+	select MFD_TQMX86
+	select GPIO_TQMX86
+	select I2C_OCORES
+	select TQMX86_WDT
+	select EEPROM_AT24
+	select RTC_CLASS
+	select RTC_DRV_DS1307
+	select DS1682
+	help
+	  This option adds platform drivers for the zodiac RAVE Access
+	  Point.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called zii_rap.
+
 config INTEL_ATOMISP2_PM
 	tristate "Intel AtomISP2 dummy / power-management driver"
 	depends on PCI && IOSF_MBI && PM
