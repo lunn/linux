@@ -1288,6 +1288,20 @@ config INTEL_ATOMISP2_PM
 	  To compile this driver as a module, choose M here: the module
 	  will be called intel_atomisp2_pm.
 
+config ZII_ZAP
+        tristate "Zodiac Access Point"
+        select PHYLIB
+        select MDIO_BITBANG
+        select MDIO_GPIO
+        select GPIOLIB
+        help
+          This option adds platform drivers for the zodiac RAVE ZAP
+          wireless access point.
+
+          To compile this driver as a module, choose M here: the module
+          will be called zii_zap.
+
+
 endif # X86_PLATFORM_DEVICES
 
 config PMC_ATOM
