@@ -1396,6 +1396,37 @@ config INTEL_TELEMETRY
 	  directly via debugfs files. Various tools may use
 	  this interface for SoC state monitoring.
 
+config ZII_RAP
+	tristate "Zodiac RAVE Access Point"
+	select PHYLIB
+	select MDIO_BITBANG
+	select MDIO_GPIO
+	select NET_DSA
+	select NET_DSA_MV88E6XXX
+	select MARVELL_PHY
+	select GPIOLIB
+	select MFD_TQMX86
+	select GPIO_TQMX86
+	select KEYBOARD_GPIO_POLLED
+	select I2C_OCORES
+	select TQMX86_WDT
+	select EEPROM_AT24
+	select RTC_CLASS
+	select RTC_DRV_DS1307
+	select DS1682
+	select IGB
+	select MMC
+	select MMC_SDHCI_PCI
+	select USB_SERIAL
+	select USB_SERIAL_CONSOLE
+	select USB_SERIAL_FTDI_SIO
+	help
+	  This option adds platform drivers for the zodiac RAVE Access
+	  Point.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called zii_rap.
+
 endif # X86_PLATFORM_DEVICES
 
 config PMC_ATOM
