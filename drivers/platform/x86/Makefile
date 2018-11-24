@@ -95,6 +95,7 @@ obj-$(CONFIG_WMI_BMOF)		+= wmi-bmof.o
 obj-$(CONFIG_XIAOMI_WMI)	+= xiaomi-wmi.o
 obj-$(CONFIG_XO15_EBOOK)	+= xo15-ebook.o
 obj-$(CONFIG_XO1_RFKILL)	+= xo1-rfkill.o
+obj-$(CONFIG_ZII_RAP) 		+= zii-rap.o
 
 # toshiba_acpi must link after wmi to ensure that wmi devices are found
 # before toshiba_acpi initializes
