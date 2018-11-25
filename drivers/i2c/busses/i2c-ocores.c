@@ -13,6 +13,7 @@
  */
 
 #include <linux/clk.h>
+#include <linux/delay.h>
 #include <linux/err.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -40,9 +41,13 @@ struct ocores_i2c {
 	struct clk *clk;
 	int ip_clock_khz;
 	int bus_clock_khz;
+	int flags;
 	void (*setreg)(struct ocores_i2c *i2c, int reg, u8 value);
 	u8 (*getreg)(struct ocores_i2c *i2c, int reg);
 };
+
+/* flags */
+#define I2C_FLAG_NOIRQ		BIT(0)
 
 /* registers */
 #define OCI2C_PRELOW		0
@@ -224,6 +229,27 @@ static irqreturn_t ocores_isr(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
+static void ocores_poll_irq(struct ocores_i2c *i2c)
+{
+	int timeout = 500;
+	u8 stat;
+
+	do {
+		/* delay 2-3 SCL (5-7usec for 400KHz) */
+		usleep_range(5, 7);
+		stat = oc_getreg(i2c, OCI2C_STATUS);
+	} while ((stat & OCI2C_STAT_TIP) && timeout--);
+
+
+	if (!(stat & OCI2C_STAT_TIP)) {
+		ocores_process(i2c);
+	} else {
+		i2c->state = STATE_ERROR;
+		dev_dbg(&i2c->adap.dev, "Timeout while polling %02x\n", stat);
+		oc_setreg(i2c, OCI2C_CMD, OCI2C_CMD_STOP);
+	}
+}
+
 static int ocores_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
 {
 	struct ocores_i2c *i2c = i2c_get_adapdata(adap);
@@ -236,11 +262,18 @@ static int ocores_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs, int num)
 	oc_setreg(i2c, OCI2C_DATA, i2c_8bit_addr_from_msg(i2c->msg));
 	oc_setreg(i2c, OCI2C_CMD, OCI2C_CMD_START);
 
-	if (wait_event_timeout(i2c->wait, (i2c->state == STATE_ERROR) ||
-			       (i2c->state == STATE_DONE), HZ))
+	if (i2c->flags & I2C_FLAG_NOIRQ) {
+		while (!((i2c->state == STATE_DONE) ||
+			 (i2c->state == STATE_ERROR)))
+			ocores_poll_irq(i2c);
 		return (i2c->state == STATE_DONE) ? num : -EIO;
-	else
-		return -ETIMEDOUT;
+	} else {
+		if (wait_event_timeout(i2c->wait,
+				       (i2c->state == STATE_ERROR) ||
+				       (i2c->state == STATE_DONE), HZ))
+			return (i2c->state == STATE_DONE) ? num : -EIO;
+	}
+	return -ETIMEDOUT;
 }
 
 static int ocores_init(struct device *dev, struct ocores_i2c *i2c)
@@ -425,13 +458,16 @@ static int ocores_i2c_probe(struct platform_device *pdev)
 	int ret;
 	int i;
 
-	irq = platform_get_irq(pdev, 0);
-	if (irq < 0)
-		return irq;
-
 	i2c = devm_kzalloc(&pdev->dev, sizeof(*i2c), GFP_KERNEL);
 	if (!i2c)
 		return -ENOMEM;
+
+	irq = platform_get_irq(pdev, 0);
+	if (irq == -ENXIO)
+		i2c->flags |= I2C_FLAG_NOIRQ;
+	else
+		if (irq < 0)
+			return irq;
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (res) {
@@ -504,11 +540,13 @@ static int ocores_i2c_probe(struct platform_device *pdev)
 		goto err_clk;
 
 	init_waitqueue_head(&i2c->wait);
-	ret = devm_request_irq(&pdev->dev, irq, ocores_isr, 0,
-			       pdev->name, i2c);
-	if (ret) {
-		dev_err(&pdev->dev, "Cannot claim IRQ\n");
-		goto err_clk;
+	if (!(i2c->flags & I2C_FLAG_NOIRQ)) {
+		ret = devm_request_irq(&pdev->dev, irq, ocores_isr, 0,
+				       pdev->name, i2c);
+		if (ret) {
+			dev_err(&pdev->dev, "Cannot claim IRQ\n");
+			goto err_clk;
+		}
 	}
 
 	/* hook up driver to tree */
