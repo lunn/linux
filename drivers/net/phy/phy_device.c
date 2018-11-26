@@ -1898,7 +1898,9 @@ EXPORT_SYMBOL(genphy_loopback);
 
 static int __set_phy_supported(struct phy_device *phydev, u32 max_speed)
 {
+	__ETHTOOL_DECLARE_LINK_MODE_MASK(supported_speeds) = { 0, };
 	__ETHTOOL_DECLARE_LINK_MODE_MASK(speeds) = { 0, };
+	__ETHTOOL_DECLARE_LINK_MODE_MASK(mask) = { 0, };
 
 	linkmode_set_bit_array(phy_10_100_features_array,
 			       ARRAY_SIZE(phy_10_100_features_array),
@@ -1907,29 +1909,37 @@ static int __set_phy_supported(struct phy_device *phydev, u32 max_speed)
 			       ARRAY_SIZE(phy_gbit_features_array),
 			       speeds);
 
-	linkmode_andnot(phydev->supported, phydev->supported, speeds);
+	/* Get just the speeds which are supported */
+	linkmode_and(supported_speeds, phydev->supported, speeds);
 
 	switch (max_speed) {
 	default:
 		return -ENOTSUPP;
 	case SPEED_1000:
 		linkmode_set_bit(ETHTOOL_LINK_MODE_1000baseT_Half_BIT,
-				 phydev->supported);
+				 mask);
 		linkmode_set_bit(ETHTOOL_LINK_MODE_1000baseT_Full_BIT,
-				 phydev->supported);
+				 mask);
 		/* fall through */
 	case SPEED_100:
 		linkmode_set_bit(ETHTOOL_LINK_MODE_100baseT_Half_BIT,
-				 phydev->supported);
+				 mask);
 		linkmode_set_bit(ETHTOOL_LINK_MODE_100baseT_Full_BIT,
-				 phydev->supported);
+				 mask);
 		/* fall through */
 	case SPEED_10:
 		linkmode_set_bit(ETHTOOL_LINK_MODE_10baseT_Half_BIT,
-				 phydev->supported);
+				 mask);
 		linkmode_set_bit(ETHTOOL_LINK_MODE_10baseT_Full_BIT,
-				 phydev->supported);
+				 mask);
 	}
+
+	/* Mask out the higher speeds not supported by the MAC*/
+	linkmode_and(supported_speeds, supported_speeds, mask);
+	/* Remove all speeds */
+	linkmode_andnot(phydev->supported, phydev->supported, speeds);
+	/* And put back those which are supported */
+	linkmode_or(phydev->supported, phydev->supported, supported_speeds);
 
 	return 0;
 }
