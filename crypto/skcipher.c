@@ -701,6 +701,10 @@ static int skcipher_setkey_ablkcipher(struct crypto_skcipher *tfm,
 	struct crypto_ablkcipher *ablkcipher = *ctx;
 	int err;
 
+	if (!tfm->keysize &&
+		!((crypto_skcipher_get_flags(tfm) & CRYPTO_TFM_NEED_KEY)))
+		return 0;
+
 	crypto_ablkcipher_clear_flags(ablkcipher, ~0);
 	crypto_ablkcipher_set_flags(ablkcipher,
 				    crypto_skcipher_get_flags(tfm) &
