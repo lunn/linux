@@ -156,6 +156,19 @@ static int skcipher_recvmsg(struct socket *sock, struct msghdr *msg,
 	struct sock *sk = sock->sk;
 	int ret = 0;
 
+	struct alg_sock *ask = alg_sk(sk);
+	struct sock *psk;
+	struct alg_sock *pask;
+	struct crypto_skcipher *tfm;
+
+	psk = ask->parent;
+	pask = alg_sk(ask->parent);
+	tfm = pask->private;
+
+	if (!(crypto_skcipher_get_flags(tfm) & CRYPTO_TFM_NEED_KEY) &&
+	    !capable(CAP_NET_ADMIN))
+		return -EACCES;
+
 	lock_sock(sk);
 	while (msg_data_left(msg)) {
 		int err = _skcipher_recvmsg(sock, msg, ignored, flags);
@@ -226,6 +239,9 @@ static int skcipher_check_key(struct socket *sock)
 	lock_sock_nested(psk, SINGLE_DEPTH_NESTING);
 	if (crypto_skcipher_get_flags(tfm) & CRYPTO_TFM_NEED_KEY)
 		goto unlock;
+	else if (!capable(CAP_NET_ADMIN)) {
+		return -EACCES;
+	}
 
 	if (!pask->refcnt++)
 		sock_hold(psk);

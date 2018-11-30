@@ -823,6 +823,18 @@ int af_alg_sendmsg(struct socket *sock, struct msghdr *msg, size_t size,
 	bool init = 0;
 	int err = 0;
 
+	struct sock *psk;
+	struct alg_sock *pask;
+	struct crypto_skcipher *tfm;
+
+	psk = ask->parent;
+	pask = alg_sk(ask->parent);
+	tfm = pask->private;
+
+	if (!(crypto_skcipher_get_flags(tfm) & CRYPTO_TFM_NEED_KEY) &&
+	    !capable(CAP_NET_ADMIN))
+		return -EACCES;
+
 	if (msg->msg_controllen) {
 		err = af_alg_cmsg_send(msg, &con);
 		if (err)
@@ -964,6 +976,18 @@ ssize_t af_alg_sendpage(struct socket *sock, struct page *page,
 	struct af_alg_ctx *ctx = ask->private;
 	struct af_alg_tsgl *sgl;
 	int err = -EINVAL;
+
+	struct sock *psk;
+	struct alg_sock *pask;
+	struct crypto_skcipher *tfm;
+
+	psk = ask->parent;
+	pask = alg_sk(ask->parent);
+	tfm = pask->private;
+
+	if (!(crypto_skcipher_get_flags(tfm) & CRYPTO_TFM_NEED_KEY) &&
+	    !capable(CAP_NET_ADMIN))
+		return -EACCES;
 
 	if (flags & MSG_SENDPAGE_NOTLAST)
 		flags |= MSG_MORE;
