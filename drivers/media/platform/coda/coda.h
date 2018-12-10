@@ -327,12 +327,14 @@ static inline unsigned int coda_get_bitstream_payload(struct coda_ctx *ctx)
 
 /*
  * The bitstream prefetcher needs to read at least 2 256 byte periods past
- * the desired bitstream position for all data to reach the decoder.
+ * the desired bitstream position for all data to reach the decoder. On
+ * CodaHx4 even more data seems to be needed.
  */
 static inline bool coda_bitstream_can_fetch_past(struct coda_ctx *ctx,
 						 unsigned int pos)
 {
-	return (int)(ctx->bitstream_fifo.kfifo.in - ALIGN(pos, 256)) > 512;
+	return (int)(ctx->bitstream_fifo.kfifo.in - ALIGN(pos, 256)) >
+	       ((ctx->dev->devtype->product == CODA_HX4) ? 768 : 512);
 }
 
 bool coda_bitstream_can_fetch_past(struct coda_ctx *ctx, unsigned int pos);
