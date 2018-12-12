@@ -713,6 +713,23 @@ static int coda_try_fmt_vid_cap(struct file *file, void *priv,
 			f->fmt.pix.sizeimage = f->fmt.pix.bytesperline *
 				f->fmt.pix.height;
 		}
+
+		/*
+		 * HACK: For CodaHx4 we round up to a multiple of 256 (NV12) or
+		 * 1024 (YUV420, YVU420). Given macroblock aligned height, this
+		 * guarantees that all plane offsets are page aligned, so that
+		 * the GPU can import decoded buffers directly.
+		 */
+		if (ctx->dev->devtype->product == CODA_HX4) {
+			if (f->fmt.pix.pixelformat == V4L2_PIX_FMT_NV12)
+				f->fmt.pix.bytesperline =
+					round_up(f->fmt.pix.width, 256);
+			else
+				f->fmt.pix.bytesperline =
+					round_up(f->fmt.pix.width, 1024);
+			f->fmt.pix.sizeimage = f->fmt.pix.bytesperline *
+						f->fmt.pix.height * 3 / 2;
+		}
 	}
 
 	return 0;
