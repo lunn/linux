@@ -308,6 +308,7 @@ struct mxt_data {
 	struct t7_config t7_cfg;
 	struct mxt_dbg dbg;
 	struct gpio_desc *reset_gpio;
+	const char *cfg_name;
 
 	/* Cached parameters from object table */
 	u16 T5_address;
@@ -2142,7 +2143,8 @@ static int mxt_initialize(struct mxt_data *data)
 	if (error)
 		return error;
 
-	error = request_firmware_nowait(THIS_MODULE, true, MXT_CFG_NAME,
+	error = request_firmware_nowait(THIS_MODULE, true,
+					data->cfg_name ? : MXT_CFG_NAME,
 					&client->dev, GFP_KERNEL, data,
 					mxt_config_cb);
 	if (error) {
@@ -3014,6 +3016,8 @@ static int mxt_parse_device_properties(struct mxt_data *data)
 		data->t19_keymap = keymap;
 		data->t19_num_keys = n_keys;
 	}
+
+	device_property_read_string(dev, "linux,cfg-name", &data->cfg_name);
 
 	return 0;
 }
