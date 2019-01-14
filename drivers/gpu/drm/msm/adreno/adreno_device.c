@@ -35,7 +35,7 @@ static const struct adreno_info gpulist[] = {
 			[ADRENO_FW_PFP] = "yamato_pfp.fw",
 		},
 		.gmem  = SZ_128K,
-		.inactive_period = DRM_MSM_INACTIVE_PERIOD,
+		.inactive_period = 1000 * 60 * 60, /* 1 hour */
 		.init  = a2xx_gpu_init,
 	}, {
 		.rev   = ADRENO_REV(2, 2, 0, ANY_ID),
