@@ -141,6 +141,7 @@ void ipu_dmfc_config_wait4eot(struct dmfc_channel *dmfc, int width)
 
 	dmfc_gen1 = readl(priv->base + DMFC_GENERAL1);
 
+	/* 64 128-bit words per slot, 4 32-bit pixels per word */
 	if ((dmfc->slots * 64 * 4) / width > dmfc->data->max_fifo_lines)
 		dmfc_gen1 |= 1 << dmfc->data->eot_shift;
 	else
@@ -194,14 +195,48 @@ int ipu_dmfc_init(struct ipu_soc *ipu, struct device *dev, unsigned long base,
 		priv->channels[i].ipu = ipu;
 		priv->channels[i].data = &dmfcdata[i];
 
-		if (dmfcdata[i].ipu_channel == IPUV3_CHANNEL_MEM_BG_SYNC ||
-		    dmfcdata[i].ipu_channel == IPUV3_CHANNEL_MEM_FG_SYNC ||
-		    dmfcdata[i].ipu_channel == IPUV3_CHANNEL_MEM_DC_SYNC)
-			priv->channels[i].slots = 2;
+		/* These must match dmfc_fifo_size settings below */
+		switch (dmfcdata[i].ipu_channel) {
+		case IPUV3_CHANNEL_MEM_BG_SYNC:
+			if (ipu->ipu_type == IPUV3EX) {
+				priv->channels[i].slots = 4; /* 256x128bit */
+				break;
+			}
+			/* else fall through */
+		case IPUV3_CHANNEL_MEM_FG_SYNC:
+		case IPUV3_CHANNEL_MEM_DC_SYNC:
+			priv->channels[i].slots = 2; /* 128x128bit */
+			break;
+		}
 	}
 
-	writel(0x00000050, priv->base + DMFC_WR_CHAN);
-	writel(0x00005654, priv->base + DMFC_DP_CHAN);
+	if (ipu->ipu_type == IPUV3EX) {
+		/* IPU DMFC DP HIGH RESOLUTION: 1(0,1), 5B(2~5), 5F(6,7) */
+		writel((2 << 6) |	/* dmfc_burst_size_1 = 8x128bit words - 32 pixels */
+		       (2 << 3) |	/* dmfc_fifo_size_1 = 128x128bit words */
+		       (0 << 0),	/* dmfc_st_addr_1 = segment 0 of 8 */
+		       priv->base + DMFC_WR_CHAN);
+		writel((2 << 14) |	/* dmfc_burst_size_5f = 8x128bit words - 32 pixels */
+		       (2 << 11) |	/* dmfc_fifo_size_5f = 128x128bit words */
+		       (6 << 8) |	/* dmfc_st_addr_5f = segment 4 of 8 */
+		       (3 << 6) |	/* dmfc_burst_size_5b = 4x128bit words - 16 pixels */
+		       (1 << 3) |	/* dmfc_fifo_size_5b = 256x128bit words */
+		       (2 << 0),	/* dmfc_st_addr_5b = segment 2 of 8 */
+		       priv->base + DMFC_DP_CHAN);
+	} else {
+		writel(0x00000050, priv->base + DMFC_WR_CHAN);
+		writel((1 << 14) |	/* dmfc_burst_size_5f = 16x128bit words */
+		       (2 << 11) |	/* dmfc_fifo_size_5f = 128x128bit words */
+		       (6 << 8) |	/* dmfc_st_addr_5f = segment 6 of 8 */
+		       (1 << 6) |	/* dmfc_burst_size_5b = 16x128bit words */
+		       (2 << 3) |	/* dmfc_fifo_size_5b = 128x128bit words */
+		       (4 << 0),	/* dmfc_st_addr_5b = segment 4 of 8 */
+		       priv->base + DMFC_DP_CHAN);
+	}
+	/*
+	 * Enable watermark on channels 1, 5f and 5b:
+	 * dmfc_wm_clr = 7, dmfc_wm_set = 5, dmfc_wm_en = 1
+	 */
 	writel(0x202020f6, priv->base + DMFC_WR_CHAN_DEF);
 	writel(0x2020f6f6, priv->base + DMFC_DP_CHAN_DEF);
 	writel(0x00000003, priv->base + DMFC_GENERAL1);
