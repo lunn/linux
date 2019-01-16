@@ -98,6 +98,25 @@ struct ipu_dmfc_priv {
 	int use_count;
 };
 
+void ipu_dmfc_dump(struct dmfc_channel *dmfc)
+{
+	struct ipu_dmfc_priv *priv = dmfc->priv;
+
+	dev_dbg(priv->dev, "DMFC_WR_CHAN = \t0x%08X\n",
+		readl(priv->base + DMFC_WR_CHAN));
+	dev_dbg(priv->dev, "DMFC_WR_CHAN_DEF = \t0x%08X\n",
+		readl(priv->base + DMFC_WR_CHAN_DEF));
+	dev_dbg(priv->dev, "DMFC_DP_CHAN = \t0x%08X\n",
+		readl(priv->base + DMFC_DP_CHAN));
+	dev_dbg(priv->dev, "DMFC_DP_CHAN_DEF = \t0x%08X\n",
+		readl(priv->base + DMFC_DP_CHAN_DEF));
+	dev_dbg(priv->dev, "DMFC_GENERAL1 = \t0x%08X\n",
+		readl(priv->base + DMFC_GENERAL1));
+	dev_dbg(priv->dev, "DMFC_STAT = \t0x%08X\n",
+		readl(priv->base + DMFC_STAT));
+}
+EXPORT_SYMBOL_GPL(ipu_dmfc_dump);
+
 int ipu_dmfc_enable_channel(struct dmfc_channel *dmfc)
 {
 	struct ipu_dmfc_priv *priv = dmfc->priv;
