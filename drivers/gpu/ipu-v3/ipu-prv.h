@@ -109,6 +109,7 @@ struct ipu_soc;
 #define IDMAC_ALT_SEP_ALPHA		IPU_IDMAC_REG(0x0010)
 #define IDMAC_CHA_PRI(ch)		IPU_IDMAC_REG(0x0014 + 4 * ((ch) / 32))
 #define IDMAC_WM_EN(ch)			IPU_IDMAC_REG(0x001c + 4 * ((ch) / 32))
+#define IDMAC_LOCK_EN(ch)		IPU_IDMAC_REG(0x0024 + 4 * ((ch) / 32))
 #define IDMAC_CH_LOCK_EN_1		IPU_IDMAC_REG(0x0024)
 #define IDMAC_CH_LOCK_EN_2		IPU_IDMAC_REG(0x0028)
 #define IDMAC_SUB_ADDR_0		IPU_IDMAC_REG(0x002c)
