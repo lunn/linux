@@ -3,6 +3,7 @@
  * Copyright (c) 2010 Sascha Hauer <s.hauer@pengutronix.de>
  * Copyright (C) 2005-2009 Freescale Semiconductor, Inc.
  */
+#include <linux/bitops.h>
 #include <linux/module.h>
 #include <linux/export.h>
 #include <linux/types.h>
@@ -310,6 +311,49 @@ void ipu_idmac_set_double_buffer(struct ipuv3_channel *channel,
 }
 EXPORT_SYMBOL_GPL(ipu_idmac_set_double_buffer);
 
+static int ipuv3ex_idmac_lock_enable(struct ipuv3_channel *channel,
+				      int num_bursts)
+{
+	/*
+	 * IPUv3EX supports 8-burst locking on channels 5, 11, 12, 14, 15,
+	 * 20-22, and 45-50.
+	 */
+	static const unsigned long idmac_lock_en_supported[2] = { 0x0070d820,
+								  0x0007e000 };
+	struct ipu_soc *ipu = channel->ipu;
+	unsigned long flags;
+	u32 val;
+
+	switch (num_bursts) {
+	case 0:
+	case 1:
+		/* locking disabled */
+		if (!test_bit(channel->num, idmac_lock_en_supported))
+			return 0;
+		break;
+	case 8:
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	if (!test_bit(channel->num, idmac_lock_en_supported))
+		return -EINVAL;
+
+	spin_lock_irqsave(&ipu->lock, flags);
+
+	val = ipu_idmac_read(ipu, IDMAC_LOCK_EN(channel->num));
+	if (num_bursts == 8)
+		val |= 1 << (channel->num % 32);
+	else
+		val &= ~(1 << (channel->num % 32));
+	ipu_idmac_write(ipu, val, IDMAC_LOCK_EN(channel->num));
+
+	spin_unlock_irqrestore(&ipu->lock, flags);
+
+	return 0;
+}
+
 static const struct {
 	int chnum;
 	u32 reg;
@@ -341,6 +385,10 @@ int ipu_idmac_lock_enable(struct ipuv3_channel *channel, int num_bursts)
 	u32 bursts, regval;
 	int i;
 
+	/* IPUv3EX / i.MX51 has a different register layout */
+	if (ipu->ipu_type == IPUV3EX)
+		return ipuv3ex_idmac_lock_enable(channel, num_bursts);
+
 	switch (num_bursts) {
 	case 0:
 	case 1:
@@ -348,9 +396,13 @@ int ipu_idmac_lock_enable(struct ipuv3_channel *channel, int num_bursts)
 		break;
 	case 2:
 		bursts = 0x01;
+		if (ipu->ipu_type == IPUV3EX)
+			return -EINVAL;
 		break;
 	case 4:
 		bursts = 0x02;
+		if (ipu->ipu_type == IPUV3EX)
+			return -EINVAL;
 		break;
 	case 8:
 		bursts = 0x03;
@@ -360,9 +412,8 @@ int ipu_idmac_lock_enable(struct ipuv3_channel *channel, int num_bursts)
 	}
 
 	/*
-	 * IPUv3EX / i.MX51 has a different register layout, and on IPUv3M /
-	 * i.MX53 channel arbitration locking doesn't seem to work properly.
-	 * Allow enabling the lock feature on IPUv3H / i.MX6 only.
+	 * On IPUv3M / i.MX53 channel arbitration locking doesn't seem to work
+	 * properly.
 	 */
 	if (bursts && ipu->ipu_type != IPUV3H)
 		return -EINVAL;
@@ -372,7 +423,7 @@ int ipu_idmac_lock_enable(struct ipuv3_channel *channel, int num_bursts)
 			break;
 	}
 	if (i >= ARRAY_SIZE(idmac_lock_en_info))
-		return -EINVAL;
+		return bursts ? -EINVAL : 0;
 
 	spin_lock_irqsave(&ipu->lock, flags);
 
