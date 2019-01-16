@@ -1366,6 +1366,14 @@ void ipu_dump(struct ipu_soc *ipu)
 		ipu_idmac_read(ipu, IDMAC_CHA_PRI(0)));
 	dev_dbg(ipu->dev, "IDMAC_CHA_PRI2 = \t0x%08X\n",
 		ipu_idmac_read(ipu, IDMAC_CHA_PRI(32)));
+	dev_dbg(ipu->dev, "IDMAC_WM_EN_1 = \t0x%08X\n",
+		ipu_idmac_read(ipu, IDMAC_WM_EN(0)));
+	dev_dbg(ipu->dev, "IDMAC_WM_EN_2 = \t0x%08X\n",
+		ipu_idmac_read(ipu, IDMAC_WM_EN(32)));
+	dev_dbg(ipu->dev, "IDMAC_LOCK_EN_1 = \t0x%08X\n",
+		ipu_idmac_read(ipu, IDMAC_CH_LOCK_EN_1));
+	dev_dbg(ipu->dev, "IDMAC_LOCK_EN_2 = \t0x%08X\n",
+		ipu_idmac_read(ipu, IDMAC_CH_LOCK_EN_2));
 	dev_dbg(ipu->dev, "IDMAC_BAND_EN1 = \t0x%08X\n",
 		ipu_idmac_read(ipu, IDMAC_BAND_EN(0)));
 	dev_dbg(ipu->dev, "IDMAC_BAND_EN2 = \t0x%08X\n",
@@ -1385,6 +1393,9 @@ void ipu_dump(struct ipu_soc *ipu)
 	for (i = 0; i < 15; i++)
 		dev_dbg(ipu->dev, "IPU_INT_CTRL(%d) = \t%08X\n", i,
 			ipu_cm_read(ipu, IPU_INT_CTRL(i)));
+	for (i = 0; i < 15; i++)
+		dev_dbg(ipu->dev, "IPU_INT_STAT(%d) = \t%08X\n", i,
+			ipu_cm_read(ipu, IPU_INT_STAT(i)));
 }
 EXPORT_SYMBOL_GPL(ipu_dump);
 
