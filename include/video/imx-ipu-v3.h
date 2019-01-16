@@ -315,6 +315,7 @@ int ipu_di_init_sync_panel(struct ipu_di *, struct ipu_di_signal_cfg *sig);
  * IPU Display Multi FIFO Controller (dmfc) functions
  */
 struct dmfc_channel;
+void ipu_dmfc_dump(struct dmfc_channel *dmfc);
 int ipu_dmfc_enable_channel(struct dmfc_channel *dmfc);
 void ipu_dmfc_disable_channel(struct dmfc_channel *dmfc);
 void ipu_dmfc_config_wait4eot(struct dmfc_channel *dmfc, int width);
