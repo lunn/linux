@@ -1088,6 +1088,12 @@ static void ipu_irq_handle(struct ipu_soc *ipu, const int *regs, int num_regs)
 				generic_handle_irq(irq);
 		}
 	}
+
+	status = ipu_cm_read(ipu, IPU_INT_STAT(9));
+	if (status) {
+		dev_err(ipu->dev, "IPU_INT_STAT_10: 0x%08lx", status);
+		ipu_cm_write(ipu, status, IPU_INT_STAT(9));
+	}
 }
 
 static void ipu_irq_handler(struct irq_desc *desc)
