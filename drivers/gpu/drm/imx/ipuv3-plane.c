@@ -693,6 +693,7 @@ static void ipu_plane_atomic_update(struct drm_plane *plane,
 	num_bursts = 0;
 
 	ipu_cpmem_zero(ipu_plane->ipu_ch);
+	ipu_cpmem_set_axi_id(ipu_plane->ipu_ch, axi_id);
 	ipu_cpmem_set_resolution(ipu_plane->ipu_ch, width, height);
 	ipu_cpmem_set_fmt(ipu_plane->ipu_ch, fb->format->format);
 	ipu_cpmem_set_burstsize(ipu_plane->ipu_ch, burstsize);
@@ -700,7 +701,6 @@ static void ipu_plane_atomic_update(struct drm_plane *plane,
 	ipu_idmac_enable_watermark(ipu_plane->ipu_ch, true);
 	ipu_idmac_set_double_buffer(ipu_plane->ipu_ch, 1);
 	ipu_cpmem_set_stride(ipu_plane->ipu_ch, fb->pitches[0]);
-	ipu_cpmem_set_axi_id(ipu_plane->ipu_ch, axi_id);
 
 	switch (fb->format->format) {
 	case DRM_FORMAT_YUV420:
