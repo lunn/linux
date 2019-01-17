@@ -902,6 +902,8 @@ void ipu_cpmem_dump(struct ipuv3_channel *ch)
 		ipu_ch_param_read_field(ch, IPU_FIELD_BPP));
 	dev_dbg(ipu->dev, "NPB 0x%x\n",
 		 ipu_ch_param_read_field(ch, IPU_FIELD_NPB));
+	dev_dbg(ipu->dev, "ID 0x%x\n",
+		 ipu_ch_param_read_field(ch, IPU_FIELD_ID));
 
 	dev_dbg(ipu->dev, "FW %d, ",
 		 ipu_ch_param_read_field(ch, IPU_FIELD_FW));
