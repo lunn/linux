@@ -671,6 +671,19 @@ static void ipu_plane_atomic_update(struct drm_plane *plane,
 	ipu_calculate_bursts(width, info->cpp[0], fb->pitches[0],
 			     &burstsize, &num_bursts);
 
+	/*
+	 * IPUv3EX DMFC channel 5B burst size is set to 16 pixels,
+	 * do not issue longer bursts.
+	 */
+	if (ipu_get_type(ipu_plane->ipu) == IPUV3EX &&
+	    ipu_plane->dp_flow == IPU_DP_FLOW_SYNC_BG &&
+	    burstsize > 16) {
+		dev_info(ipu_plane->base.dev->dev,
+			 "limiting primary plane burst size to 16 pixels\n");
+		burstsize = 16;
+	}
+	num_bursts = 0;
+
 	ipu_cpmem_zero(ipu_plane->ipu_ch);
 	ipu_cpmem_set_resolution(ipu_plane->ipu_ch, width, height);
 	ipu_cpmem_set_fmt(ipu_plane->ipu_ch, fb->format->format);
