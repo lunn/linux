@@ -45,6 +45,7 @@
 #define MDIO_AN_ADVERTISE	16	/* AN advertising (base page) */
 #define MDIO_AN_LPA		19	/* AN LP abilities (base page) */
 #define MDIO_PCS_EEE_ABLE	20	/* EEE Capability register */
+#define MDIO_PMA_NG_EXTABLE	21	/* 2.5G/5G PMA/PMD extended ability */
 #define MDIO_PCS_EEE_WK_ERR	22	/* EEE wake error counter */
 #define MDIO_PHYXS_LNSTAT	24	/* PHY XGXS lane state */
 #define MDIO_AN_EEE_ADV		60	/* EEE advertisement */
@@ -201,6 +202,7 @@
 #define MDIO_PMA_EXTABLE_1000BKX	0x0040	/* 1000BASE-KX ability */
 #define MDIO_PMA_EXTABLE_100BTX		0x0080	/* 100BASE-TX ability */
 #define MDIO_PMA_EXTABLE_10BT		0x0100	/* 10BASE-T ability */
+#define MDIO_PMA_EXTABLE_NBT		0x4000  /* 2.5/5GBASE-T ability */
 
 /* PHY XGXS lane state register. */
 #define MDIO_PHYXS_LNSTAT_SYNC0		0x0001
@@ -271,6 +273,10 @@
 #define MDIO_EEE_1000KX		0x0010	/* 1000KX EEE cap */
 #define MDIO_EEE_10GKX4		0x0020	/* 10G KX4 EEE cap */
 #define MDIO_EEE_10GKR		0x0040	/* 10G KR EEE cap */
+
+/* 2.5G/5G Extended abilities register. */
+#define MDIO_PMA_NG_EXTABLE_2_5GBT	0x0001	/* 2.5GBASET ability */
+#define MDIO_PMA_NG_EXTABLE_5GBT	0x0002	/* 5GBASET ability */
 
 /* LASI RX_ALARM control/status registers. */
 #define MDIO_PMA_LASI_RX_PHYXSLFLT	0x0001	/* PHY XS RX local fault */

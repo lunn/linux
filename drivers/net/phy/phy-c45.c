@@ -377,6 +377,20 @@ int genphy_c45_read_abilities(struct phy_device *phydev)
 			__set_bit(ETHTOOL_LINK_MODE_10baseT_Half_BIT,
 				  supported);
 		}
+
+		if (val & MDIO_PMA_EXTABLE_NBT) {
+			val = phy_read_mmd(phydev, MDIO_MMD_PMAPMD,
+					   MDIO_PMA_NG_EXTABLE);
+			if (val < 0)
+				return val;
+
+			if (val & MDIO_PMA_NG_EXTABLE_2_5GBT)
+				__set_bit(ETHTOOL_LINK_MODE_2500baseT_Full_BIT,
+					  supported);
+			if (val & MDIO_PMA_NG_EXTABLE_5GBT)
+				__set_bit(ETHTOOL_LINK_MODE_5000baseT_Full_BIT,
+					  supported);
+		}
 	}
 
 	linkmode_copy(phydev->supported, supported);
