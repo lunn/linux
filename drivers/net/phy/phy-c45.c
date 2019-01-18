@@ -267,6 +267,102 @@ int genphy_c45_read_mdix(struct phy_device *phydev)
 }
 EXPORT_SYMBOL_GPL(genphy_c45_read_mdix);
 
+/**
+ * genphy_c45_read_abilities - read supported link modes from PMA
+ * @phydev: target phy_device struct
+ *
+ * Read the supported link modes from the PMA Status 2 (1.8) register. If bit
+ * 1.8.9 is set, the list of supported modes is completed with the values in the
+ * PMA Extended Abilities (1.11) register, indicating 1000BASET an 10G related
+ * modes. If bit 1.11.14 is set, then the list is also completed with the modes
+ * in the 2.5G/5G PMA Extended register (1.21), indicating if 2.5GBASET and
+ * 5GBASET are supported.
+ */
+int genphy_c45_read_abilities(struct phy_device *phydev)
+{
+	__ETHTOOL_DECLARE_LINK_MODE_MASK(supported) = { 0, };
+	int val;
+
+	__set_bit(ETHTOOL_LINK_MODE_Pause_BIT, supported);
+	__set_bit(ETHTOOL_LINK_MODE_Asym_Pause_BIT, supported);
+
+	if (phydev->c45_ids.devices_in_package & MDIO_DEVS_AN) {
+		val = phy_read_mmd(phydev, MDIO_MMD_AN, MDIO_STAT1);
+		if (val < 0)
+			return val;
+
+		if (val & MDIO_AN_STAT1_ABLE)
+			__set_bit(ETHTOOL_LINK_MODE_Autoneg_BIT, supported);
+	}
+
+	val = phy_read_mmd(phydev, MDIO_MMD_PMAPMD, MDIO_STAT2);
+	if (val < 0)
+		return val;
+
+	/* Ethtool does not support the WAN mode bits */
+	if (val & (MDIO_PMA_STAT2_10GBSR | MDIO_PMA_STAT2_10GBLR |
+		   MDIO_PMA_STAT2_10GBER | MDIO_PMA_STAT2_10GBLX4 |
+		   MDIO_PMA_STAT2_10GBSW | MDIO_PMA_STAT2_10GBLW |
+		   MDIO_PMA_STAT2_10GBEW))
+		__set_bit(ETHTOOL_LINK_MODE_FIBRE_BIT, supported);
+	if (val & MDIO_PMA_STAT2_10GBSR)
+		__set_bit(ETHTOOL_LINK_MODE_10000baseSR_Full_BIT, supported);
+	if (val & MDIO_PMA_STAT2_10GBLR)
+		__set_bit(ETHTOOL_LINK_MODE_10000baseLR_Full_BIT, supported);
+	if (val & MDIO_PMA_STAT2_10GBER)
+		__set_bit(ETHTOOL_LINK_MODE_10000baseER_Full_BIT, supported);
+
+	if (val & MDIO_PMA_STAT2_EXTABLE) {
+		val = phy_read_mmd(phydev, MDIO_MMD_PMAPMD, MDIO_PMA_EXTABLE);
+		if (val < 0)
+			return val;
+
+		if (val & (MDIO_PMA_EXTABLE_10GBT | MDIO_PMA_EXTABLE_1000BT |
+			   MDIO_PMA_EXTABLE_100BTX | MDIO_PMA_EXTABLE_10BT))
+			__set_bit(ETHTOOL_LINK_MODE_TP_BIT, supported);
+		if (val & MDIO_PMA_EXTABLE_10GBLRM)
+			__set_bit(ETHTOOL_LINK_MODE_FIBRE_BIT, supported);
+		if (val & (MDIO_PMA_EXTABLE_10GBKX4 | MDIO_PMA_EXTABLE_10GBKR |
+			   MDIO_PMA_EXTABLE_1000BKX))
+			__set_bit(ETHTOOL_LINK_MODE_Backplane_BIT, supported);
+		if (val & MDIO_PMA_EXTABLE_10GBLRM)
+			__set_bit(ETHTOOL_LINK_MODE_10000baseLRM_Full_BIT,
+				  supported);
+		if (val & MDIO_PMA_EXTABLE_10GBT)
+			__set_bit(ETHTOOL_LINK_MODE_10000baseT_Full_BIT,
+				  supported);
+		if (val & MDIO_PMA_EXTABLE_10GBKX4)
+			__set_bit(ETHTOOL_LINK_MODE_10000baseKX4_Full_BIT,
+				  supported);
+		if (val & MDIO_PMA_EXTABLE_10GBKR)
+			__set_bit(ETHTOOL_LINK_MODE_10000baseKR_Full_BIT,
+				  supported);
+		if (val & MDIO_PMA_EXTABLE_1000BT)
+			__set_bit(ETHTOOL_LINK_MODE_1000baseT_Full_BIT,
+				  supported);
+		if (val & MDIO_PMA_EXTABLE_1000BKX)
+			__set_bit(ETHTOOL_LINK_MODE_1000baseKX_Full_BIT,
+				  supported);
+		if (val & MDIO_PMA_EXTABLE_100BTX) {
+			__set_bit(ETHTOOL_LINK_MODE_100baseT_Full_BIT,
+				  supported);
+			__set_bit(ETHTOOL_LINK_MODE_100baseT_Half_BIT,
+				  supported);
+		}
+		if (val & MDIO_PMA_EXTABLE_10BT) {
+			__set_bit(ETHTOOL_LINK_MODE_10baseT_Full_BIT,
+				  supported);
+			__set_bit(ETHTOOL_LINK_MODE_10baseT_Half_BIT,
+				  supported);
+		}
+	}
+
+	linkmode_copy(phydev->supported, supported);
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(genphy_c45_read_abilities);
+
 /* The gen10g_* functions are the old Clause 45 stub */
 
 int gen10g_config_aneg(struct phy_device *phydev)
