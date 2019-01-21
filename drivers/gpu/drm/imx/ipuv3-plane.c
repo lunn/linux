@@ -34,14 +34,14 @@ static inline struct ipu_plane *to_ipu_plane(struct drm_plane *p)
 	return container_of(p, struct ipu_plane, base);
 }
 
+/*
+ * Number of 32-bit formats at the beginning of ipu_plane_formats[] to skip
+ * for the overlay plane on IPUv3EX / i.MX51.
+ */
+#define NUM_32BIT_FORMATS	8
+
 static const uint32_t ipu_plane_formats[] = {
-	DRM_FORMAT_ARGB1555,
-	DRM_FORMAT_XRGB1555,
-	DRM_FORMAT_ABGR1555,
-	DRM_FORMAT_XBGR1555,
-	DRM_FORMAT_RGBA5551,
-	DRM_FORMAT_BGRA5551,
-	DRM_FORMAT_ARGB4444,
+	/* 32-bit formats not available on the IPUv3EX / i.MX51 overlay plane */
 	DRM_FORMAT_ARGB8888,
 	DRM_FORMAT_XRGB8888,
 	DRM_FORMAT_ABGR8888,
@@ -50,6 +50,14 @@ static const uint32_t ipu_plane_formats[] = {
 	DRM_FORMAT_RGBX8888,
 	DRM_FORMAT_BGRA8888,
 	DRM_FORMAT_BGRX8888,
+	/* Formats available on all planes */
+	DRM_FORMAT_ARGB1555,
+	DRM_FORMAT_XRGB1555,
+	DRM_FORMAT_ABGR1555,
+	DRM_FORMAT_XBGR1555,
+	DRM_FORMAT_RGBA5551,
+	DRM_FORMAT_BGRA5551,
+	DRM_FORMAT_ARGB4444,
 	DRM_FORMAT_UYVY,
 	DRM_FORMAT_VYUY,
 	DRM_FORMAT_YUYV,
@@ -882,6 +890,8 @@ struct ipu_plane *ipu_plane_init(struct drm_device *dev, struct ipu_soc *ipu,
 	struct ipu_plane *ipu_plane;
 	const uint64_t *modifiers = ipu_format_modifiers;
 	unsigned int zpos = (type == DRM_PLANE_TYPE_PRIMARY) ? 0 : 1;
+	const uint32_t *formats;
+	int num_formats;
 	int ret;
 
 	DRM_DEBUG_KMS("channel %d, dp flow %d, possible_crtcs=0x%x\n",
@@ -900,9 +910,16 @@ struct ipu_plane *ipu_plane_init(struct drm_device *dev, struct ipu_soc *ipu,
 	if (ipu_prg_present(ipu))
 		modifiers = pre_format_modifiers;
 
+	formats = ipu_plane_formats;
+	num_formats = ARRAY_SIZE(ipu_plane_formats);
+	/* Skip 32-bit formats on IPUv3EX / i.MX51 overlay plane */
+	if (ipu_get_type(ipu) == IPUV3EX && dp == IPU_DP_FLOW_SYNC_FG) {
+		formats += NUM_32BIT_FORMATS;
+		num_formats -= NUM_32BIT_FORMATS;
+	}
+
 	ret = drm_universal_plane_init(dev, &ipu_plane->base, possible_crtcs,
-				       &ipu_plane_funcs, ipu_plane_formats,
-				       ARRAY_SIZE(ipu_plane_formats),
+				       &ipu_plane_funcs, formats, num_formats,
 				       modifiers, type, NULL);
 	if (ret)
 		goto err_free;
