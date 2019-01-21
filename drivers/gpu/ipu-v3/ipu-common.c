@@ -43,6 +43,12 @@ int ipu_get_num(struct ipu_soc *ipu)
 }
 EXPORT_SYMBOL_GPL(ipu_get_num);
 
+enum ipuv3_type ipu_get_type(struct ipu_soc *ipu)
+{
+	return ipu->ipu_type;
+}
+EXPORT_SYMBOL_GPL(ipu_get_type);
+
 void ipu_srm_dp_update(struct ipu_soc *ipu, bool sync)
 {
 	u32 val;
