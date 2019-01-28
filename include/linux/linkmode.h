@@ -82,4 +82,14 @@ static inline int linkmode_equal(const unsigned long *src1,
 	return bitmap_equal(src1, src2, __ETHTOOL_LINK_MODE_MASK_NBITS);
 }
 
+struct phy_device;
+
+void phy_print_link_mode(struct phy_device *phydev, const char *what,
+			 unsigned long *linkmode);
+struct phylink;
+
+void phylink_print_link_mode(struct phylink *pl, const char *what,
+			     unsigned long *linkmode);
+
+
 #endif /* __LINKMODE_H */

@@ -356,6 +356,11 @@ EXPORT_SYMBOL(phy_ethtool_ksettings_set);
 void phy_ethtool_ksettings_get(struct phy_device *phydev,
 			       struct ethtool_link_ksettings *cmd)
 {
+
+	phy_print_link_mode(phydev, "supported", phydev->supported);
+	phy_print_link_mode(phydev, "advertising", phydev->advertising);
+	phy_print_link_mode(phydev, "lp_advertising", phydev->lp_advertising);
+
 	linkmode_copy(cmd->link_modes.supported, phydev->supported);
 	linkmode_copy(cmd->link_modes.advertising, phydev->advertising);
 	linkmode_copy(cmd->link_modes.lp_advertising, phydev->lp_advertising);

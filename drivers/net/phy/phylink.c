@@ -1015,6 +1015,8 @@ int phylink_ethtool_ksettings_get(struct phylink *pl,
 		kset->base.port = pl->link_port;
 	}
 
+	phylink_print_link_mode(pl, "pl->supported", pl->supported);
+
 	linkmode_copy(kset->link_modes.supported, pl->supported);
 
 	switch (pl->link_an_mode) {
@@ -1694,3 +1696,93 @@ void phylink_helper_basex_speed(struct phylink_link_state *state)
 EXPORT_SYMBOL_GPL(phylink_helper_basex_speed);
 
 MODULE_LICENSE("GPL v2");
+
+
+static char * link_mode_bit2text[] = {
+	[ETHTOOL_LINK_MODE_10baseT_Half_BIT] = "10baseT_Half",
+	[ETHTOOL_LINK_MODE_10baseT_Full_BIT] = "10baseT_Full",
+	[ETHTOOL_LINK_MODE_100baseT_Half_BIT] = "100baseT_Half",
+	[ETHTOOL_LINK_MODE_100baseT_Full_BIT] = "100baseT_Full",
+	[ETHTOOL_LINK_MODE_1000baseT_Half_BIT] = "1000baseT_Half",
+	[ETHTOOL_LINK_MODE_1000baseT_Full_BIT] = "1000baseT_Full",
+	[ETHTOOL_LINK_MODE_Autoneg_BIT] = "Autoneg",
+	[ETHTOOL_LINK_MODE_TP_BIT] = "TP",
+	[ETHTOOL_LINK_MODE_AUI_BIT] = "AUI",
+	[ETHTOOL_LINK_MODE_MII_BIT] = "MII",
+	[ETHTOOL_LINK_MODE_FIBRE_BIT] = "FIBRE",
+	[ETHTOOL_LINK_MODE_BNC_BIT] = "BNC",
+	[ETHTOOL_LINK_MODE_10000baseT_Full_BIT] = "10000baseT_Full",
+	[ETHTOOL_LINK_MODE_Pause_BIT] = "Pause",
+	[ETHTOOL_LINK_MODE_Asym_Pause_BIT] = "Asym_Pause",
+	[ETHTOOL_LINK_MODE_2500baseX_Full_BIT] = "2500baseX_Full",
+	[ETHTOOL_LINK_MODE_Backplane_BIT] = "Backplane",
+	[ETHTOOL_LINK_MODE_1000baseKX_Full_BIT] = "1000baseKX_Full",
+	[ETHTOOL_LINK_MODE_10000baseKX4_Full_BIT] = "10000baseKX4_Full",
+	[ETHTOOL_LINK_MODE_10000baseKR_Full_BIT] = "10000baseKR_Full",
+	[ETHTOOL_LINK_MODE_10000baseR_FEC_BIT] = "10000baseR_FEC",
+	[ETHTOOL_LINK_MODE_20000baseMLD2_Full_BIT] = "20000baseMLD2_Full",
+	[ETHTOOL_LINK_MODE_20000baseKR2_Full_BIT] = "20000baseKR2_Full",
+	[ETHTOOL_LINK_MODE_40000baseKR4_Full_BIT] = "40000baseKR4_Full",
+	[ETHTOOL_LINK_MODE_40000baseCR4_Full_BIT] = "40000baseCR4_Full",
+	[ETHTOOL_LINK_MODE_40000baseSR4_Full_BIT] = "40000baseSR4_Full",
+	[ETHTOOL_LINK_MODE_40000baseLR4_Full_BIT] = "40000baseLR4_Full",
+	[ETHTOOL_LINK_MODE_56000baseKR4_Full_BIT] = "56000baseKR4_Full",
+	[ETHTOOL_LINK_MODE_56000baseCR4_Full_BIT] = "56000baseCR4_Full",
+	[ETHTOOL_LINK_MODE_56000baseSR4_Full_BIT] = "56000baseSR4_Full",
+	[ETHTOOL_LINK_MODE_56000baseLR4_Full_BIT] = "56000baseLR4_Full",
+	[ETHTOOL_LINK_MODE_25000baseCR_Full_BIT] = "25000baseCR_Full",
+	[ETHTOOL_LINK_MODE_25000baseKR_Full_BIT] = "25000baseKR_Full",
+	[ETHTOOL_LINK_MODE_25000baseSR_Full_BIT] = "25000baseSR_Full",
+	[ETHTOOL_LINK_MODE_50000baseCR2_Full_BIT] = "50000baseCR2_Full",
+	[ETHTOOL_LINK_MODE_50000baseKR2_Full_BIT] = "50000baseKR2_Full",
+	[ETHTOOL_LINK_MODE_100000baseKR4_Full_BIT] = "100000baseKR4_Full",
+	[ETHTOOL_LINK_MODE_100000baseSR4_Full_BIT] = "100000baseSR4_Full",
+	[ETHTOOL_LINK_MODE_100000baseCR4_Full_BIT] = "100000baseCR4_Full",
+	[ETHTOOL_LINK_MODE_100000baseLR4_ER4_Full_BIT] = "100000baseLR4_ER4_Full",
+	[ETHTOOL_LINK_MODE_50000baseSR2_Full_BIT] = "50000baseSR2_Full",
+	[ETHTOOL_LINK_MODE_1000baseX_Full_BIT] = "1000baseX_Full",
+	[ETHTOOL_LINK_MODE_10000baseCR_Full_BIT] = "10000baseCR_Full",
+	[ETHTOOL_LINK_MODE_10000baseSR_Full_BIT] = "10000baseSR_Full",
+	[ETHTOOL_LINK_MODE_10000baseLR_Full_BIT] = "10000baseLR_Full",
+	[ETHTOOL_LINK_MODE_10000baseLRM_Full_BIT] = "10000baseLRM_Full",
+	[ETHTOOL_LINK_MODE_10000baseER_Full_BIT] = "10000baseER_Full",
+	[ETHTOOL_LINK_MODE_2500baseT_Full_BIT] = "2500baseT_Full",
+	[ETHTOOL_LINK_MODE_5000baseT_Full_BIT] = "5000baseT_Full",
+	[ETHTOOL_LINK_MODE_FEC_NONE_BIT] = "FEC_NONE",
+	[ETHTOOL_LINK_MODE_FEC_RS_BIT] = "FEC_RS",
+	[ETHTOOL_LINK_MODE_FEC_BASER_BIT] = "FEC_BASER",
+};
+
+void phy_print_link_mode(struct phy_device *phydev, const char *what,
+			 unsigned long *linkmode)
+{
+	u32 bit;
+
+	phydev_info(phydev, "%s\n", what);
+	phydev_info(phydev, "---------\n");
+
+	for_each_set_bit(bit, linkmode, __ETHTOOL_LINK_MODE_MASK_NBITS) {
+		if (bit < ARRAY_SIZE(link_mode_bit2text))
+			phydev_info(phydev, "%2d %s\n", bit,
+				    link_mode_bit2text[bit]);
+		else
+			phydev_info(phydev, "%2d XXXX!\n", bit);
+	}
+}
+
+void phylink_print_link_mode(struct phylink *pl, const char *what,
+			     unsigned long *linkmode)
+{
+	u32 bit;
+
+	netdev_info(pl->netdev, "%s\n", what);
+	netdev_info(pl->netdev, "---------\n");
+
+	for_each_set_bit(bit, linkmode, __ETHTOOL_LINK_MODE_MASK_NBITS) {
+		if (bit < ARRAY_SIZE(link_mode_bit2text))
+			netdev_info(pl->netdev, "%2d %s\n", bit,
+				    link_mode_bit2text[bit]);
+		else
+			netdev_info(pl->netdev, "%2d XXXX!\n", bit);
+	}
+}

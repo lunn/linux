@@ -2231,6 +2231,7 @@ static int phy_probe(struct device *dev)
 		if (err)
 			goto out;
 	}
+	phy_print_link_mode(phydev, "supported", phydev->supported);
 
 	of_set_phy_supported(phydev);
 	linkmode_copy(phydev->advertising, phydev->supported);
