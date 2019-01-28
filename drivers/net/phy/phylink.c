@@ -1681,7 +1681,8 @@ void phylink_helper_basex_speed(struct phylink_link_state *state)
 {
 	if (phy_interface_mode_is_8023z(state->interface)) {
 		bool want_2500 = state->an_enabled ?
-			phylink_test(state->advertising, 2500baseX_Full) :
+			(phylink_test(state->advertising, 2500baseX_Full) ||
+			 phylink_test(state->advertising, 2500baseT_Full)) :
 			state->speed == SPEED_2500;
 
 		if (want_2500) {
@@ -1689,6 +1690,7 @@ void phylink_helper_basex_speed(struct phylink_link_state *state)
 			state->interface = PHY_INTERFACE_MODE_2500BASEX;
 		} else {
 			phylink_clear(state->advertising, 2500baseX_Full);
+			phylink_clear(state->advertising, 2500baseT_Full);
 			state->interface = PHY_INTERFACE_MODE_1000BASEX;
 		}
 	}
