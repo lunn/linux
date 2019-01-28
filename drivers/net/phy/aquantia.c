@@ -104,6 +104,18 @@ static int aqr_config_aneg(struct phy_device *phydev)
 	return 0;
 }
 
+static int aqr_config_init(struct phy_device *phydev)
+{
+	/* Check that the PHY interface type is compatible */
+	if (phydev->interface != PHY_INTERFACE_MODE_SGMII &&
+	    phydev->interface != PHY_INTERFACE_MODE_XAUI &&
+	    phydev->interface != PHY_INTERFACE_MODE_RXAUI &&
+	    phydev->interface != PHY_INTERFACE_MODE_10GKR)
+		return -ENODEV;
+
+	return 0;
+}
+
 static int aqr_config_intr(struct phy_device *phydev)
 {
 	int err;
@@ -436,8 +448,9 @@ static struct phy_driver aqr_driver[] = {
 	.phy_id		= PHY_ID_AQ1202,
 	.phy_id_mask	= 0xfffffff0,
 	.name		= "Aquantia AQ1202",
-	.features	= PHY_10GBIT_FULL_FEATURES,
 	.aneg_done	= genphy_c45_aneg_done,
+	.get_features	= genphy_c45_read_abilities,
+	.config_init	= aqr_config_init,
 	.config_aneg    = aqr_config_aneg,
 	.config_intr	= aqr_config_intr,
 	.ack_interrupt	= aqr_ack_interrupt,
@@ -447,8 +460,9 @@ static struct phy_driver aqr_driver[] = {
 	.phy_id		= PHY_ID_AQ2104,
 	.phy_id_mask	= 0xfffffff0,
 	.name		= "Aquantia AQ2104",
-	.features	= PHY_10GBIT_FULL_FEATURES,
 	.aneg_done	= genphy_c45_aneg_done,
+	.get_features	= genphy_c45_read_abilities,
+	.config_init	= aqr_config_init,
 	.config_aneg    = aqr_config_aneg,
 	.config_intr	= aqr_config_intr,
 	.ack_interrupt	= aqr_ack_interrupt,
@@ -458,8 +472,9 @@ static struct phy_driver aqr_driver[] = {
 	.phy_id		= PHY_ID_AQR105,
 	.phy_id_mask	= 0xfffffff0,
 	.name		= "Aquantia AQR105",
-	.features	= PHY_10GBIT_FULL_FEATURES,
 	.aneg_done	= genphy_c45_aneg_done,
+	.get_features	= genphy_c45_read_abilities,
+	.config_init	= aqr_config_init,
 	.config_aneg    = aqr_config_aneg,
 	.config_intr	= aqr_config_intr,
 	.ack_interrupt	= aqr_ack_interrupt,
@@ -469,8 +484,9 @@ static struct phy_driver aqr_driver[] = {
 	.phy_id		= PHY_ID_AQR106,
 	.phy_id_mask	= 0xfffffff0,
 	.name		= "Aquantia AQR106",
-	.features	= PHY_10GBIT_FULL_FEATURES,
 	.aneg_done	= genphy_c45_aneg_done,
+	.get_features	= genphy_c45_read_abilities,
+	.config_init	= aqr_config_init,
 	.config_aneg    = aqr_config_aneg,
 	.config_intr	= aqr_config_intr,
 	.ack_interrupt	= aqr_ack_interrupt,
@@ -480,9 +496,10 @@ static struct phy_driver aqr_driver[] = {
 	.phy_id		= PHY_ID_AQR107,
 	.phy_id_mask	= 0xfffffff0,
 	.name		= "Aquantia AQR107",
-	.features	= PHY_10GBIT_FULL_FEATURES,
 	.probe          = aqr_probe,
 	.aneg_done	= genphy_c45_aneg_done,
+	.get_features	= genphy_c45_read_abilities,
+	.config_init	= aqr_config_init,
 	.config_aneg    = aqr_config_aneg,
 	.config_intr	= aqr_config_intr,
 	.ack_interrupt	= aqr_ack_interrupt,
@@ -492,9 +509,10 @@ static struct phy_driver aqr_driver[] = {
 	.phy_id		= PHY_ID_AQCS109,
 	.phy_id_mask	= 0xfffffff0,
 	.name		= "Aquantia AQCS109",
-	.features	= PHY_10GBIT_FULL_FEATURES,
 	.probe          = aqr_probe,
 	.aneg_done	= genphy_c45_aneg_done,
+	.get_features	= genphy_c45_read_abilities,
+	.config_init	= aqr_config_init,
 	.config_aneg    = aqr_config_aneg,
 	.config_intr	= aqr_config_intr,
 	.ack_interrupt	= aqr_ack_interrupt,
@@ -504,8 +522,9 @@ static struct phy_driver aqr_driver[] = {
 	.phy_id		= PHY_ID_AQR405,
 	.phy_id_mask	= 0xfffffff0,
 	.name		= "Aquantia AQR405",
-	.features	= PHY_10GBIT_FULL_FEATURES,
 	.aneg_done	= genphy_c45_aneg_done,
+	.get_features	= genphy_c45_read_abilities,
+	.config_init	= aqr_config_init,
 	.config_aneg    = aqr_config_aneg,
 	.config_intr	= aqr_config_intr,
 	.ack_interrupt	= aqr_ack_interrupt,
