@@ -1,3 +1,4 @@
+#define DEBUG
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Driver for Aquantia PHY
@@ -100,12 +101,15 @@ static int aqr_config_aneg(struct phy_device *phydev)
 {
 	linkmode_copy(phydev->supported, phy_10gbit_features);
 	linkmode_copy(phydev->advertising, phydev->supported);
+	phydev_dbg(phydev, "%s\n", __func__);
 
 	return 0;
 }
 
 static int aqr_config_init(struct phy_device *phydev)
 {
+	phydev_dbg(phydev, "%s\n", __func__);
+
 	/* Check that the PHY interface type is compatible */
 	if (phydev->interface != PHY_INTERFACE_MODE_SGMII &&
 	    phydev->interface != PHY_INTERFACE_MODE_XAUI &&
@@ -119,6 +123,8 @@ static int aqr_config_init(struct phy_device *phydev)
 static int aqr_config_intr(struct phy_device *phydev)
 {
 	int err;
+
+	phydev_dbg(phydev, "%s\n", __func__);
 
 	if (phydev->interrupts == PHY_INTERRUPT_ENABLED) {
 		err = phy_write_mmd(phydev, MDIO_MMD_AN,
@@ -158,6 +164,8 @@ static int aqr_ack_interrupt(struct phy_device *phydev)
 {
 	int reg;
 
+	phydev_dbg(phydev, "%s\n", __func__);
+
 	reg = phy_read_mmd(phydev, MDIO_MMD_AN,
 			   MDIO_AN_TX_VEND_INT_STATUS2);
 	return (reg < 0) ? reg : 0;
@@ -166,6 +174,8 @@ static int aqr_ack_interrupt(struct phy_device *phydev)
 static int aqr_read_status(struct phy_device *phydev)
 {
 	int reg;
+
+	phydev_dbg(phydev, "%s\n", __func__);
 
 	reg = phy_read_mmd(phydev, MDIO_MMD_AN, MDIO_STAT1);
 	reg = phy_read_mmd(phydev, MDIO_MMD_AN, MDIO_STAT1);
