@@ -26,6 +26,10 @@
 #define PHY_ID_AQCS109	0x03a1b5c2
 #define PHY_ID_AQR405	0x03a1b4b0
 
+#define MDIO_AN_VEND_PROV			0xc400
+#define MDIO_AN_VEND_PROV_1000BASET_HALF	BIT(14)
+#define MDIO_AN_VEND_PROV_1000BASET_FULL	BIT(15)
+
 #define MDIO_AN_TX_VEND_STATUS1			0xc800
 #define MDIO_AN_TX_VEND_STAUTS1_FULL_DUPLEX	BIT(0)
 #define MDIO_AN_TX_VEND_STAUTS1_10BASET		(0x0 << 1)
@@ -99,11 +103,51 @@ struct aqr_priv {
 
 static int aqr_config_aneg(struct phy_device *phydev)
 {
-	linkmode_copy(phydev->supported, phy_10gbit_features);
-	linkmode_copy(phydev->advertising, phydev->supported);
+	int changed;
+	int ret;
+	u16 reg;
+
 	phydev_dbg(phydev, "%s\n", __func__);
 
-	return 0;
+	/* We don't support manual MDI control */
+	phydev->mdix_ctrl = ETH_TP_MDI_AUTO;
+
+	if (phydev->autoneg == AUTONEG_DISABLE) {
+		ret = genphy_c45_pma_setup_forced(phydev);
+		if (ret < 0)
+			return ret;
+
+		return genphy_c45_an_disable_aneg(phydev);
+	}
+
+	changed = genphy_c45_an_config_an(phydev);
+	if (changed < 0)
+		return changed;
+
+	/* 1000Base-T is vendor specific */
+	if (linkmode_test_bit(ETHTOOL_LINK_MODE_1000baseT_Full_BIT,
+			      phydev->advertising))
+		reg = MDIO_AN_VEND_PROV_1000BASET_FULL;
+	else
+		reg = 0;
+
+	if (linkmode_test_bit(ETHTOOL_LINK_MODE_1000baseT_Half_BIT,
+			      phydev->advertising))
+		reg = MDIO_AN_VEND_PROV_1000BASET_HALF;
+
+	ret = phy_modify_mmd(phydev, MDIO_MMD_AN, MDIO_AN_VEND_PROV,
+			     MDIO_AN_VEND_PROV_1000BASET_HALF |
+			     MDIO_AN_VEND_PROV_1000BASET_FULL, reg);
+	if (ret < 0)
+		return ret;
+
+	if (ret > 0)
+		changed = true;
+
+	if (changed)
+		ret = genphy_c45_restart_aneg(phydev);
+
+	return ret;
 }
 
 static int aqr_config_init(struct phy_device *phydev)
