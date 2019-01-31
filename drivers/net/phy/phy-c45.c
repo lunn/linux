@@ -75,6 +75,60 @@ int genphy_c45_pma_setup_forced(struct phy_device *phydev)
 EXPORT_SYMBOL_GPL(genphy_c45_pma_setup_forced);
 
 /**
+ * genphy_c45_an_config_an - configures most auto-neg registers
+ * @phydev: target phy_device struct
+ *
+ * Configures 10BaseT, 100BaseT, Pause, and 10G registers.
+ * 1000BaseT is not standardized, so it not configured.
+ *
+ * Returns zero on success but nothing changed, return one on success
+ * and registers changed, or negative errno code on failure.
+ */
+int genphy_c45_an_config_an(struct phy_device *phydev)
+{
+	bool changed = false;
+	u16 reg;
+	int ret;
+
+	ret = phy_modify_mmd(phydev, MDIO_MMD_AN, MDIO_AN_ADVERTISE,
+			     ADVERTISE_ALL | ADVERTISE_100BASE4 |
+			     ADVERTISE_PAUSE_CAP | ADVERTISE_PAUSE_ASYM,
+			     linkmode_adv_to_mii_adv_t(phydev->advertising));
+	if (ret < 0)
+		return ret;
+
+	if (ret > 0)
+		changed = true;
+
+	/* 10G control register */
+	if (linkmode_test_bit(ETHTOOL_LINK_MODE_10000baseT_Full_BIT,
+			      phydev->advertising))
+		reg = MDIO_AN_10GBT_CTRL_ADV10G;
+	else
+		reg = 0;
+
+	if (linkmode_test_bit(ETHTOOL_LINK_MODE_2500baseT_Full_BIT,
+			      phydev->advertising))
+		reg |= MDIO_AN_10GBT_CTRL_ADV2_5G;
+	if (linkmode_test_bit(ETHTOOL_LINK_MODE_5000baseT_Full_BIT,
+			      phydev->advertising))
+		reg |= MDIO_AN_10GBT_CTRL_ADV5G;
+
+	ret = phy_modify_mmd(phydev, MDIO_MMD_AN, MDIO_AN_10GBT_CTRL,
+			     MDIO_AN_10GBT_CTRL_ADV10G |
+			     MDIO_AN_10GBT_CTRL_ADV5G |
+			     MDIO_AN_10GBT_CTRL_ADV2_5G, reg);
+	if (ret < 0)
+		return ret;
+
+	if (ret > 0)
+		changed = true;
+
+	return (changed ? 1 : 0);
+}
+EXPORT_SYMBOL_GPL(genphy_c45_an_config_an);
+
+/**
  * genphy_c45_an_disable_aneg - disable auto-negotiation
  * @phydev: target phy_device struct
  *
