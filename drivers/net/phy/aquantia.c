@@ -217,70 +217,64 @@ static int aqr_ack_interrupt(struct phy_device *phydev)
 
 static int aqr_read_status(struct phy_device *phydev)
 {
-	int reg;
+	u32 mmd_mask = phydev->c45_ids.devices_in_package;
+	int val;
 
 	phydev_dbg(phydev, "%s\n", __func__);
 
-	reg = phy_read_mmd(phydev, MDIO_MMD_AN, MDIO_STAT1);
-	reg = phy_read_mmd(phydev, MDIO_MMD_AN, MDIO_STAT1);
-	if (reg & MDIO_STAT1_LSTATUS)
-		phydev->link = 1;
-	else
-		phydev->link = 0;
+	pr_info("mmd_mask %x\n", mmd_mask);
 
-	reg = phy_read_mmd(phydev, MDIO_MMD_AN, MDIO_AN_TX_VEND_STATUS1);
-	mdelay(10);
-	reg = phy_read_mmd(phydev, MDIO_MMD_AN, MDIO_AN_TX_VEND_STATUS1);
+	/* The vendor devads do not report link status.  Avoid the
+	 * PHYXS instance as its status depends on the MAC being
+	 * appropriately configured for the negotiated speed. C22EXT
+	 * also does not report link status.
+	 */
+	mmd_mask &= ~(BIT(MDIO_MMD_VEND1) | BIT(MDIO_MMD_VEND2) |
+		      BIT(MDIO_MMD_PHYXS) | BIT(MDIO_MMD_C22EXT));
 
-	switch (reg & MDIO_AN_TX_VEND_STAUTS1_RATE_MASK) {
-	case MDIO_AN_TX_VEND_STAUTS1_10GBASET:
-		phydev->speed = SPEED_10000;
-		break;
-	case MDIO_AN_TX_VEND_STAUTS1_5000BASET:
-		phydev->speed = SPEED_50000;
-		break;
-	case MDIO_AN_TX_VEND_STAUTS1_2500BASET:
-		phydev->speed = SPEED_2500;
-		break;
-	case MDIO_AN_TX_VEND_STAUTS1_1000BASET:
-		phydev->speed = SPEED_1000;
-		break;
-	case MDIO_AN_TX_VEND_STAUTS1_100BASETX:
-		phydev->speed = SPEED_100;
-		break;
-	case MDIO_AN_TX_VEND_STAUTS1_10BASET:
-		phydev->speed = SPEED_10;
-		break;
-	default:
-		phydev->speed = SPEED_UNKNOWN;
-		break;
+	phydev->speed = SPEED_UNKNOWN;
+	phydev->duplex = DUPLEX_UNKNOWN;
+	linkmode_zero(phydev->lp_advertising);
+	phydev->link = 0;
+	phydev->pause = 0;
+	phydev->asym_pause = 0;
+	phydev->mdix = 0;
+
+	val = genphy_c45_read_link(phydev, mmd_mask);
+	if (val < 0)
+		return val;
+
+	phydev->link = val > 0 ? 1 : 0;
+
+	val = phy_read_mmd(phydev, MDIO_MMD_AN, MDIO_STAT1);
+	if (val < 0)
+		return val;
+
+	if (val & MDIO_AN_STAT1_COMPLETE) {
+		val = genphy_c45_read_lpa(phydev);
+		if (val < 0)
+			return val;
+
+		/* Read the link partner's 1G advertisement */
+		/* TODO */
+
+		if (phydev->autoneg == AUTONEG_ENABLE)
+			phy_resolve_aneg_linkmode(phydev);
 	}
 
-	if (reg & MDIO_AN_TX_VEND_STAUTS1_FULL_DUPLEX)
-		phydev->duplex = DUPLEX_FULL;
-	else
-		phydev->duplex = DUPLEX_HALF;
-
-	reg = phy_read_mmd(phydev, MDIO_MMD_PHYXS, MDIO_XS_SYSIF_STATUS);
-
-	switch ((reg >> MDIO_XS_SYSIF_MODE_SHIFT) & MDIO_XS_SYSIF_MODE_MASK) {
-	case MDIO_XS_SYSIF_MODE_BACKPLANE_KR:
-		phydev->interface = PHY_INTERFACE_MODE_10GKR;
-		break;
-	case MDIO_XS_SYSIF_MODE_SGMII:
-		phydev->interface = PHY_INTERFACE_MODE_SGMII;
-		break;
-	case MDIO_XS_SYSIF_MODE_XAUI:
-	case MDIO_XS_SYSIF_MODE_XAUI_PAUSE:
-		phydev->interface = PHY_INTERFACE_MODE_XAUI;
-		break;
-	case MDIO_XS_SYSIF_MODE_RXAUI:
-		phydev->interface = PHY_INTERFACE_MODE_RXAUI;
-		break;
-	default:
-		phydev->interface = PHY_INTERFACE_MODE_NA;
+	if (phydev->autoneg != AUTONEG_ENABLE) {
+		val = genphy_c45_read_pma(phydev);
+		if (val < 0)
+			return val;
 	}
 
+	if (phydev->speed == SPEED_10000) {
+		val = genphy_c45_read_mdix(phydev);
+		if (val < 0)
+			return val;
+	} else {
+		/* TODO: MDIX */
+	}
 	return 0;
 }
 
