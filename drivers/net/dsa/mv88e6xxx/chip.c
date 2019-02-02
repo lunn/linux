@@ -1234,8 +1234,10 @@ static int mv88e6xxx_pot_setup(struct mv88e6xxx_chip *chip)
 
 static int mv88e6xxx_rsvd2cpu_setup(struct mv88e6xxx_chip *chip)
 {
+#if !IS_ENABLED(CONFIG_NET_DSA_MV88E6XXX_ZII_RDU)
 	if (chip->info->ops->mgmt_rsvd2cpu)
 		return chip->info->ops->mgmt_rsvd2cpu(chip);
+#endif
 
 	return 0;
 }
