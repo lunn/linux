@@ -1267,6 +1267,21 @@ static int mv88e6xxx_atu_add_local_mac(struct mv88e6xxx_chip *chip, int fid)
 }
 #endif
 
+#if IS_ENABLED(CONFIG_NET_DSA_MV88E6XXX_ZII_RDU)
+static int mv88e6xxx_atu_add_bpdu_mac(struct mv88e6xxx_chip *chip, int fid)
+{
+	u8 addr[6] = { 0x01, 0x80, 0xc2, 0x00, 0x00, 0x00 };
+	struct mv88e6xxx_atu_entry entry = {
+		.state = MV88E6XXX_G1_ATU_DATA_STATE_MC_STATIC_DA_MGMT_PO,
+		.portvec = BIT(3) | BIT(4), /* RDU netleft and netright */
+	};
+
+	ether_addr_copy(entry.mac, addr);
+
+	return mv88e6xxx_g1_atu_loadpurge(chip, fid, &entry);
+}
+#endif
+
 static int mv88e6xxx_atu_setup(struct mv88e6xxx_chip *chip)
 {
 	int err;
@@ -1277,6 +1292,12 @@ static int mv88e6xxx_atu_setup(struct mv88e6xxx_chip *chip)
 
 #if IS_ENABLED(CONFIG_NET_DSA_MV88E6XXX_ZII)
 	err = mv88e6xxx_atu_add_local_mac(chip, 0);
+	if (err)
+		return err;
+#endif
+
+#if IS_ENABLED(CONFIG_NET_DSA_MV88E6XXX_ZII_RDU)
+	err = mv88e6xxx_atu_add_bpdu_mac(chip, 0);
 	if (err)
 		return err;
 #endif
@@ -1451,6 +1472,12 @@ static int mv88e6xxx_atu_new(struct mv88e6xxx_chip *chip, u16 *fid)
 
 #if IS_ENABLED(CONFIG_NET_DSA_MV88E6XXX_ZII)
 	err = mv88e6xxx_atu_add_local_mac(chip, *fid);
+	if (err)
+		return err;
+#endif
+
+#if IS_ENABLED(CONFIG_NET_DSA_MV88E6XXX_ZII_RDU)
+	err = mv88e6xxx_atu_add_bpdu_mac(chip, *fid);
 	if (err)
 		return err;
 #endif
