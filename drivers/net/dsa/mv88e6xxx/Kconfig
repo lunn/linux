@@ -52,3 +52,10 @@ config NET_DSA_MV88E6XXX_ZII
 	depends on NET_DSA_MV88E6XXX
 	help
 	  Say Y to enable ZII specific hacks.
+
+config NET_DSA_MV88E6XXX_ZII_RDU
+	bool "Support for ZII specific RDU hacks"
+	default n
+	depends on NET_DSA_MV88E6XXX_ZII
+	help
+	  Say Y to enable ZII specific RDU hacks.
