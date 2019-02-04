@@ -1235,3 +1235,12 @@
 		>;
 	};
 };
+
+/delete-node/ &mipi_vc1_to_ipu1_csi1;
+/delete-node/ &mipi_vc2_to_ipu2_csi0;
+/delete-node/ &ipu2_csi0_from_mipi_vc2;
+/delete-node/ &ipu1_csi1_from_mipi_vc1;
+/delete-node/ &ipu1_csi0_mux_to_ipu1_csi0;
+/delete-node/ &ipu2_csi1_mux_to_ipu2_csi1;
+/delete-node/ &ipu1_csi0_from_ipu1_csi0_mux;
+/delete-node/ &ipu2_csi1_from_ipu2_csi1_mux;
