@@ -42,6 +42,9 @@
 #include "ptp.h"
 #include "serdes.h"
 #include "smi.h"
+#if IS_ENABLED(CONFIG_NET_DSA_MV88E6XXX_ZII)
+#include "sysfs.h"
+#endif
 
 static void assert_reg_lock(struct mv88e6xxx_chip *chip)
 {
@@ -3085,6 +3088,13 @@ static int mv88e6xxx_setup(struct dsa_switch *ds)
 		goto unlock;
 
 	mv88e6xxx_dbg_create(chip);
+
+#if IS_ENABLED(CONFIG_NET_DSA_MV88E6XXX_ZII)
+	err = mv88e6xxx_sysfs_setup(chip);
+	if (err)
+		goto unlock;
+#endif
+
 unlock:
 	mv88e6xxx_reg_unlock(chip);
 
@@ -5709,6 +5719,10 @@ static void mv88e6xxx_remove(struct mdio_device *mdiodev)
 	struct mv88e6xxx_chip *chip = ds->priv;
 
 	mv88e6xxx_dbg_destroy(chip);
+
+#if IS_ENABLED(CONFIG_NET_DSA_MV88E6XXX_ZII)
+	mv88e6xxx_sysfs_teardown(chip);
+#endif
 
 	if (chip->info->ptp_support) {
 		mv88e6xxx_hwtstamp_free(chip);
