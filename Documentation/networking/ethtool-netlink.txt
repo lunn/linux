@@ -131,6 +131,8 @@ List of message types
     ETHNL_CMD_SET_STRSET		response only
     ETHNL_CMD_GET_INFO
     ETHNL_CMD_SET_INFO			response only
+    ETHNL_CMD_GET_SETTINGS
+    ETHNL_CMD_SET_SETTINGS		response only (for now)
 
 All constants use ETHNL_CMD_ prefix, usually followed by "GET", "SET" or "ACT"
 to indicate the type.
@@ -258,6 +260,50 @@ if no PHC is associated, the attribute is not present.
 GET_INFO requests allow dumps.
 
 
+GET_SETTINGS
+------------
+
+GET_SETTINGS request retrieves information provided by ETHTOOL_GLINKSETTINGS,
+ETHTOOL_GWOL, ETHTOOL_GMSGLVL and ETHTOOL_GLINK ioctl requests. The request
+doesn't use any attributes.
+
+Request attributes:
+
+    ETHA_SETTINGS_DEV		(nested)	device identification
+    ETHA_SETTINGS_INFOMASK	(u32)		info mask
+    ETHA_SETTINGS_COMPACT	(flag)		request compact bitsets
+
+Info mask bits meaning:
+
+    ETH_SETTINGS_IM_LINKINFO		link settings
+    ETH_SETTINGS_IM_LINKMODES		link modes and related
+
+Response contents:
+
+    ETHA_SETTINGS_DEV		(nested)	device identification
+    ETHA_SETTINGS_LINK_INFO	(nested)	link settings
+        ETHA_LINKINFO_PORT		(u8)		physical port
+        ETHA_LINKINFO_PHYADDR		(u8)		MDIO address of phy
+        ETHA_LINKINFO_TP_MDIX		(u8)		MDI(-X) status
+        ETHA_LINKINFO_TP_MDIX_CTRL	(u8)		MDI(-X) control
+        ETHA_LINKINFO_TRANSCEIVER	(u8)		transceiver
+    ETHA_SETTINGS_LINK_MODES	(nested)	link modes
+        ETHA_LINKMODES_AUTONEG		(u8)		autoneotiation status
+        ETHA_LINKMODES_OURS		(bitset)	advertised link modes
+        ETHA_LINKMODES_PEER		(bitset)	partner link modes
+        ETHA_LINKMODES_SPEED		(u32)		link speed (Mb/s)
+        ETHA_LINKMODES_DUPLEX		(u8)		duplex mode
+
+Most of the attributes and their values have the same meaning as matching
+members of the corresponding ioctl structures. For ETHA_LINKMODES_OURS,
+value represents advertised modes and mask represents supported modes.
+ETHA_LINKMODES_PEER in the reply is a bit list.
+
+GET_SETTINGS requests allow dumps and messages in the same format as response
+to them are broadcasted as notifications on change of these settings using
+netlink or ioctl ethtool interface.
+
+
 Request translation
 -------------------
 
@@ -267,7 +313,7 @@ have their netlink replacement yet.
 
 ioctl command			netlink command
 ---------------------------------------------------------------------
-ETHTOOL_GSET			n/a
+ETHTOOL_GSET			ETHNL_CMD_GET_SETTINGS
 ETHTOOL_SSET			n/a
 ETHTOOL_GDRVINFO		ETHNL_CMD_GET_INFO
 ETHTOOL_GREGS			n/a
@@ -341,7 +387,7 @@ ETHTOOL_GTUNABLE		n/a
 ETHTOOL_STUNABLE		n/a
 ETHTOOL_GPHYSTATS		n/a
 ETHTOOL_PERQUEUE		n/a
-ETHTOOL_GLINKSETTINGS		n/a
+ETHTOOL_GLINKSETTINGS		ETHNL_CMD_GET_SETTINGS
 ETHTOOL_SLINKSETTINGS		n/a
 ETHTOOL_PHY_GTUNABLE		n/a
 ETHTOOL_PHY_STUNABLE		n/a

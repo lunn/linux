@@ -30,6 +30,7 @@
 #include <net/devlink.h>
 #include <net/xdp_sock.h>
 #include <net/flow_offload.h>
+#include <linux/ethtool_netlink.h>
 
 #include "common.h"
 
@@ -356,54 +357,6 @@ bool ethtool_convert_link_mode_to_legacy_u32(u32 *legacy_u32,
 }
 EXPORT_SYMBOL(ethtool_convert_link_mode_to_legacy_u32);
 
-/* return false if legacy contained non-0 deprecated fields
- * maxtxpkt/maxrxpkt. rest of ksettings always updated
- */
-static bool
-convert_legacy_settings_to_link_ksettings(
-	struct ethtool_link_ksettings *link_ksettings,
-	const struct ethtool_cmd *legacy_settings)
-{
-	bool retval = true;
-
-	memset(link_ksettings, 0, sizeof(*link_ksettings));
-
-	/* This is used to tell users that driver is still using these
-	 * deprecated legacy fields, and they should not use
-	 * %ETHTOOL_GLINKSETTINGS/%ETHTOOL_SLINKSETTINGS
-	 */
-	if (legacy_settings->maxtxpkt ||
-	    legacy_settings->maxrxpkt)
-		retval = false;
-
-	ethtool_convert_legacy_u32_to_link_mode(
-		link_ksettings->link_modes.supported,
-		legacy_settings->supported);
-	ethtool_convert_legacy_u32_to_link_mode(
-		link_ksettings->link_modes.advertising,
-		legacy_settings->advertising);
-	ethtool_convert_legacy_u32_to_link_mode(
-		link_ksettings->link_modes.lp_advertising,
-		legacy_settings->lp_advertising);
-	link_ksettings->base.speed
-		= ethtool_cmd_speed(legacy_settings);
-	link_ksettings->base.duplex
-		= legacy_settings->duplex;
-	link_ksettings->base.port
-		= legacy_settings->port;
-	link_ksettings->base.phy_address
-		= legacy_settings->phy_address;
-	link_ksettings->base.autoneg
-		= legacy_settings->autoneg;
-	link_ksettings->base.mdio_support
-		= legacy_settings->mdio_support;
-	link_ksettings->base.eth_tp_mdix
-		= legacy_settings->eth_tp_mdix;
-	link_ksettings->base.eth_tp_mdix_ctrl
-		= legacy_settings->eth_tp_mdix_ctrl;
-	return retval;
-}
-
 /* return false if ksettings link modes had higher bits
  * set. legacy_settings always updated (best effort)
  */
@@ -617,7 +570,12 @@ static int ethtool_set_link_ksettings(struct net_device *dev,
 	    != link_ksettings.base.link_mode_masks_nwords)
 		return -EINVAL;
 
-	return dev->ethtool_ops->set_link_ksettings(dev, &link_ksettings);
+	err = dev->ethtool_ops->set_link_ksettings(dev, &link_ksettings);
+	if (err >= 0)
+		ethtool_notify(dev, NULL, ETHNL_CMD_SET_SETTINGS,
+			       ETH_SETTINGS_IM_LINKINFO |
+			       ETH_SETTINGS_IM_LINKMODES, NULL);
+	return err;
 }
 
 /* Query device for its ethtool_cmd settings.
@@ -666,6 +624,7 @@ static int ethtool_set_settings(struct net_device *dev, void __user *useraddr)
 {
 	struct ethtool_link_ksettings link_ksettings;
 	struct ethtool_cmd cmd;
+	int ret;
 
 	ASSERT_RTNL();
 
@@ -678,7 +637,12 @@ static int ethtool_set_settings(struct net_device *dev, void __user *useraddr)
 		return -EINVAL;
 	link_ksettings.base.link_mode_masks_nwords =
 		__ETHTOOL_LINK_MODE_MASK_NU32;
-	return dev->ethtool_ops->set_link_ksettings(dev, &link_ksettings);
+	ret = dev->ethtool_ops->set_link_ksettings(dev, &link_ksettings);
+	if (ret >= 0)
+		ethtool_notify(dev, NULL, ETHNL_CMD_SET_SETTINGS,
+			       ETH_SETTINGS_IM_LINKINFO |
+			       ETH_SETTINGS_IM_LINKMODES, NULL);
+	return ret;
 }
 
 static noinline_for_stack int ethtool_get_drvinfo(struct net_device *dev,
