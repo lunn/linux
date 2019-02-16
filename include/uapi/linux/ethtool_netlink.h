@@ -16,6 +16,8 @@ enum {
 	ETHNL_CMD_EVENT,		/* only for notifications */
 	ETHNL_CMD_GET_STRSET,
 	ETHNL_CMD_SET_STRSET,		/* only for reply */
+	ETHNL_CMD_GET_INFO,
+	ETHNL_CMD_SET_INFO,		/* only for reply */
 
 	__ETHNL_CMD_CNT,
 	ETHNL_CMD_MAX = (__ETHNL_CMD_CNT - 1)
@@ -139,6 +141,34 @@ enum {
 
 	__ETHA_STRSET_CNT,
 	ETHA_STRSET_MAX = (__ETHA_STRSET_CNT - 1)
+};
+
+/* GET_INFO / SET_INFO */
+
+enum {
+	ETHA_INFO_UNSPEC,
+	ETHA_INFO_DEV,				/* nest - ETHA_DEV_* */
+	ETHA_INFO_INFOMASK,			/* u32 */
+	ETHA_INFO_COMPACT,			/* flag */
+	ETHA_INFO_DRVINFO,			/* nest - ETHA_DRVINFO_* */
+
+	__ETHA_INFO_CNT,
+	ETHA_INFO_MAX = (__ETHA_INFO_CNT - 1)
+};
+
+#define ETH_INFO_IM_DRVINFO			(1U << 0)
+
+#define ETH_INFO_IM_ALL (ETH_INFO_IM_DRVINFO)
+
+enum {
+	ETHA_DRVINFO_UNSPEC,
+	ETHA_DRVINFO_DRIVER,			/* string */
+	ETHA_DRVINFO_FWVERSION,			/* string */
+	ETHA_DRVINFO_BUSINFO,			/* string */
+	ETHA_DRVINFO_EROM_VER,			/* string */
+
+	__ETHA_DRVINFO_CNT,
+	ETHA_DRVINFO_MAX = (__ETHA_DRVINFO_CNT - 1)
 };
 
 /* generic netlink info */

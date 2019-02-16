@@ -129,6 +129,8 @@ List of message types
     ETHNL_CMD_EVENT			notification only
     ETHNL_CMD_GET_STRSET
     ETHNL_CMD_SET_STRSET		response only
+    ETHNL_CMD_GET_INFO
+    ETHNL_CMD_SET_INFO			response only
 
 All constants use ETHNL_CMD_ prefix, usually followed by "GET", "SET" or "ACT"
 to indicate the type.
@@ -209,6 +211,45 @@ ETHA_STRSET_COUNTS tells kernel to only return string counts of the sets, not
 the actual strings.
 
 
+GET_INFO
+--------
+
+GET_INFO requests information provided by ioctl commands ETHTOOL_GDRVINFO,
+ETHTOOL_GPERMADDR and ETHTOOL_GET_TS_INFO to provide basic device information.
+Common pattern is that all information is read only so that SET_INFO message
+exists but is only used by kernel for replies to GET_INFO requests. There is
+also no corresponding notification.
+
+Request contents:
+
+    ETHA_INFO_DEV		(nested)	device identification
+    ETHA_INFO_INFOMASK		(u32)		info mask
+    ETHA_INFO_COMPACT		(flag)		request compact bitsets
+
+Info mask bits meaning:
+
+    ETH_INFO_IM_DRVINFO			driver info (GDRVINFO)
+    ETH_INFO_IM_PERMADDR		permanent HW address (GPERMADDR)
+    ETH_INFO_IM_TSINFO			timestamping info (GET_TS_INFO)
+
+Kernel response contents:
+
+    ETHA_INFO_DEV		(nested)	device identification
+    ETHA_INFO_DRVINFO		(nested)	driver information
+        ETHA_DRVINFO_DRIVER		(string)	driver name
+        ETHA_DRVINFO_FWVERSION		(string)	firmware version
+        ETHA_DRVINFO_BUSINFO		(string)	device bus address
+        ETHA_DRVINFO_EROM_VER		(string)	expansion ROM version
+
+The meaning of DRVINFO attributes follows the corresponding fields of
+ETHTOOL_GDRVINFO response. Second part with various counts and sizes is
+omitted as these are not really needed (and if they are, they can be easily
+found by different means). Driver version is also omitted as it is rather
+misleading in most cases.
+
+GET_INFO requests allow dumps.
+
+
 Request translation
 -------------------
 
@@ -220,7 +261,7 @@ ioctl command			netlink command
 ---------------------------------------------------------------------
 ETHTOOL_GSET			n/a
 ETHTOOL_SSET			n/a
-ETHTOOL_GDRVINFO		n/a
+ETHTOOL_GDRVINFO		ETHNL_CMD_GET_INFO
 ETHTOOL_GREGS			n/a
 ETHTOOL_GWOL			n/a
 ETHTOOL_SWOL			n/a

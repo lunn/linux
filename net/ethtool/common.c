@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
 
+#include <linux/rtnetlink.h>
+#include <net/devlink.h>
 #include "common.h"
 
 const char netdev_features_strings[NETDEV_FEATURE_COUNT][ETH_GSTRING_LEN] = {
@@ -81,3 +83,53 @@ phy_tunable_strings[__ETHTOOL_PHY_TUNABLE_COUNT][ETH_GSTRING_LEN] = {
 	[ETHTOOL_ID_UNSPEC]     = "Unspec",
 	[ETHTOOL_PHY_DOWNSHIFT]	= "phy-downshift",
 };
+
+int __ethtool_get_drvinfo(struct net_device *dev, struct ethtool_drvinfo *info)
+{
+	const struct ethtool_ops *ops = dev->ethtool_ops;
+
+	memset(info, 0, sizeof(*info));
+	info->cmd = ETHTOOL_GDRVINFO;
+	if (ops->get_drvinfo) {
+		ops->get_drvinfo(dev, info);
+	} else if (dev->dev.parent && dev->dev.parent->driver) {
+		strlcpy(info->bus_info, dev_name(dev->dev.parent),
+			sizeof(info->bus_info));
+		strlcpy(info->driver, dev->dev.parent->driver->name,
+			sizeof(info->driver));
+	} else {
+		return -EOPNOTSUPP;
+	}
+
+	/* this method of obtaining string set info is deprecated;
+	 * Use ETHTOOL_GSSET_INFO instead.
+	 */
+	if (ops->get_sset_count) {
+		int rc;
+
+		rc = ops->get_sset_count(dev, ETH_SS_TEST);
+		if (rc >= 0)
+			info->testinfo_len = rc;
+		rc = ops->get_sset_count(dev, ETH_SS_STATS);
+		if (rc >= 0)
+			info->n_stats = rc;
+		rc = ops->get_sset_count(dev, ETH_SS_PRIV_FLAGS);
+		if (rc >= 0)
+			info->n_priv_flags = rc;
+	}
+	if (ops->get_regs_len) {
+		int ret = ops->get_regs_len(dev);
+
+		if (ret > 0)
+			info->regdump_len = ret;
+	}
+
+	if (ops->get_eeprom_len)
+		info->eedump_len = ops->get_eeprom_len(dev);
+
+	if (!info->fw_version[0])
+		devlink_compat_running_version(dev, info->fw_version,
+					       sizeof(info->fw_version));
+
+	return 0;
+}

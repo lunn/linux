@@ -278,5 +278,6 @@ struct get_request_ops {
 /* request handlers */
 
 extern const struct get_request_ops strset_request_ops;
+extern const struct get_request_ops info_request_ops;
 
 #endif /* _NET_ETHTOOL_NETLINK_H */
