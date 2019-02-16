@@ -16,4 +16,6 @@ extern const char
 phy_tunable_strings[__ETHTOOL_PHY_TUNABLE_COUNT][ETH_GSTRING_LEN];
 
 int __ethtool_get_drvinfo(struct net_device *dev, struct ethtool_drvinfo *info);
+int __ethtool_get_ts_info(struct net_device *dev, struct ethtool_ts_info *info);
+
 #endif /* _ETHTOOL_COMMON_H */
