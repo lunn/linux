@@ -21,6 +21,9 @@ struct settings_data {
 		u32	active[ETHTOOL_DEV_FEATURE_WORDS];
 		u32	nochange[ETHTOOL_DEV_FEATURE_WORDS];
 	} features;
+	char				(*priv_flag_names)[ETH_GSTRING_LEN];
+	u32				priv_flags;
+	unsigned int			n_priv_flags;
 	bool				lpm_empty;
 };
 
@@ -132,6 +135,7 @@ static const struct nla_policy get_settings_policy[ETHA_SETTINGS_MAX + 1] = {
 	[ETHA_SETTINGS_WOL]		= { .type = NLA_REJECT },
 	[ETHA_SETTINGS_DEBUG]		= { .type = NLA_REJECT },
 	[ETHA_SETTINGS_FEATURES]	= { .type = NLA_REJECT },
+	[ETHA_SETTINGS_PRIV_FLAGS]	= { .type = NLA_REJECT },
 };
 
 static int parse_settings(struct common_req_info *req_info,
@@ -209,6 +213,58 @@ static int ethnl_get_features(struct net_device *dev,
 	return 0;
 }
 
+static int get_priv_flags_info(struct net_device *dev, unsigned int *count,
+			       void **names)
+{
+	const struct ethtool_ops *ops = dev->ethtool_ops;
+	int nflags;
+
+	if (!ops->get_priv_flags || !ops->get_sset_count || !ops->get_strings)
+		return -EOPNOTSUPP;
+	nflags = ops->get_sset_count(dev, ETH_SS_PRIV_FLAGS);
+	if (nflags < 0)
+		return nflags;
+
+	if (names) {
+		*names = kcalloc(nflags, ETH_GSTRING_LEN, GFP_KERNEL);
+		if (!*names)
+			return -ENOMEM;
+		ops->get_strings(dev, ETH_SS_PRIV_FLAGS, *names);
+	}
+
+	/* We can easily pass more than 32 private flags to userspace via
+	 * netlink but we cannot get more with ethtool_ops::get_priv_flags().
+	 * Note that we must not adjust nflags before allocating the space
+	 * for flag names as the buffer must be large enough for all flags.
+	 */
+	if (WARN_ONCE(nflags > 32,
+		      "device %s reports more than 32 private flags (%d)\n",
+		      netdev_name(dev), nflags))
+		nflags = 32;
+
+	*count = nflags;
+	return 0;
+}
+
+static int ethnl_get_priv_flags(struct genl_info *info,
+				struct settings_data *data)
+{
+	struct net_device *dev = data->repdata_base.dev;
+	const struct ethtool_ops *ops = dev->ethtool_ops;
+	unsigned int nflags;
+	void *names;
+	int ret;
+
+	ret = get_priv_flags_info(dev, &nflags, &names);
+	if (ret < 0)
+		return ret;
+
+	data->priv_flags = ops->get_priv_flags(dev);
+	data->priv_flag_names = names;
+	data->n_priv_flags = nflags;
+	return 0;
+}
+
 static int prepare_settings(struct common_req_info *req_info,
 			    struct genl_info *info)
 {
@@ -258,6 +314,11 @@ static int prepare_settings(struct common_req_info *req_info,
 	}
 	if (req_mask & ETH_SETTINGS_IM_FEATURES)
 		ethnl_get_features(dev, data);
+	if (req_mask & ETH_SETTINGS_IM_PRIVFLAGS) {
+		ret = ethnl_get_priv_flags(info, data);
+		if (ret < 0)
+			req_mask &= ~ETH_SETTINGS_IM_PRIVFLAGS;
+	}
 	ethnl_after_ops(dev);
 
 	data->repdata_base.info_mask = req_mask;
@@ -385,6 +446,17 @@ static int settings_size(const struct common_req_info *req_info)
 		len += debug_size();
 	if (info_mask & ETH_SETTINGS_IM_FEATURES) {
 		ret = features_size(data);
+		if (ret < 0)
+			return ret;
+		len += ret;
+	}
+	if (info_mask & ETH_SETTINGS_IM_PRIVFLAGS) {
+		const unsigned int flags =
+			(compact ? ETHNL_BITSET_COMPACT : 0) |
+			ETHNL_BITSET_LEGACY_NAMES;
+
+		ret = ethnl_bitset32_size(data->n_priv_flags, &data->priv_flags,
+					  NULL, data->priv_flag_names, flags);
 		if (ret < 0)
 			return ret;
 		len += ret;
@@ -561,6 +633,18 @@ static int fill_features(struct sk_buff *skb, const struct settings_data *data)
 	return 0;
 }
 
+static int fill_priv_flags(struct sk_buff *skb,
+			   const struct settings_data *data)
+{
+	const unsigned int bitset_flags =
+		(data->reqinfo_base.compact ? ETHNL_BITSET_COMPACT : 0) |
+		ETHNL_BITSET_LEGACY_NAMES;
+
+	return ethnl_put_bitset32(skb, ETHA_SETTINGS_PRIV_FLAGS,
+				  data->n_priv_flags, &data->priv_flags, NULL,
+				  data->priv_flag_names, bitset_flags);
+}
+
 static int fill_settings(struct sk_buff *skb,
 			 const struct common_req_info *req_info)
 {
@@ -601,8 +685,21 @@ static int fill_settings(struct sk_buff *skb,
 		if (ret < 0)
 			return ret;
 	}
+	if (info_mask & ETH_SETTINGS_IM_PRIVFLAGS) {
+		ret = fill_priv_flags(skb, data);
+		if (ret < 0)
+			return ret;
+	}
 
 	return 0;
+}
+
+static void settings_cleanup(struct common_req_info *req_info)
+{
+	const struct settings_data *data =
+		container_of(req_info, struct settings_data, reqinfo_base);
+
+	kfree(data->priv_flag_names);
 }
 
 const struct get_request_ops settings_request_ops = {
@@ -616,6 +713,7 @@ const struct get_request_ops settings_request_ops = {
 	.prepare_data		= prepare_settings,
 	.reply_size		= settings_size,
 	.fill_reply		= fill_settings,
+	.cleanup		= settings_cleanup,
 };
 
 /* SET_SETTINGS */
@@ -672,6 +770,7 @@ static const struct nla_policy set_settings_policy[ETHA_SETTINGS_MAX + 1] = {
 	[ETHA_SETTINGS_WOL]		= { .type = NLA_NESTED },
 	[ETHA_SETTINGS_DEBUG]		= { .type = NLA_NESTED },
 	[ETHA_SETTINGS_FEATURES]	= { .type = NLA_NESTED },
+	[ETHA_SETTINGS_PRIV_FLAGS]	= { .type = NLA_REJECT },
 };
 
 static int ethnl_set_link_ksettings(struct genl_info *info,
