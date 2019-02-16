@@ -1242,11 +1242,11 @@ static int ethtool_reset(struct net_device *dev, char __user *useraddr)
 static int ethtool_get_wol(struct net_device *dev, char __user *useraddr)
 {
 	struct ethtool_wolinfo wol = { .cmd = ETHTOOL_GWOL };
+	int rc;
 
-	if (!dev->ethtool_ops->get_wol)
-		return -EOPNOTSUPP;
-
-	dev->ethtool_ops->get_wol(dev, &wol);
+	rc = __ethtool_get_wol(dev, &wol);
+	if (rc < 0)
+		return rc;
 
 	if (copy_to_user(useraddr, &wol, sizeof(wol)))
 		return -EFAULT;
@@ -1269,6 +1269,8 @@ static int ethtool_set_wol(struct net_device *dev, char __user *useraddr)
 		return ret;
 
 	dev->wol_enabled = !!wol.wolopts;
+	ethtool_notify(dev, NULL, ETHNL_CMD_SET_SETTINGS, ETH_SETTINGS_IM_WOL,
+		       NULL);
 
 	return 0;
 }

@@ -213,3 +213,13 @@ int __ethtool_get_link(struct net_device *dev)
 
 	return netif_running(dev) && dev->ethtool_ops->get_link(dev);
 }
+
+int __ethtool_get_wol(struct net_device *dev, struct ethtool_wolinfo *wol)
+{
+	if (!dev->ethtool_ops->get_wol)
+		return -EOPNOTSUPP;
+
+	dev->ethtool_ops->get_wol(dev, wol);
+
+	return 0;
+}

@@ -6,10 +6,12 @@
 
 struct settings_data {
 	struct common_req_info		reqinfo_base;
+	bool				privileged;
 
 	/* everything below here will be reset for each device in dumps */
 	struct common_reply_data	repdata_base;
 	struct ethtool_link_ksettings	ksettings;
+	struct ethtool_wolinfo		wolinfo;
 	struct ethtool_link_settings	*lsettings;
 	int				link;
 	bool				lpm_empty;
@@ -114,14 +116,19 @@ static const struct nla_policy get_settings_policy[ETHA_SETTINGS_MAX + 1] = {
 	[ETHA_SETTINGS_LINK_INFO]	= { .type = NLA_REJECT },
 	[ETHA_SETTINGS_LINK_MODES]	= { .type = NLA_REJECT },
 	[ETHA_SETTINGS_LINK_STATE]	= { .type = NLA_REJECT },
+	[ETHA_SETTINGS_WOL]		= { .type = NLA_REJECT },
 };
 
 static int parse_settings(struct common_req_info *req_info,
 			  struct sk_buff *skb, struct genl_info *info,
 			  const struct nlmsghdr *nlhdr)
 {
+	struct settings_data *data =
+		container_of(req_info, struct settings_data, reqinfo_base);
 	struct nlattr *tb[ETHA_SETTINGS_MAX + 1];
 	int ret;
+
+	data->privileged = ethnl_is_privileged(skb);
 
 	ret = ethnlmsg_parse(nlhdr, tb, ETHA_SETTINGS_MAX, get_settings_policy,
 			     info);
@@ -156,6 +163,16 @@ static int ethnl_get_link_ksettings(struct genl_info *info,
 
 	if (ret < 0)
 		ETHNL_SET_ERRMSG(info, "failed to retrieve link settings");
+	return ret;
+}
+
+static int ethnl_get_wol(struct genl_info *info, struct net_device *dev,
+			 struct ethtool_wolinfo *wolinfo)
+{
+	int ret = __ethtool_get_wol(dev, wolinfo);
+
+	if (ret < 0)
+		ETHNL_SET_ERRMSG(info, "failed to retrieve wol info");
 	return ret;
 }
 
@@ -194,6 +211,11 @@ static int prepare_settings(struct common_req_info *req_info,
 	}
 	if (req_mask & ETH_SETTINGS_IM_LINKSTATE)
 		data->link = __ethtool_get_link(dev);
+	if (req_mask & ETH_SETTINGS_IM_WOL) {
+		ret = ethnl_get_wol(info, dev, &data->wolinfo);
+		if (ret < 0)
+			req_mask &= ~ETH_SETTINGS_IM_WOL;
+	}
 	ethnl_after_ops(dev);
 
 	data->repdata_base.info_mask = req_mask;
@@ -249,6 +271,12 @@ static int link_state_size(int link)
 	return nla_total_size(nla_total_size(sizeof(u8)));
 }
 
+static int wol_size(void)
+{
+	return nla_total_size(nla_total_size(sizeof(struct nla_bitfield32)) +
+			      nla_total_size(SOPASS_MAX));
+}
+
 /* To keep things simple, reserve space for some attributes which may not
  * be added to the message (e.g. ETHA_SETTINGS_SOPASS); therefore the length
  * returned may be bigger than the actual length of the message sent
@@ -272,6 +300,8 @@ static int settings_size(const struct common_req_info *req_info)
 	}
 	if (info_mask & ETH_SETTINGS_IM_LINKSTATE)
 		len += link_state_size(data->link);
+	if (info_mask & ETH_SETTINGS_IM_WOL)
+		len += wol_size();
 
 	return len;
 }
@@ -361,6 +391,33 @@ err:
 	return -EMSGSIZE;
 }
 
+static int fill_wolinfo(struct sk_buff *skb,
+			const struct ethtool_wolinfo *wolinfo, bool privileged)
+{
+	struct nlattr *nest;
+
+	nest = ethnl_nest_start(skb, ETHA_SETTINGS_WOL);
+	if (!nest)
+		return -EMSGSIZE;
+	if (nla_put_bitfield32(skb, ETHA_WOL_MODES, wolinfo->wolopts,
+			       wolinfo->supported))
+		goto err;
+	/* ioctl() restricts read access to wolinfo but the actual
+	 * reason is to hide sopass from unprivileged users; netlink
+	 * can show wol modes without sopass
+	 */
+	if (privileged &&
+	    nla_put(skb, ETHA_WOL_SOPASS, sizeof(wolinfo->sopass),
+		    wolinfo->sopass))
+		goto err;
+	nla_nest_end(skb, nest);
+	return 0;
+
+err:
+	nla_nest_cancel(skb, nest);
+	return -EMSGSIZE;
+}
+
 static int fill_settings(struct sk_buff *skb,
 			 const struct common_req_info *req_info)
 {
@@ -383,6 +440,11 @@ static int fill_settings(struct sk_buff *skb,
 	}
 	if (info_mask & ETH_SETTINGS_IM_LINKSTATE) {
 		ret = fill_link_state(skb, data->link);
+		if (ret < 0)
+			return ret;
+	}
+	if (info_mask & ETH_SETTINGS_IM_WOL) {
+		ret = fill_wolinfo(skb, &data->wolinfo, data->privileged);
 		if (ret < 0)
 			return ret;
 	}
@@ -431,6 +493,7 @@ static const struct nla_policy set_settings_policy[ETHA_SETTINGS_MAX + 1] = {
 	[ETHA_SETTINGS_LINK_INFO]	= { .type = NLA_NESTED },
 	[ETHA_SETTINGS_LINK_MODES]	= { .type = NLA_NESTED },
 	[ETHA_SETTINGS_LINK_STATE]	= { .type = NLA_REJECT },
+	[ETHA_SETTINGS_WOL]		= { .type = NLA_REJECT },
 };
 
 static int ethnl_set_link_ksettings(struct genl_info *info,
