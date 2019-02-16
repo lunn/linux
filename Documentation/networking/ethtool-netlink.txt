@@ -274,6 +274,7 @@ Info mask bits meaning:
     ETHTOOL_IM_SETTINGS_LINKINFO	link settings
     ETHTOOL_IM_SETTINGS_LINKMODES	link modes and related
     ETHTOOL_IM_SETTINGS_LINKSTATE	link state
+    ETHTOOL_IM_SETTINGS_WOL		struct ethtool_wolinfo
 
 Response contents:
 
@@ -292,11 +293,21 @@ Response contents:
         ETHTOOL_A_LINKMODES_DUPLEX	    (u8)	    duplex mode
     ETHTOOL_A_SETTINGS_LINK_STATE	(nested)	link state
         ETHTOOL_A_LINKSTATE_LINK	    (u8)	    link on/off/unknown
+    ETHTOOL_A_SETTINGS_WOL		(nested)	wake on LAN settings
+        ETHTOOL_A_WOL_MODES		    (bitfield32)    wake on LAN modes
+        ETHTOOL_A_WOL_SOPASS		    (binary)	    SecureOn password
 
 Most of the attributes and their values have the same meaning as matching
 members of the corresponding ioctl structures. For ETHTOOL_A_LINKMODES_OURS,
 value represents advertised modes and mask represents supported modes.
 ETHTOOL_A_LINKMODES_PEER in the reply is a bit list.
+
+For ETHTOOL_A_WOL_MODES, selector reports wake on LAN modes supported by the
+device and value enabled modes.
+
+GET_SETTINGS request is allowed for unprivileged user but ETHTOOL_A_WOL_SOPASS
+is only provided by kernel in response to privileged (netns CAP_NET_ADMIN)
+requests.
 
 GET_SETTINGS requests allow dumps and messages in the same format as response
 to them are broadcasted as notifications on change of these settings using
@@ -344,7 +355,7 @@ ETHTOOL_GSET			ETHNL_CMD_GET_SETTINGS
 ETHTOOL_SSET			ETHNL_CMD_SET_SETTINGS
 ETHTOOL_GDRVINFO		ETHNL_CMD_GET_INFO
 ETHTOOL_GREGS			n/a
-ETHTOOL_GWOL			n/a
+ETHTOOL_GWOL			ETHNL_CMD_GET_SETTINGS
 ETHTOOL_SWOL			n/a
 ETHTOOL_GMSGLVL			n/a
 ETHTOOL_SMSGLVL			n/a
