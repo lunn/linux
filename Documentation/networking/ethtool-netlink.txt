@@ -277,6 +277,7 @@ Info mask bits meaning:
 
     ETH_SETTINGS_IM_LINKINFO		link settings
     ETH_SETTINGS_IM_LINKMODES		link modes and related
+    ETH_SETTINGS_IM_LINKSTATE		link state
 
 Response contents:
 
@@ -293,6 +294,8 @@ Response contents:
         ETHA_LINKMODES_PEER		(bitset)	partner link modes
         ETHA_LINKMODES_SPEED		(u32)		link speed (Mb/s)
         ETHA_LINKMODES_DUPLEX		(u8)		duplex mode
+    ETHA_SETTINGS_LINK_STATE	(nested)	link state
+        ETHA_LINKSTATE_LINK		(u8)		link on/off/unknown
 
 Most of the attributes and their values have the same meaning as matching
 members of the corresponding ioctl structures. For ETHA_LINKMODES_OURS,
@@ -350,7 +353,7 @@ ETHTOOL_SWOL			n/a
 ETHTOOL_GMSGLVL			n/a
 ETHTOOL_SMSGLVL			n/a
 ETHTOOL_NWAY_RST		n/a
-ETHTOOL_GLINK			n/a
+ETHTOOL_GLINK			ETHNL_CMD_GET_SETTINGS
 ETHTOOL_GEEPROM			n/a
 ETHTOOL_SEEPROM			n/a
 ETHTOOL_GCOALESCE		n/a
