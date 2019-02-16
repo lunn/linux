@@ -3,6 +3,7 @@
 #ifndef _ETHTOOL_COMMON_H
 #define _ETHTOOL_COMMON_H
 
+#include <linux/netdevice.h>
 #include <linux/ethtool.h>
 
 extern const char
@@ -14,4 +15,5 @@ tunable_strings[__ETHTOOL_TUNABLE_COUNT][ETH_GSTRING_LEN];
 extern const char
 phy_tunable_strings[__ETHTOOL_PHY_TUNABLE_COUNT][ETH_GSTRING_LEN];
 
+int __ethtool_get_drvinfo(struct net_device *dev, struct ethtool_drvinfo *info);
 #endif /* _ETHTOOL_COMMON_H */
