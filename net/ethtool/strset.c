@@ -85,6 +85,12 @@ static const struct strset_info info_template[] = {
 		.count		= __HWTSTAMP_FILTER_COUNT,
 		.data		= { .simple = tstamp_rx_filter_labels },
 	},
+	[ETH_SS_LINK_MODES] = {
+		.type		= ETH_SS_TYPE_SIMPLE,
+		.per_dev	= false,
+		.count		= __ETHTOOL_LINK_MODE_MASK_NBITS,
+		.data		= { .simple = link_mode_names },
+	},
 };
 
 struct strset_data {
