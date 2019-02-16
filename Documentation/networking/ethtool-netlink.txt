@@ -277,6 +277,7 @@ Info mask bits meaning:
     ETHTOOL_IM_SETTINGS_WOL		struct ethtool_wolinfo
     ETHTOOL_IM_SETTINGS_DEBUG		debugging
     ETHTOOL_IM_SETTINGS_FEATURES	features
+    ETHTOOL_IM_SETTINGS_PRIVFLAGS	device private flags
 
 Response contents:
 
@@ -305,6 +306,7 @@ Response contents:
         ETHTOOL_A_FEATURES_WANTED	    (bitset)	    dev->wanted_features
         ETHTOOL_A_FEATURES_ACTIVE	    (bitset)	    dev->features
         ETHTOOL_A_FEATURES_NOCHANGE	    (bitset)	    NETIF_F_NEVER_CHANGE
+    ETHTOOL_A_SETTINGS_PRIV_FLAGS	(bitset)	device private flags
 
 Most of the attributes and their values have the same meaning as matching
 members of the corresponding ioctl structures. For ETHTOOL_A_LINKMODES_OURS,
@@ -326,6 +328,11 @@ compatibility), it can calculate their values from related feature bits
 itself. ETHTOOL_A_FEATURES_HW uses mask consisting of all features recognized
 by kernel (to provide all names when using verbose bitmap format), remaining
 three use mask equal to value (to save space).
+
+ETHTOOL_A_SETTINGS_PRIV_FLAGS is a bitset with values of device private flags.
+These flags are defined by driver, their number and names (as well as meaning)
+are device dependent. For compact bitset format, names can be retrieved as
+ETH_SS_PRIV_FLAGS string set.
 
 GET_SETTINGS request is allowed for unprivileged user but ETHTOOL_A_WOL_SOPASS
 is only provided by kernel in response to privileged (netns CAP_NET_ADMIN)
@@ -439,7 +446,7 @@ ETHTOOL_GGSO			ETHNL_CMD_GET_SETTINGS
 ETHTOOL_SGSO			ETHNL_CMD_SET_SETTINGS
 ETHTOOL_GFLAGS			ETHNL_CMD_GET_SETTINGS
 ETHTOOL_SFLAGS			ETHNL_CMD_SET_SETTINGS
-ETHTOOL_GPFLAGS			n/a
+ETHTOOL_GPFLAGS			ETHNL_CMD_GET_SETTINGS
 ETHTOOL_SPFLAGS			n/a
 ETHTOOL_GRXFH			n/a
 ETHTOOL_SRXFH			n/a
