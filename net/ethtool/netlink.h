@@ -23,6 +23,7 @@ extern struct genl_family ethtool_genl_family;
 extern const char *const so_timestamping_labels[];
 extern const char *const tstamp_tx_type_labels[];
 extern const char *const tstamp_rx_filter_labels[];
+extern const char *const link_mode_names[];
 
 struct net_device *ethnl_dev_get(struct genl_info *info, struct nlattr *nest);
 int ethnl_fill_dev(struct sk_buff *msg, struct net_device *dev, u16 attrtype);

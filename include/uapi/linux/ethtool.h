@@ -566,6 +566,7 @@ struct ethtool_pauseparam {
  * @ETH_SS_TSTAMP_SOF: timestamping flag names
  * @ETH_SS_TSTAMP_TX_TYPE: timestamping Tx type names
  * @ETH_SS_TSTAMP_RX_FILTER: timestamping Rx filter names
+ * @ETH_SS_LINK_MODES: link mode names
  */
 enum ethtool_stringset {
 	ETH_SS_TEST		= 0,
@@ -580,6 +581,7 @@ enum ethtool_stringset {
 	ETH_SS_TSTAMP_SOF,
 	ETH_SS_TSTAMP_TX_TYPE,
 	ETH_SS_TSTAMP_RX_FILTER,
+	ETH_SS_LINK_MODES,
 
 	ETH_SS_COUNT
 };
