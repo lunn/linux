@@ -11,6 +11,7 @@ struct settings_data {
 	struct common_reply_data	repdata_base;
 	struct ethtool_link_ksettings	ksettings;
 	struct ethtool_link_settings	*lsettings;
+	int				link;
 	bool				lpm_empty;
 };
 
@@ -112,6 +113,7 @@ static const struct nla_policy get_settings_policy[ETHTOOL_A_SETTINGS_MAX + 1] =
 	[ETHTOOL_A_SETTINGS_COMPACT]	= { .type = NLA_FLAG },
 	[ETHTOOL_A_SETTINGS_LINK_INFO]	= { .type = NLA_REJECT },
 	[ETHTOOL_A_SETTINGS_LINK_MODES]	= { .type = NLA_REJECT },
+	[ETHTOOL_A_SETTINGS_LINK_STATE]	= { .type = NLA_REJECT },
 };
 
 static int parse_settings(struct common_req_info *req_info,
@@ -168,6 +170,7 @@ static int prepare_settings(struct common_req_info *req_info,
 
 	data->lsettings = &data->ksettings.base;
 	data->lpm_empty = true;
+	data->link = -EOPNOTSUPP;
 
 	ret = ethnl_before_ops(dev);
 	if (ret < 0)
@@ -190,6 +193,8 @@ static int prepare_settings(struct common_req_info *req_info,
 		ethnl_bitmap_to_u32(data->ksettings.link_modes.lp_advertising,
 				    __ETHTOOL_LINK_MODE_MASK_NWORDS);
 	}
+	if (req_mask & ETHTOOL_IM_SETTINGS_LINKSTATE)
+		data->link = __ethtool_get_link(dev);
 	ethnl_after_ops(dev);
 
 	data->repdata_base.info_mask = req_mask;
@@ -238,6 +243,13 @@ static int link_modes_size(const struct ethtool_link_ksettings *ksettings,
 	return nla_total_size(len);
 }
 
+static int link_state_size(int link)
+{
+	if (link < 0)
+		return nla_total_size(0);
+	return nla_total_size(nla_total_size(sizeof(u8)));
+}
+
 /* To keep things simple, reserve space for some attributes which may not
  * be added to the message (e.g. ETHTOOL_A_SETTINGS_SOPASS); therefore the
  * length returned may be bigger than the actual length of the message sent.
@@ -259,6 +271,8 @@ static int settings_size(const struct common_req_info *req_info)
 			return ret;
 		len += ret;
 	}
+	if (info_mask & ETHTOOL_IM_SETTINGS_LINKSTATE)
+		len += link_state_size(data->link);
 
 	return len;
 }
@@ -333,6 +347,23 @@ err:
 	return -EMSGSIZE;
 }
 
+static int fill_link_state(struct sk_buff *skb, int link)
+{
+	struct nlattr *nest;
+
+	nest = nla_nest_start(skb, ETHTOOL_A_SETTINGS_LINK_STATE);
+	if (!nest)
+		return -EMSGSIZE;
+	if (link >=0 && nla_put_u8(skb, ETHTOOL_A_LINKSTATE_LINK, !!link))
+		goto nla_put_failure;
+	nla_nest_end(skb, nest);
+	return 0;
+
+nla_put_failure:
+	nla_nest_cancel(skb, nest);
+	return -EMSGSIZE;
+}
+
 static int fill_settings(struct sk_buff *skb,
 			 const struct common_req_info *req_info)
 {
@@ -350,6 +381,11 @@ static int fill_settings(struct sk_buff *skb,
 	if (info_mask & ETHTOOL_IM_SETTINGS_LINKMODES) {
 		ret = fill_link_modes(skb, &data->ksettings, data->lpm_empty,
 				      compact);
+		if (ret < 0)
+			return ret;
+	}
+	if (info_mask & ETHTOOL_IM_SETTINGS_LINKSTATE) {
+		ret = fill_link_state(skb, data->link);
 		if (ret < 0)
 			return ret;
 	}
@@ -397,6 +433,7 @@ static const struct nla_policy set_settings_policy[ETHTOOL_A_SETTINGS_MAX + 1] =
 	[ETHTOOL_A_SETTINGS_COMPACT]		= { .type = NLA_FLAG },
 	[ETHTOOL_A_SETTINGS_LINK_INFO]		= { .type = NLA_NESTED },
 	[ETHTOOL_A_SETTINGS_LINK_MODES]		= { .type = NLA_NESTED },
+	[ETHTOOL_A_SETTINGS_LINK_STATE]		= { .type = NLA_REJECT },
 };
 
 static int ethnl_set_link_ksettings(struct genl_info *info,
