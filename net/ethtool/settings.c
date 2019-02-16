@@ -14,6 +14,7 @@ struct settings_data {
 	struct ethtool_wolinfo		wolinfo;
 	struct ethtool_link_settings	*lsettings;
 	int				link;
+	u32				msglevel;
 	bool				lpm_empty;
 };
 
@@ -123,6 +124,7 @@ static const struct nla_policy get_settings_policy[ETHA_SETTINGS_MAX + 1] = {
 	[ETHA_SETTINGS_LINK_MODES]	= { .type = NLA_REJECT },
 	[ETHA_SETTINGS_LINK_STATE]	= { .type = NLA_REJECT },
 	[ETHA_SETTINGS_WOL]		= { .type = NLA_REJECT },
+	[ETHA_SETTINGS_DEBUG]		= { .type = NLA_REJECT },
 };
 
 static int parse_settings(struct common_req_info *req_info,
@@ -188,6 +190,7 @@ static int prepare_settings(struct common_req_info *req_info,
 	struct settings_data *data =
 		container_of(req_info, struct settings_data, reqinfo_base);
 	struct net_device *dev = data->repdata_base.dev;
+	const struct ethtool_ops *eops = dev->ethtool_ops;
 	u32 req_mask = req_info->req_mask;
 	int ret;
 
@@ -221,6 +224,12 @@ static int prepare_settings(struct common_req_info *req_info,
 		ret = ethnl_get_wol(info, dev, &data->wolinfo);
 		if (ret < 0)
 			req_mask &= ~ETH_SETTINGS_IM_WOL;
+	}
+	if (req_mask & ETH_SETTINGS_IM_DEBUG) {
+		if (eops->get_msglevel)
+			data->msglevel = eops->get_msglevel(dev);
+		else
+			req_mask &= ~ETH_SETTINGS_IM_DEBUG;
 	}
 	ethnl_after_ops(dev);
 
@@ -283,6 +292,11 @@ static int wol_size(void)
 			      nla_total_size(SOPASS_MAX));
 }
 
+static int debug_size(void)
+{
+	return nla_total_size(nla_total_size(sizeof(struct nla_bitfield32)));
+}
+
 /* To keep things simple, reserve space for some attributes which may not
  * be added to the message (e.g. ETHA_SETTINGS_SOPASS); therefore the length
  * returned may be bigger than the actual length of the message sent
@@ -308,6 +322,8 @@ static int settings_size(const struct common_req_info *req_info)
 		len += link_state_size(data->link);
 	if (info_mask & ETH_SETTINGS_IM_WOL)
 		len += wol_size();
+	if (info_mask & ETH_SETTINGS_IM_DEBUG)
+		len += debug_size();
 
 	return len;
 }
@@ -424,6 +440,24 @@ err:
 	return -EMSGSIZE;
 }
 
+static int fill_debug(struct sk_buff *skb, u32 msglevel)
+{
+	struct nlattr *nest;
+
+	nest = ethnl_nest_start(skb, ETHA_SETTINGS_DEBUG);
+	if (!nest)
+		return -EMSGSIZE;
+	if (nla_put_bitfield32(skb, ETHA_DEBUG_MSG_MASK, msglevel,
+			       NETIF_MSG_ALL))
+		goto err;
+	nla_nest_end(skb, nest);
+	return 0;
+
+err:
+	nla_nest_cancel(skb, nest);
+	return -EMSGSIZE;
+}
+
 static int fill_settings(struct sk_buff *skb,
 			 const struct common_req_info *req_info)
 {
@@ -451,6 +485,11 @@ static int fill_settings(struct sk_buff *skb,
 	}
 	if (info_mask & ETH_SETTINGS_IM_WOL) {
 		ret = fill_wolinfo(skb, &data->wolinfo, data->privileged);
+		if (ret < 0)
+			return ret;
+	}
+	if (info_mask & ETH_SETTINGS_IM_DEBUG) {
+		ret = fill_debug(skb, data->msglevel);
 		if (ret < 0)
 			return ret;
 	}
@@ -508,6 +547,7 @@ static const struct nla_policy set_settings_policy[ETHA_SETTINGS_MAX + 1] = {
 	[ETHA_SETTINGS_LINK_MODES]	= { .type = NLA_NESTED },
 	[ETHA_SETTINGS_LINK_STATE]	= { .type = NLA_REJECT },
 	[ETHA_SETTINGS_WOL]		= { .type = NLA_NESTED },
+	[ETHA_SETTINGS_DEBUG]		= { .type = NLA_REJECT },
 };
 
 static int ethnl_set_link_ksettings(struct genl_info *info,

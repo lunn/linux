@@ -2464,6 +2464,9 @@ int dev_ethtool(struct net *net, struct ifreq *ifr)
 	case ETHTOOL_SMSGLVL:
 		rc = ethtool_set_value_void(dev, useraddr,
 				       dev->ethtool_ops->set_msglevel);
+		if (rc >= 0)
+			ethtool_notify(dev, NULL, ETHNL_CMD_SET_SETTINGS,
+				       ETH_SETTINGS_IM_DEBUG, NULL);
 		break;
 	case ETHTOOL_GEEE:
 		rc = ethtool_get_eee(dev, useraddr);
