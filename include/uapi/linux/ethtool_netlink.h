@@ -151,14 +151,17 @@ enum {
 	ETHA_INFO_INFOMASK,			/* u32 */
 	ETHA_INFO_COMPACT,			/* flag */
 	ETHA_INFO_DRVINFO,			/* nest - ETHA_DRVINFO_* */
+	ETHA_INFO_TSINFO,			/* nest - ETHA_TSINFO_* */
 
 	__ETHA_INFO_CNT,
 	ETHA_INFO_MAX = (__ETHA_INFO_CNT - 1)
 };
 
 #define ETH_INFO_IM_DRVINFO			(1U << 0)
+#define ETH_INFO_IM_TSINFO			(1U << 1)
 
-#define ETH_INFO_IM_ALL (ETH_INFO_IM_DRVINFO)
+#define ETH_INFO_IM_ALL (ETH_INFO_IM_DRVINFO | \
+			 ETH_INFO_IM_TSINFO)
 
 enum {
 	ETHA_DRVINFO_UNSPEC,
@@ -169,6 +172,17 @@ enum {
 
 	__ETHA_DRVINFO_CNT,
 	ETHA_DRVINFO_MAX = (__ETHA_DRVINFO_CNT - 1)
+};
+
+enum {
+	ETHA_TSINFO_UNSPEC,
+	ETHA_TSINFO_TIMESTAMPING,		/* bitset */
+	ETHA_TSINFO_PHC_INDEX,			/* u32 */
+	ETHA_TSINFO_TX_TYPES,			/* bitset */
+	ETHA_TSINFO_RX_FILTERS,			/* bitset */
+
+	__ETHA_TSINFO_CNT,
+	ETHA_TSINFO_MAX = (__ETHA_TSINFO_CNT - 1)
 };
 
 /* generic netlink info */

@@ -67,6 +67,24 @@ static const struct strset_info info_template[] = {
 		.count		= ARRAY_SIZE(phy_tunable_strings),
 		.data		= { .legacy = phy_tunable_strings },
 	},
+	[ETH_SS_TSTAMP_SOF] = {
+		.type		= ETH_SS_TYPE_SIMPLE,
+		.per_dev	= false,
+		.count		= __SOF_TIMESTAMPING_COUNT,
+		.data		= { .simple = so_timestamping_labels },
+	},
+	[ETH_SS_TSTAMP_TX_TYPE] = {
+		.type		= ETH_SS_TYPE_SIMPLE,
+		.per_dev	= false,
+		.count		= __HWTSTAMP_TX_COUNT,
+		.data		= { .simple = tstamp_tx_type_labels },
+	},
+	[ETH_SS_TSTAMP_RX_FILTER] = {
+		.type		= ETH_SS_TYPE_SIMPLE,
+		.per_dev	= false,
+		.count		= __HWTSTAMP_FILTER_COUNT,
+		.data		= { .simple = tstamp_rx_filter_labels },
+	},
 };
 
 struct strset_data {

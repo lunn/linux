@@ -1,8 +1,53 @@
 // SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
 
+#include <linux/net_tstamp.h>
+
 #include "netlink.h"
 #include "common.h"
 #include "bitset.h"
+
+const char *const so_timestamping_labels[] = {
+	"hardware-transmit",		/* SOF_TIMESTAMPING_TX_HARDWARE */
+	"software-transmit",		/* SOF_TIMESTAMPING_TX_SOFTWARE */
+	"hardware-receive",		/* SOF_TIMESTAMPING_RX_HARDWARE */
+	"software-receive",		/* SOF_TIMESTAMPING_RX_SOFTWARE */
+	"software-system-clock",	/* SOF_TIMESTAMPING_SOFTWARE */
+	"hardware-legacy-clock",	/* SOF_TIMESTAMPING_SYS_HARDWARE */
+	"hardware-raw-clock",		/* SOF_TIMESTAMPING_RAW_HARDWARE */
+	"option-id",			/* SOF_TIMESTAMPING_OPT_ID */
+	"sched-transmit",		/* SOF_TIMESTAMPING_TX_SCHED */
+	"ack-transmit",			/* SOF_TIMESTAMPING_TX_ACK */
+	"option-cmsg",			/* SOF_TIMESTAMPING_OPT_CMSG */
+	"option-tsonly",		/* SOF_TIMESTAMPING_OPT_TSONLY */
+	"option-stats",			/* SOF_TIMESTAMPING_OPT_STATS */
+	"option-pktinfo",		/* SOF_TIMESTAMPING_OPT_PKTINFO */
+	"option-tx-swhw",		/* SOF_TIMESTAMPING_OPT_TX_SWHW */
+};
+
+const char *const tstamp_tx_type_labels[] = {
+	[HWTSTAMP_TX_OFF]		= "off",
+	[HWTSTAMP_TX_ON]		= "on",
+	[HWTSTAMP_TX_ONESTEP_SYNC]	= "one-step-sync",
+};
+
+const char *const tstamp_rx_filter_labels[] = {
+	[HWTSTAMP_FILTER_NONE]			= "none",
+	[HWTSTAMP_FILTER_ALL]			= "all",
+	[HWTSTAMP_FILTER_SOME]			= "some",
+	[HWTSTAMP_FILTER_PTP_V1_L4_EVENT]	= "ptpv1-l4-event",
+	[HWTSTAMP_FILTER_PTP_V1_L4_SYNC]	= "ptpv1-l4-sync",
+	[HWTSTAMP_FILTER_PTP_V1_L4_DELAY_REQ]	= "ptpv1-l4-delay-req",
+	[HWTSTAMP_FILTER_PTP_V2_L4_EVENT]	= "ptpv2-l4-event",
+	[HWTSTAMP_FILTER_PTP_V2_L4_SYNC]	= "ptpv2-l4-sync",
+	[HWTSTAMP_FILTER_PTP_V2_L4_DELAY_REQ]	= "ptpv2-l4-delay-req",
+	[HWTSTAMP_FILTER_PTP_V2_L2_EVENT]	= "ptpv2-l2-event",
+	[HWTSTAMP_FILTER_PTP_V2_L2_SYNC]	= "ptpv2-l2-sync",
+	[HWTSTAMP_FILTER_PTP_V2_L2_DELAY_REQ]	= "ptpv2-l2-delay-req",
+	[HWTSTAMP_FILTER_PTP_V2_EVENT]		= "ptpv2-event",
+	[HWTSTAMP_FILTER_PTP_V2_SYNC]		= "ptpv2-sync",
+	[HWTSTAMP_FILTER_PTP_V2_DELAY_REQ]	= "ptpv2-delay-req",
+	[HWTSTAMP_FILTER_NTP_ALL]		= "ntp-all",
+};
 
 struct info_data {
 	struct common_req_info		reqinfo_base;
@@ -10,6 +55,7 @@ struct info_data {
 	/* everything below here will be reset for each device in dumps */
 	struct common_reply_data	repdata_base;
 	struct ethtool_drvinfo		drvinfo;
+	struct ethtool_ts_info		tsinfo;
 };
 
 static const struct nla_policy get_info_policy[ETHA_INFO_MAX + 1] = {
@@ -18,6 +64,7 @@ static const struct nla_policy get_info_policy[ETHA_INFO_MAX + 1] = {
 	[ETHA_INFO_INFOMASK]		= { .type = NLA_U32 },
 	[ETHA_INFO_COMPACT]		= { .type = NLA_FLAG },
 	[ETHA_INFO_DRVINFO]		= { .type = NLA_REJECT },
+	[ETHA_INFO_TSINFO]		= { .type = NLA_REJECT },
 };
 
 /* parse_request() handler */
@@ -67,6 +114,11 @@ static int prepare_info(struct common_req_info *req_info,
 		if (ret < 0)
 			req_mask &= ~ETH_INFO_IM_DRVINFO;
 	}
+	if (req_mask & ETH_INFO_IM_TSINFO) {
+		ret = __ethtool_get_ts_info(dev, &data->tsinfo);
+		if (ret < 0)
+			req_mask &= ~ETH_INFO_IM_TSINFO;
+	}
 	ethnl_after_ops(dev);
 
 	data->repdata_base.info_mask = req_mask;
@@ -87,6 +139,42 @@ static int drvinfo_size(const struct ethtool_drvinfo *drvinfo)
 	return nla_total_size(len);
 }
 
+static int tsinfo_size(const struct ethtool_ts_info *tsinfo, bool compact)
+{
+	const unsigned int flags = compact ? ETHNL_BITSET_COMPACT : 0;
+	int len = 0;
+	int ret;
+
+	/* if any of these exceeds 32, we need a different interface to talk to
+	 * NIC drivers anyway
+	 */
+	BUILD_BUG_ON(__SOF_TIMESTAMPING_COUNT > 32);
+	BUILD_BUG_ON(__HWTSTAMP_TX_COUNT > 32);
+	BUILD_BUG_ON(__HWTSTAMP_FILTER_COUNT > 32);
+
+	ret = ethnl_bitset32_size(__SOF_TIMESTAMPING_COUNT,
+				  &tsinfo->so_timestamping, NULL,
+				  so_timestamping_labels, flags);
+	if (ret < 0)
+		return ret;
+	len += ret;
+	ret = ethnl_bitset32_size(__HWTSTAMP_TX_COUNT,
+				  &tsinfo->tx_types, NULL,
+				  tstamp_tx_type_labels, flags);
+	if (ret < 0)
+		return ret;
+	len += ret;
+	ret = ethnl_bitset32_size(__HWTSTAMP_FILTER_COUNT,
+				  &tsinfo->rx_filters, NULL,
+				  tstamp_rx_filter_labels, flags);
+	if (ret < 0)
+		return ret;
+	len += ret;
+	len += nla_total_size(sizeof(u32));
+
+	return nla_total_size(len);
+}
+
 /* reply_size() handler */
 static int info_size(const struct common_req_info *req_info)
 {
@@ -98,6 +186,13 @@ static int info_size(const struct common_req_info *req_info)
 	len += dev_ident_size();
 	if (info_mask & ETH_INFO_IM_DRVINFO)
 		len += drvinfo_size(&data->drvinfo);
+	if (info_mask & ETH_INFO_IM_TSINFO) {
+		int ret = tsinfo_size(&data->tsinfo, req_info->compact);
+
+		if (ret < 0)
+			return ret;
+		len += ret;
+	}
 
 	return len;
 }
@@ -126,6 +221,44 @@ err:
 	return ret;
 }
 
+static int fill_tsinfo(struct sk_buff *skb,
+		       const struct ethtool_ts_info *tsinfo, bool compact)
+{
+	const unsigned int flags = compact ? ETHNL_BITSET_COMPACT : 0;
+	struct nlattr *nest = ethnl_nest_start(skb, ETHA_INFO_TSINFO);
+	int ret;
+
+	if (!nest)
+		return -EMSGSIZE;
+	ret = ethnl_put_bitset32(skb, ETHA_TSINFO_TIMESTAMPING,
+				 __SOF_TIMESTAMPING_COUNT,
+				 &tsinfo->so_timestamping, NULL,
+				 so_timestamping_labels, flags);
+	if (ret < 0)
+		goto err;
+	ret = -EMSGSIZE;
+	if (tsinfo->phc_index >= 0 &&
+	    nla_put_u32(skb, ETHA_TSINFO_PHC_INDEX, tsinfo->phc_index))
+		goto err;
+
+	ret = ethnl_put_bitset32(skb, ETHA_TSINFO_TX_TYPES, __HWTSTAMP_TX_COUNT,
+				 &tsinfo->tx_types, NULL, tstamp_tx_type_labels,
+				 flags);
+	if (ret < 0)
+		goto err;
+	ret = ethnl_put_bitset32(skb, ETHA_TSINFO_RX_FILTERS,
+				 __HWTSTAMP_FILTER_COUNT, &tsinfo->rx_filters,
+				 NULL, tstamp_rx_filter_labels, flags);
+	if (ret < 0)
+		goto err;
+
+	nla_nest_end(skb, nest);
+	return 0;
+err:
+	nla_nest_cancel(skb, nest);
+	return ret;
+}
+
 /* fill_reply() handler */
 static int fill_info(struct sk_buff *skb,
 		     const struct common_req_info *req_info)
@@ -137,6 +270,11 @@ static int fill_info(struct sk_buff *skb,
 
 	if (info_mask & ETH_INFO_IM_DRVINFO) {
 		ret = fill_drvinfo(skb, &data->drvinfo);
+		if (ret < 0)
+			return ret;
+	}
+	if (info_mask & ETH_INFO_IM_TSINFO) {
+		ret = fill_tsinfo(skb, &data->tsinfo, req_info->compact);
 		if (ret < 0)
 			return ret;
 	}

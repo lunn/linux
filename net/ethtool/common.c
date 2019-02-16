@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note
 
 #include <linux/rtnetlink.h>
+#include <linux/phy.h>
+#include <linux/net_tstamp.h>
 #include <net/devlink.h>
 #include "common.h"
 
@@ -132,4 +134,26 @@ int __ethtool_get_drvinfo(struct net_device *dev, struct ethtool_drvinfo *info)
 					       sizeof(info->fw_version));
 
 	return 0;
+}
+
+int __ethtool_get_ts_info(struct net_device *dev, struct ethtool_ts_info *info)
+{
+	const struct ethtool_ops *ops = dev->ethtool_ops;
+	struct phy_device *phydev = dev->phydev;
+	int err = 0;
+
+	memset(info, 0, sizeof(*info));
+	info->cmd = ETHTOOL_GET_TS_INFO;
+
+	if (phydev && phydev->drv && phydev->drv->ts_info) {
+		err = phydev->drv->ts_info(phydev, info);
+	} else if (ops->get_ts_info) {
+		err = ops->get_ts_info(dev, info);
+	} else {
+		info->so_timestamping = SOF_TIMESTAMPING_RX_SOFTWARE |
+					SOF_TIMESTAMPING_SOFTWARE;
+		info->phc_index = -1;
+	}
+
+	return err;
 }

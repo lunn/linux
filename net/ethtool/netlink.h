@@ -7,13 +7,22 @@
 #include <linux/netdevice.h>
 #include <net/genetlink.h>
 #include <net/sock.h>
+#include <linux/net_tstamp.h>
 
 #define ETHNL_SET_ERRMSG(info, msg) \
 	do { if (info) GENL_SET_ERR_MSG(info, msg); } while (0)
 
+#define __SOF_TIMESTAMPING_COUNT (const_ilog2(SOF_TIMESTAMPING_LAST) + 1)
+#define __HWTSTAMP_TX_COUNT (HWTSTAMP_TX_LAST + 1)
+#define __HWTSTAMP_FILTER_COUNT (HWTSTAMP_FILTER_LAST + 1)
+
 extern u32 ethnl_bcast_seq;
 
 extern struct genl_family ethtool_genl_family;
+
+extern const char *const so_timestamping_labels[];
+extern const char *const tstamp_tx_type_labels[];
+extern const char *const tstamp_rx_filter_labels[];
 
 struct net_device *ethnl_dev_get(struct genl_info *info, struct nlattr *nest);
 int ethnl_fill_dev(struct sk_buff *msg, struct net_device *dev, u16 attrtype);

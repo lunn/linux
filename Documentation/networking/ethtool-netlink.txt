@@ -240,12 +240,20 @@ Kernel response contents:
         ETHA_DRVINFO_FWVERSION		(string)	firmware version
         ETHA_DRVINFO_BUSINFO		(string)	device bus address
         ETHA_DRVINFO_EROM_VER		(string)	expansion ROM version
+    ETHA_INFO_TSINFO		(nested)	timestamping information
+        ETHA_TSINFO_TIMESTAMPING	(bitset)	supported flags
+        ETHA_TSINFO_PHC_INDEX		(u32)		associated PHC
+        ETHA_TSINFO_TX_TYPES		(bitset)	Tx types
+        ETHA_TSINFO_RX_FILTERS		(bitset)	Rx filters
 
 The meaning of DRVINFO attributes follows the corresponding fields of
 ETHTOOL_GDRVINFO response. Second part with various counts and sizes is
 omitted as these are not really needed (and if they are, they can be easily
 found by different means). Driver version is also omitted as it is rather
 misleading in most cases.
+
+ETHA_TSINFO_PHC_INDEX can be unsigned as there is no need for special value;
+if no PHC is associated, the attribute is not present.
 
 GET_INFO requests allow dumps.
 
@@ -322,7 +330,7 @@ ETHTOOL_SCHANNELS		n/a
 ETHTOOL_SET_DUMP		n/a
 ETHTOOL_GET_DUMP_FLAG		n/a
 ETHTOOL_GET_DUMP_DATA		n/a
-ETHTOOL_GET_TS_INFO		n/a
+ETHTOOL_GET_TS_INFO		ETHNL_CMD_GET_INFO
 ETHTOOL_GMODULEINFO		n/a
 ETHTOOL_GMODULEEEPROM		n/a
 ETHTOOL_GEEE			n/a
