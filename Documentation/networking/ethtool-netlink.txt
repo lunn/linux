@@ -127,6 +127,8 @@ List of message types
     ETHNL_CMD_SET_STRSET		response only
     ETHNL_CMD_GET_INFO
     ETHNL_CMD_SET_INFO			response only
+    ETHNL_CMD_GET_SETTINGS
+    ETHNL_CMD_SET_SETTINGS		response only (for now)
 
 All constants use ETHNL_CMD_ prefix, usually followed by "GET", "SET" or "ACT"
 to indicate the type.
@@ -254,6 +256,50 @@ value; if no PHC is associated, the attribute is not present.
 GET_INFO requests allow dumps.
 
 
+GET_SETTINGS
+------------
+
+GET_SETTINGS request retrieves information provided by ETHTOOL_GLINKSETTINGS,
+ETHTOOL_GWOL, ETHTOOL_GMSGLVL and ETHTOOL_GLINK ioctl requests. The request
+doesn't use any attributes.
+
+Request attributes:
+
+    ETHTOOL_A_SETTINGS_DEV		(nested)	device identification
+    ETHTOOL_A_SETTINGS_INFOMASK		(u32)		info mask
+    ETHTOOL_A_SETTINGS_COMPACT		(flag)		compact bitsets
+
+Info mask bits meaning:
+
+    ETHTOOL_IM_SETTINGS_LINKINFO	link settings
+    ETHTOOL_IM_SETTINGS_LINKMODES	link modes and related
+
+Response contents:
+
+    ETHTOOL_A_SETTINGS_DEV		(nested)	device identification
+    ETHTOOL_A_SETTINGS_LINK_INFO	(nested)	link settings
+        ETHTOOL_A_LINKINFO_PORT		    (u8)	    physical port
+        ETHTOOL_A_LINKINFO_PHYADDR	    (u8)	    phy MDIO address
+        ETHTOOL_A_LINKINFO_TP_MDIX	    (u8)	    MDI(-X) status
+        ETHTOOL_A_LINKINFO_TP_MDIX_CTRL	    (u8)	    MDI(-X) control
+        ETHTOOL_A_LINKINFO_TRANSCEIVER	    (u8)	    transceiver
+    ETHTOOL_A_SETTINGS_LINK_MODES	(nested)	link modes
+        ETHTOOL_A_LINKMODES_AUTONEG	    (u8)	    autonegotiation status
+        ETHTOOL_A_LINKMODES_OURS	    (bitset)	    advertised link modes
+        ETHTOOL_A_LINKMODES_PEER	    (bitset)	    partner link modes
+        ETHTOOL_A_LINKMODES_SPEED	    (u32)	    link speed (Mb/s)
+        ETHTOOL_A_LINKMODES_DUPLEX	    (u8)	    duplex mode
+
+Most of the attributes and their values have the same meaning as matching
+members of the corresponding ioctl structures. For ETHTOOL_A_LINKMODES_OURS,
+value represents advertised modes and mask represents supported modes.
+ETHTOOL_A_LINKMODES_PEER in the reply is a bit list.
+
+GET_SETTINGS requests allow dumps and messages in the same format as response
+to them are broadcasted as notifications on change of these settings using
+netlink or ioctl ethtool interface.
+
+
 Request translation
 -------------------
 
@@ -263,7 +309,7 @@ have their netlink replacement yet.
 
 ioctl command			netlink command
 ---------------------------------------------------------------------
-ETHTOOL_GSET			n/a
+ETHTOOL_GSET			ETHNL_CMD_GET_SETTINGS
 ETHTOOL_SSET			n/a
 ETHTOOL_GDRVINFO		ETHNL_CMD_GET_INFO
 ETHTOOL_GREGS			n/a
@@ -337,7 +383,7 @@ ETHTOOL_GTUNABLE		n/a
 ETHTOOL_STUNABLE		n/a
 ETHTOOL_GPHYSTATS		n/a
 ETHTOOL_PERQUEUE		n/a
-ETHTOOL_GLINKSETTINGS		n/a
+ETHTOOL_GLINKSETTINGS		ETHNL_CMD_GET_SETTINGS
 ETHTOOL_SLINKSETTINGS		n/a
 ETHTOOL_PHY_GTUNABLE		n/a
 ETHTOOL_PHY_STUNABLE		n/a
