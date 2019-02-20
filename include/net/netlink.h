@@ -913,6 +913,15 @@ static inline int nla_parse_nested(struct nlattr *tb[], int maxtype,
 			 extack);
 }
 
+static inline int nla_parse_nested_strict(struct nlattr *tb[], int maxtype,
+					  const struct nlattr *nla,
+					  const struct nla_policy *policy,
+					  struct netlink_ext_ack *extack)
+{
+	return nla_parse_strict(tb, maxtype, nla_data(nla), nla_len(nla),
+				policy, extack);
+}
+
 /**
  * nla_put_u8 - Add a u8 netlink attribute to a socket buffer
  * @skb: socket buffer to add attribute to
