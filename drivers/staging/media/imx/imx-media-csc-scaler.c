@@ -220,6 +220,19 @@ static int ipu_csc_scaler_try_fmt(struct file *file, void *priv,
 		test_out.pix : test_in.pix;
 
 	if (f->type == V4L2_BUF_TYPE_VIDEO_CAPTURE) {
+		/*
+		 * HACK: round up 32 pixels / 8 lines to satisfy freedreno GMEM
+		 * width alignment and etnaviv RS alignment. This allows direct
+		 * import on i.MX51 and i.MX6.
+		 */
+		if (f->fmt.pix.pixelformat == V4L2_PIX_FMT_RGB565 ||
+		    f->fmt.pix.pixelformat == V4L2_PIX_FMT_YUYV) {
+			f->fmt.pix.bytesperline =
+				round_up(f->fmt.pix.bytesperline, 64);
+			f->fmt.pix.sizeimage = f->fmt.pix.bytesperline *
+				round_up(f->fmt.pix.height, 8);
+		}
+
 		f->fmt.pix.colorspace = q_data->cur_fmt.colorspace;
 		f->fmt.pix.xfer_func = q_data->cur_fmt.xfer_func;
 	} else if (f->fmt.pix.colorspace == V4L2_COLORSPACE_DEFAULT) {
