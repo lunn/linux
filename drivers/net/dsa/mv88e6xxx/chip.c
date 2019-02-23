@@ -2406,6 +2406,18 @@ static void mv88e6xxx_port_disable(struct dsa_switch *ds, int port)
 	mutex_unlock(&chip->reg_lock);
 }
 
+static int mv88e6xxx_port_unused(struct mv88e6xxx_chip *chip, int port)
+{
+	int err;
+
+	err = mv88e6xxx_port_set_state(chip, port, BR_STATE_DISABLED);
+	if (err)
+		return err;
+
+	return mv88e6xxx_serdes_power(chip, port, false);
+}
+
+
 static int mv88e6xxx_set_ageing_time(struct dsa_switch *ds,
 				     unsigned int ageing_time)
 {
@@ -2565,8 +2577,13 @@ static int mv88e6xxx_setup(struct dsa_switch *ds)
 
 	/* Setup Switch Port Registers */
 	for (i = 0; i < mv88e6xxx_num_ports(chip); i++) {
-		if (dsa_is_unused_port(ds, i))
+		if (dsa_is_unused_port(ds, i)) {
+			err = mv88e6xxx_port_unused(chip, i);
+			if (err)
+				goto unlock;
+
 			continue;
+		}
 
 		err = mv88e6xxx_setup_port(chip, i);
 		if (err)
