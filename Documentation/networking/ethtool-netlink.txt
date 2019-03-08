@@ -132,7 +132,7 @@ List of message types
     ETHNL_CMD_GET_INFO
     ETHNL_CMD_SET_INFO			response only
     ETHNL_CMD_GET_SETTINGS
-    ETHNL_CMD_SET_SETTINGS		response only (for now)
+    ETHNL_CMD_SET_SETTINGS
 
 All constants use ETHNL_CMD_ prefix, usually followed by "GET", "SET" or "ACT"
 to indicate the type.
@@ -304,6 +304,34 @@ to them are broadcasted as notifications on change of these settings using
 netlink or ioctl ethtool interface.
 
 
+SET_SETTINGS
+------------
+
+SET_SETTINGS request allows setting some of the data reported by GET_SETTINGS.
+Request flags, info_mask and index are ignored. These attributes are allowed
+to be passed with SET_SETTINGS request:
+
+    ETHA_SETTINGS_DEV		(nested)	device identification
+    ETHA_SETTINGS_LINK_INFO	(nested)	link settings
+        ETHA_LINKINFO_PORT		(u8)		physical port
+        ETHA_LINKINFO_PHYADDR		(u8)		MDIO address of phy
+        ETHA_LINKINFO_TP_MDIX_CTRL	(u8)		MDI(-X) control
+    ETHA_SETTINGS_LINK_MODES	(nested)	link modes
+        ETHA_LINKMODES_AUTONEG		(u8)		autonegotiation
+        ETHA_LINKMODES_OURS		(bitset)	advertised link modes
+        ETHA_LINKMODES_SPEED		(u32)		link speed (Mb/s)
+        ETHA_LINKMODES_DUPLEX		(u8)		duplex mode
+
+ETHA_LINKMODES_OURS bit set allows setting advertised link modes. If
+autonegotiation is on (either set now or kept from before), advertised modes
+are not changed (no ETHA_LINKMODES_OURS attribute) and at least one of speed
+and duplex is specified, kernel adjusts advertised modes to all supported
+modes matching speed, duplex or both (whatever is specified). This
+autoselection is done on ethtool side with ioctl interface, netlink interface
+is supposed to allow requesting changes without knowing what exactly kernel
+supports.
+
+
 Request translation
 -------------------
 
@@ -314,7 +342,7 @@ have their netlink replacement yet.
 ioctl command			netlink command
 ---------------------------------------------------------------------
 ETHTOOL_GSET			ETHNL_CMD_GET_SETTINGS
-ETHTOOL_SSET			n/a
+ETHTOOL_SSET			ETHNL_CMD_SET_SETTINGS
 ETHTOOL_GDRVINFO		ETHNL_CMD_GET_INFO
 ETHTOOL_GREGS			n/a
 ETHTOOL_GWOL			n/a
@@ -388,7 +416,7 @@ ETHTOOL_STUNABLE		n/a
 ETHTOOL_GPHYSTATS		n/a
 ETHTOOL_PERQUEUE		n/a
 ETHTOOL_GLINKSETTINGS		ETHNL_CMD_GET_SETTINGS
-ETHTOOL_SLINKSETTINGS		n/a
+ETHTOOL_SLINKSETTINGS		ETHNL_CMD_SET_SETTINGS
 ETHTOOL_PHY_GTUNABLE		n/a
 ETHTOOL_PHY_STUNABLE		n/a
 ETHTOOL_GFECPARAM		n/a

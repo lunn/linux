@@ -14,6 +14,97 @@ struct settings_data {
 	bool				lpm_empty;
 };
 
+struct link_mode_info {
+	int				speed;
+	u8				duplex;
+};
+
+#define __DEFINE_LINK_MODE_PARAMS(_speed, _type, _duplex) \
+	[ETHTOOL_LINK_MODE(_speed, _type, _duplex)] = { \
+		.speed	= SPEED_ ## _speed, \
+		.duplex	= __DUPLEX_ ## _duplex \
+	}
+#define __DUPLEX_Half DUPLEX_HALF
+#define __DUPLEX_Full DUPLEX_FULL
+#define __DEFINE_SPECIAL_MODE_PARAMS(_mode) \
+	[ETHTOOL_LINK_MODE_ ## _mode ## _BIT] = { \
+		.speed	= SPEED_UNKNOWN, \
+		.duplex	= DUPLEX_UNKNOWN, \
+	}
+
+static const struct link_mode_info link_mode_params[] = {
+	__DEFINE_LINK_MODE_PARAMS(10, T, Half),
+	__DEFINE_LINK_MODE_PARAMS(10, T, Full),
+	__DEFINE_LINK_MODE_PARAMS(100, T, Half),
+	__DEFINE_LINK_MODE_PARAMS(100, T, Full),
+	__DEFINE_LINK_MODE_PARAMS(1000, T, Half),
+	__DEFINE_LINK_MODE_PARAMS(1000, T, Full),
+	__DEFINE_SPECIAL_MODE_PARAMS(Autoneg),
+	__DEFINE_SPECIAL_MODE_PARAMS(TP),
+	__DEFINE_SPECIAL_MODE_PARAMS(AUI),
+	__DEFINE_SPECIAL_MODE_PARAMS(MII),
+	__DEFINE_SPECIAL_MODE_PARAMS(FIBRE),
+	__DEFINE_SPECIAL_MODE_PARAMS(BNC),
+	__DEFINE_LINK_MODE_PARAMS(10000, T, Full),
+	__DEFINE_SPECIAL_MODE_PARAMS(Pause),
+	__DEFINE_SPECIAL_MODE_PARAMS(Asym_Pause),
+	__DEFINE_LINK_MODE_PARAMS(2500, X, Full),
+	__DEFINE_SPECIAL_MODE_PARAMS(Backplane),
+	__DEFINE_LINK_MODE_PARAMS(1000, KX, Full),
+	__DEFINE_LINK_MODE_PARAMS(10000, KX4, Full),
+	__DEFINE_LINK_MODE_PARAMS(10000, KR, Full),
+	[ETHTOOL_LINK_MODE_10000baseR_FEC_BIT] = {
+		.speed	= SPEED_10000,
+		.duplex = DUPLEX_FULL,
+	},
+	__DEFINE_LINK_MODE_PARAMS(20000, MLD2, Full),
+	__DEFINE_LINK_MODE_PARAMS(20000, KR2, Full),
+	__DEFINE_LINK_MODE_PARAMS(40000, KR4, Full),
+	__DEFINE_LINK_MODE_PARAMS(40000, CR4, Full),
+	__DEFINE_LINK_MODE_PARAMS(40000, SR4, Full),
+	__DEFINE_LINK_MODE_PARAMS(40000, LR4, Full),
+	__DEFINE_LINK_MODE_PARAMS(56000, KR4, Full),
+	__DEFINE_LINK_MODE_PARAMS(56000, CR4, Full),
+	__DEFINE_LINK_MODE_PARAMS(56000, SR4, Full),
+	__DEFINE_LINK_MODE_PARAMS(56000, LR4, Full),
+	__DEFINE_LINK_MODE_PARAMS(25000, CR, Full),
+	__DEFINE_LINK_MODE_PARAMS(25000, KR, Full),
+	__DEFINE_LINK_MODE_PARAMS(25000, SR, Full),
+	__DEFINE_LINK_MODE_PARAMS(50000, CR2, Full),
+	__DEFINE_LINK_MODE_PARAMS(50000, KR2, Full),
+	__DEFINE_LINK_MODE_PARAMS(100000, KR4, Full),
+	__DEFINE_LINK_MODE_PARAMS(100000, SR4, Full),
+	__DEFINE_LINK_MODE_PARAMS(100000, CR4, Full),
+	__DEFINE_LINK_MODE_PARAMS(100000, LR4_ER4, Full),
+	__DEFINE_LINK_MODE_PARAMS(50000, SR2, Full),
+	__DEFINE_LINK_MODE_PARAMS(1000, X, Full),
+	__DEFINE_LINK_MODE_PARAMS(10000, CR, Full),
+	__DEFINE_LINK_MODE_PARAMS(10000, SR, Full),
+	__DEFINE_LINK_MODE_PARAMS(10000, LR, Full),
+	__DEFINE_LINK_MODE_PARAMS(10000, LRM, Full),
+	__DEFINE_LINK_MODE_PARAMS(10000, ER, Full),
+	__DEFINE_LINK_MODE_PARAMS(2500, T, Full),
+	__DEFINE_LINK_MODE_PARAMS(5000, T, Full),
+	__DEFINE_SPECIAL_MODE_PARAMS(FEC_NONE),
+	__DEFINE_SPECIAL_MODE_PARAMS(FEC_RS),
+	__DEFINE_SPECIAL_MODE_PARAMS(FEC_BASER),
+	__DEFINE_LINK_MODE_PARAMS(50000, KR, Full),
+	__DEFINE_LINK_MODE_PARAMS(50000, SR, Full),
+	__DEFINE_LINK_MODE_PARAMS(50000, CR, Full),
+	__DEFINE_LINK_MODE_PARAMS(50000, LR_ER_FR, Full),
+	__DEFINE_LINK_MODE_PARAMS(50000, DR, Full),
+	__DEFINE_LINK_MODE_PARAMS(100000, KR2, Full),
+	__DEFINE_LINK_MODE_PARAMS(100000, SR2, Full),
+	__DEFINE_LINK_MODE_PARAMS(100000, CR2, Full),
+	__DEFINE_LINK_MODE_PARAMS(100000, LR2_ER2_FR2, Full),
+	__DEFINE_LINK_MODE_PARAMS(100000, DR2, Full),
+	__DEFINE_LINK_MODE_PARAMS(200000, KR4, Full),
+	__DEFINE_LINK_MODE_PARAMS(200000, SR4, Full),
+	__DEFINE_LINK_MODE_PARAMS(200000, LR4_ER4_FR4, Full),
+	__DEFINE_LINK_MODE_PARAMS(200000, DR4, Full),
+	__DEFINE_LINK_MODE_PARAMS(200000, CR4, Full),
+};
+
 static const struct nla_policy get_settings_policy[ETHA_SETTINGS_MAX + 1] = {
 	[ETHA_SETTINGS_UNSPEC]		= { .type = NLA_REJECT },
 	[ETHA_SETTINGS_DEV]		= { .type = NLA_NESTED },
@@ -275,3 +366,217 @@ const struct get_request_ops settings_request_ops = {
 	.reply_size		= settings_size,
 	.fill_reply		= fill_settings,
 };
+
+/* SET_SETTINGS */
+
+static const struct nla_policy set_linkinfo_policy[ETHA_LINKINFO_MAX + 1] = {
+	[ETHA_LINKINFO_UNSPEC]		= { .type = NLA_REJECT },
+	[ETHA_LINKINFO_PORT]		= { .type = NLA_U8 },
+	[ETHA_LINKINFO_PHYADDR]		= { .type = NLA_U8 },
+	[ETHA_LINKINFO_TP_MDIX]		= { .type = NLA_REJECT },
+	[ETHA_LINKINFO_TP_MDIX_CTRL]	= { .type = NLA_U8 },
+	[ETHA_LINKINFO_TRANSCEIVER]	= { .type = NLA_REJECT },
+};
+
+static const struct nla_policy set_linkmodes_policy[ETHA_LINKMODES_MAX + 1] = {
+	[ETHA_LINKMODES_UNSPEC]		= { .type = NLA_REJECT },
+	[ETHA_LINKMODES_AUTONEG]	= { .type = NLA_U8 },
+	[ETHA_LINKMODES_OURS]		= { .type = NLA_NESTED },
+	[ETHA_LINKMODES_PEER]		= { .type = NLA_REJECT },
+	[ETHA_LINKMODES_SPEED]		= { .type = NLA_U32 },
+	[ETHA_LINKMODES_DUPLEX]		= { .type = NLA_U8 },
+};
+
+static const struct nla_policy set_settings_policy[ETHA_SETTINGS_MAX + 1] = {
+	[ETHA_SETTINGS_UNSPEC]		= { .type = NLA_REJECT },
+	[ETHA_SETTINGS_DEV]		= { .type = NLA_NESTED },
+	[ETHA_SETTINGS_INFOMASK]	= { .type = NLA_REJECT },
+	[ETHA_SETTINGS_COMPACT]		= { .type = NLA_FLAG },
+	[ETHA_SETTINGS_LINK_INFO]	= { .type = NLA_NESTED },
+	[ETHA_SETTINGS_LINK_MODES]	= { .type = NLA_NESTED },
+};
+
+static int ethnl_set_link_ksettings(struct genl_info *info,
+				    struct net_device *dev,
+				    struct ethtool_link_ksettings *ksettings)
+{
+	int ret = dev->ethtool_ops->set_link_ksettings(dev, ksettings);
+
+	if (ret < 0)
+		ETHNL_SET_ERRMSG(info, "link settings update failed");
+	return ret;
+}
+
+/* Set advertised link modes to all supported modes matching requested speed
+ * and duplex values. Called when autonegotiation is on, speed or duplex is
+ * requested but no link mode change. This is done in userspace with ioctl()
+ * interface, move it into kernel for netlink.
+ * Returns true if advertised modes bitmap was modified.
+ */
+static bool auto_link_modes(struct ethtool_link_ksettings *ksettings,
+			    bool req_speed, bool req_duplex)
+{
+	unsigned long *advertising = ksettings->link_modes.advertising;
+	unsigned long *supported = ksettings->link_modes.supported;
+	DECLARE_BITMAP(old_adv, __ETHTOOL_LINK_MODE_MASK_NBITS);
+	unsigned int i;
+
+	bitmap_copy(old_adv, advertising, __ETHTOOL_LINK_MODE_MASK_NBITS);
+
+	for (i = 0; i < __ETHTOOL_LINK_MODE_MASK_NBITS; i++) {
+		const struct link_mode_info *info = &link_mode_params[i];
+
+		if (info->speed == SPEED_UNKNOWN)
+			continue;
+		if (test_bit(i, supported) &&
+		    (!req_speed || info->speed == ksettings->base.speed) &&
+		    (!req_duplex || info->duplex == ksettings->base.duplex))
+			set_bit(i, advertising);
+		else
+			clear_bit(i, advertising);
+	}
+
+	return !bitmap_equal(old_adv, advertising,
+			     __ETHTOOL_LINK_MODE_MASK_NBITS);
+}
+
+static int update_linkinfo(struct genl_info *info, struct nlattr *nest,
+			   struct ethtool_link_settings *lsettings)
+{
+	struct nlattr *tb[ETHA_LINKINFO_MAX + 1];
+	int ret;
+
+	if (!nest)
+		return 0;
+	ret = nla_parse_nested_strict(tb, ETHA_LINKINFO_MAX, nest,
+				      set_linkinfo_policy, info->extack);
+	if (ret < 0)
+		return ret;
+
+	ret = 0;
+	if (ethnl_update_u8(&lsettings->port, tb[ETHA_LINKINFO_PORT]))
+		ret = 1;
+	if (ethnl_update_u8(&lsettings->phy_address, tb[ETHA_LINKINFO_PHYADDR]))
+		ret = 1;
+	if (ethnl_update_u8(&lsettings->eth_tp_mdix_ctrl,
+			    tb[ETHA_LINKINFO_TP_MDIX_CTRL]))
+		ret = 1;
+
+	return ret;
+}
+
+static int update_link_modes(struct genl_info *info, const struct nlattr *nest,
+			     struct ethtool_link_ksettings *ksettings)
+{
+	struct ethtool_link_settings *lsettings = &ksettings->base;
+	struct nlattr *tb[ETHA_LINKMODES_MAX + 1];
+	bool req_speed, req_duplex;
+	bool mod = false;
+	int ret;
+
+	if (!nest)
+		return 0;
+	ret = nla_parse_nested_strict(tb, ETHA_LINKMODES_MAX, nest,
+				      set_linkmodes_policy, info->extack);
+	if (ret < 0)
+		return ret;
+	req_speed = tb[ETHA_LINKMODES_SPEED];
+	req_duplex = tb[ETHA_LINKMODES_DUPLEX];
+
+	if (ethnl_update_u8(&lsettings->autoneg, tb[ETHA_LINKMODES_AUTONEG]))
+		mod = true;
+	if (ethnl_update_bitset(ksettings->link_modes.advertising, NULL,
+				__ETHTOOL_LINK_MODE_MASK_NBITS,
+				tb[ETHA_LINKMODES_OURS],
+				&ret, link_mode_names, false, info))
+		mod = true;
+	if (ret < 0)
+		return ret;
+	if (ethnl_update_u32(&lsettings->speed, tb[ETHA_LINKMODES_SPEED]))
+		mod = true;
+	if (ethnl_update_u8(&lsettings->duplex, tb[ETHA_LINKMODES_DUPLEX]))
+		mod = true;
+
+	if (!tb[ETHA_LINKMODES_OURS] && lsettings->autoneg &&
+	    (req_speed || req_duplex) &&
+	    auto_link_modes(ksettings, req_speed, req_duplex))
+		mod = true;
+
+	return mod;
+}
+
+/* Update device settings using ->set_link_ksettings() callback */
+static int ethnl_update_ksettings(struct genl_info *info, struct nlattr **tb,
+				  struct net_device *dev, u32 *req_mask)
+{
+	struct ethtool_link_ksettings ksettings = {};
+	struct ethtool_link_settings *lsettings;
+	u32 mod_mask = 0;
+	int ret;
+
+	ret = ethnl_get_link_ksettings(info, dev, &ksettings);
+	if (ret < 0)
+		return ret;
+	lsettings = &ksettings.base;
+
+	ret = update_linkinfo(info, tb[ETHA_SETTINGS_LINK_INFO], lsettings);
+	if (ret < 0)
+		return ret;
+	if (ret)
+		mod_mask |= ETH_SETTINGS_IM_LINKINFO;
+
+	ret = update_link_modes(info, tb[ETHA_SETTINGS_LINK_MODES], &ksettings);
+	if (ret < 0)
+		return ret;
+	if (ret)
+		mod_mask |= ETH_SETTINGS_IM_LINKMODES;
+
+	if (mod_mask) {
+		ret = ethnl_set_link_ksettings(info, dev, &ksettings);
+		if (ret < 0)
+			return ret;
+		*req_mask |= mod_mask;
+	}
+
+	return 0;
+}
+
+int ethnl_set_settings(struct sk_buff *skb, struct genl_info *info)
+{
+	struct nlattr *tb[ETHA_SETTINGS_MAX + 1];
+	struct net_device *dev;
+	u32 req_mask = 0;
+	int ret;
+
+	ret = ethnlmsg_parse(info->nlhdr, tb, ETHA_SETTINGS_MAX,
+			     set_settings_policy, info);
+	if (ret < 0)
+		return ret;
+	dev = ethnl_dev_get(info, tb[ETHA_SETTINGS_DEV]);
+	if (IS_ERR(dev))
+		return PTR_ERR(dev);
+
+	rtnl_lock();
+	ret = ethnl_before_ops(dev);
+	if (ret < 0)
+		goto out_rtnl;
+	if (tb[ETHA_SETTINGS_LINK_INFO] || tb[ETHA_SETTINGS_LINK_MODES]) {
+		ret = -EOPNOTSUPP;
+		if (!dev->ethtool_ops->get_link_ksettings)
+			goto out_ops;
+		ret = ethnl_update_ksettings(info, tb, dev, &req_mask);
+		if (ret < 0)
+			goto out_ops;
+	}
+	ret = 0;
+
+out_ops:
+	if (req_mask)
+		ethtool_notify(dev, NULL, ETHNL_CMD_SET_SETTINGS, req_mask,
+			       NULL);
+	ethnl_after_ops(dev);
+out_rtnl:
+	rtnl_unlock();
+	dev_put(dev);
+	return ret;
+}
