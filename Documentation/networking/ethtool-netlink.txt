@@ -345,6 +345,8 @@ to be passed with SET_SETTINGS request:
     ETHA_SETTINGS_WOL		(nested)	wake on LAN settings
         ETHA_WOL_MODES			(bitfield32)	wake on LAN modes
         ETHA_WOL_SOPASS			(binary)	SecureOn(tm) password
+    ETHA_SETTINGS_DEBUG		(nested)	debugging
+        ETHA_DEBUG_MSG_MASK		(bitfield32)	message mask
 
 ETHA_LINKMODES_OURS bit set allows setting advertised link modes. If
 autonegotiation is on (either set now or kept from before), advertised modes
@@ -360,7 +362,9 @@ selector are set to 0 or 1 according to value. To allow the semantics of the
 ioctl interface where the whole bitmap is set rather than only modified,
 selectors may have also bits not supported by device set and an error is only
 issued if any of them is also set in the value (i.e. if userspace tries to
-enable mode not supported by device).
+enable mode not supported by device). ETHA_SETTINGS_MSGLEVEL bitfield also
+allows bits not recognized by kernel in selector as long as the request does
+not attempt to enable them.
 
 
 Request translation
@@ -379,7 +383,7 @@ ETHTOOL_GREGS			n/a
 ETHTOOL_GWOL			ETHNL_CMD_GET_SETTINGS
 ETHTOOL_SWOL			ETHNL_CMD_SET_SETTINGS
 ETHTOOL_GMSGLVL			ETHNL_CMD_GET_SETTINGS
-ETHTOOL_SMSGLVL			n/a
+ETHTOOL_SMSGLVL			ETHNL_CMD_SET_SETTINGS
 ETHTOOL_NWAY_RST		n/a
 ETHTOOL_GLINK			ETHNL_CMD_GET_SETTINGS
 ETHTOOL_GEEPROM			n/a

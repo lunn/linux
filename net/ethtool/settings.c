@@ -538,6 +538,12 @@ static const struct nla_policy set_wol_policy[ETHA_LINKINFO_MAX + 1] = {
 					    .len = SOPASS_MAX },
 };
 
+static const struct nla_policy set_debug_policy[ETHA_DEBUG_MAX + 1] = {
+	[ETHA_DEBUG_UNSPEC]		= { .type = NLA_REJECT },
+	[ETHA_DEBUG_MSG_MASK]		= { .type = NLA_BITFIELD32,
+					    .validation_data = &all_bits },
+};
+
 static const struct nla_policy set_settings_policy[ETHA_SETTINGS_MAX + 1] = {
 	[ETHA_SETTINGS_UNSPEC]		= { .type = NLA_REJECT },
 	[ETHA_SETTINGS_DEV]		= { .type = NLA_NESTED },
@@ -547,7 +553,7 @@ static const struct nla_policy set_settings_policy[ETHA_SETTINGS_MAX + 1] = {
 	[ETHA_SETTINGS_LINK_MODES]	= { .type = NLA_NESTED },
 	[ETHA_SETTINGS_LINK_STATE]	= { .type = NLA_REJECT },
 	[ETHA_SETTINGS_WOL]		= { .type = NLA_NESTED },
-	[ETHA_SETTINGS_DEBUG]		= { .type = NLA_REJECT },
+	[ETHA_SETTINGS_DEBUG]		= { .type = NLA_NESTED },
 };
 
 static int ethnl_set_link_ksettings(struct genl_info *info,
@@ -732,6 +738,36 @@ static int update_wol(struct genl_info *info, struct nlattr *nest,
 	return ret;
 }
 
+static int update_debug(struct genl_info *info, struct nlattr *nest,
+			struct net_device *dev)
+{
+	struct nlattr *tb[ETHA_DEBUG_MAX + 1];
+	u32 msglevel;
+	int ret;
+
+	if (!nest)
+		return 0;
+	ret = nla_parse_nested_strict(tb, ETHA_DEBUG_MAX, nest,
+				      set_debug_policy, info->extack);
+	if (ret < 0)
+		return ret;
+
+	if (!dev->ethtool_ops->get_msglevel ||
+	    !dev->ethtool_ops->set_msglevel) {
+		ETHNL_SET_ERRMSG(info,
+				 "device does not provide msglvl access");
+		return -EOPNOTSUPP;
+	}
+	ret = 0;
+	msglevel = dev->ethtool_ops->get_msglevel(dev);
+	if (ethnl_update_bitfield32(&msglevel, tb[ETHA_DEBUG_MSG_MASK])) {
+		dev->ethtool_ops->set_msglevel(dev, msglevel);
+		ret = 1;
+	}
+
+	return ret;
+}
+
 int ethnl_set_settings(struct sk_buff *skb, struct genl_info *info)
 {
 	struct nlattr *tb[ETHA_SETTINGS_MAX + 1];
@@ -765,6 +801,13 @@ int ethnl_set_settings(struct sk_buff *skb, struct genl_info *info)
 			goto out_ops;
 		if (ret)
 			req_mask |= ETH_SETTINGS_IM_WOL;
+	}
+	if (tb[ETHA_SETTINGS_DEBUG]) {
+		ret = update_debug(info, tb[ETHA_SETTINGS_DEBUG], dev);
+		if (ret < 0)
+			goto out_ops;
+		if (ret)
+			req_mask |= ETH_SETTINGS_IM_DEBUG;
 	}
 	ret = 0;
 
