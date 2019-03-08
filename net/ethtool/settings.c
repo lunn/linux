@@ -108,6 +108,12 @@ static const struct link_mode_info link_mode_params[] = {
 	__DEFINE_LINK_MODE_PARAMS(200000, CR4, Full),
 };
 
+/* We want to allow ~0 as selector for backward compatibility (to just set
+ * given set of modes, whatever kernel supports) so that we allow all bits
+ * on validation and do our own sanity check later.
+ */
+static u32 all_bits = ~(u32)0;
+
 static const struct nla_policy get_settings_policy[ETHA_SETTINGS_MAX + 1] = {
 	[ETHA_SETTINGS_UNSPEC]		= { .type = NLA_REJECT },
 	[ETHA_SETTINGS_DEV]		= { .type = NLA_NESTED },
@@ -485,6 +491,14 @@ static const struct nla_policy set_linkmodes_policy[ETHA_LINKMODES_MAX + 1] = {
 	[ETHA_LINKMODES_DUPLEX]		= { .type = NLA_U8 },
 };
 
+static const struct nla_policy set_wol_policy[ETHA_LINKINFO_MAX + 1] = {
+	[ETHA_WOL_UNSPEC]		= { .type = NLA_REJECT },
+	[ETHA_WOL_MODES]		= { .type = NLA_BITFIELD32,
+					    .validation_data = &all_bits },
+	[ETHA_WOL_SOPASS]		= { .type = NLA_BINARY,
+					    .len = SOPASS_MAX },
+};
+
 static const struct nla_policy set_settings_policy[ETHA_SETTINGS_MAX + 1] = {
 	[ETHA_SETTINGS_UNSPEC]		= { .type = NLA_REJECT },
 	[ETHA_SETTINGS_DEV]		= { .type = NLA_NESTED },
@@ -493,7 +507,7 @@ static const struct nla_policy set_settings_policy[ETHA_SETTINGS_MAX + 1] = {
 	[ETHA_SETTINGS_LINK_INFO]	= { .type = NLA_NESTED },
 	[ETHA_SETTINGS_LINK_MODES]	= { .type = NLA_NESTED },
 	[ETHA_SETTINGS_LINK_STATE]	= { .type = NLA_REJECT },
-	[ETHA_SETTINGS_WOL]		= { .type = NLA_REJECT },
+	[ETHA_SETTINGS_WOL]		= { .type = NLA_NESTED },
 };
 
 static int ethnl_set_link_ksettings(struct genl_info *info,
@@ -641,6 +655,43 @@ static int ethnl_update_ksettings(struct genl_info *info, struct nlattr **tb,
 	return 0;
 }
 
+static int update_wol(struct genl_info *info, struct nlattr *nest,
+		      struct net_device *dev)
+{
+	struct nlattr *tb[ETHA_WOL_MAX + 1];
+	struct ethtool_wolinfo wolinfo = {};
+	int ret;
+
+	if (!nest)
+		return 0;
+	ret = nla_parse_nested_strict(tb, ETHA_WOL_MAX, nest, set_wol_policy,
+				      info->extack);
+	if (ret < 0)
+		return ret;
+
+	ret = ethnl_get_wol(info, dev, &wolinfo);
+	if (ret < 0) {
+		ETHNL_SET_ERRMSG(info, "failed to get wol settings");
+		return ret;
+	}
+
+	ret = 0;
+	if (ethnl_update_bitfield32(&wolinfo.wolopts, tb[ETHA_WOL_MODES]))
+		ret = 1;
+	if (ethnl_update_binary(wolinfo.sopass, SOPASS_MAX,
+				tb[ETHA_WOL_SOPASS]))
+		ret = 1;
+	if (ret) {
+		int ret2 = dev->ethtool_ops->set_wol(dev, &wolinfo);
+		if (ret2 < 0) {
+			ETHNL_SET_ERRMSG(info, "wol info update failed");
+			ret = ret2;
+		}
+	}
+
+	return ret;
+}
+
 int ethnl_set_settings(struct sk_buff *skb, struct genl_info *info)
 {
 	struct nlattr *tb[ETHA_SETTINGS_MAX + 1];
@@ -667,6 +718,13 @@ int ethnl_set_settings(struct sk_buff *skb, struct genl_info *info)
 		ret = ethnl_update_ksettings(info, tb, dev, &req_mask);
 		if (ret < 0)
 			goto out_ops;
+	}
+	if (tb[ETHA_SETTINGS_WOL]) {
+		ret = update_wol(info, tb[ETHA_SETTINGS_WOL], dev);
+		if (ret < 0)
+			goto out_ops;
+		if (ret)
+			req_mask |= ETH_SETTINGS_IM_WOL;
 	}
 	ret = 0;
 
