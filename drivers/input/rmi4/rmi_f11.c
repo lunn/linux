@@ -1195,6 +1195,16 @@ static int rmi_f11_initialize(struct rmi_function *fn)
 		ctrl->ctrl0_11[RMI_F11_DELTA_Y_THRESHOLD] =
 			sensor->axis_align.delta_y_threshold;
 
+	/*
+	 * If distance threshold values are set, switch to reduced reporting
+	 * mode so they actually get used by the controller.
+	 */
+	if (ctrl->ctrl0_11[RMI_F11_DELTA_X_THRESHOLD] ||
+	    ctrl->ctrl0_11[RMI_F11_DELTA_Y_THRESHOLD]) {
+		ctrl->ctrl0_11[0] &= ~0x7;
+		ctrl->ctrl0_11[0] |= 0x1;
+	}
+
 	if (f11->sens_query.has_dribble) {
 		switch (sensor->dribble) {
 		case RMI_REG_STATE_OFF:
