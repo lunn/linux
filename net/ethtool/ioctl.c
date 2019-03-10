@@ -1459,6 +1459,7 @@ static noinline_for_stack int ethtool_set_coalesce(struct net_device *dev,
 						   void __user *useraddr)
 {
 	struct ethtool_coalesce coalesce;
+	int ret;
 
 	if (!dev->ethtool_ops->set_coalesce)
 		return -EOPNOTSUPP;
@@ -1466,7 +1467,11 @@ static noinline_for_stack int ethtool_set_coalesce(struct net_device *dev,
 	if (copy_from_user(&coalesce, useraddr, sizeof(coalesce)))
 		return -EFAULT;
 
-	return dev->ethtool_ops->set_coalesce(dev, &coalesce);
+	ret = dev->ethtool_ops->set_coalesce(dev, &coalesce);
+	if (ret >= 0)
+		ethtool_notify(dev, NULL, ETHNL_CMD_SET_PARAMS,
+			       ETH_PARAMS_IM_COALESCE, NULL);
+	return ret;
 }
 
 static int ethtool_get_ringparam(struct net_device *dev, void __user *useraddr)

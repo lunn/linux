@@ -235,6 +235,7 @@ const struct get_request_ops *get_requests[__ETHNL_CMD_CNT] = {
 	[ETHNL_CMD_GET_STRSET]		= &strset_request_ops,
 	[ETHNL_CMD_GET_INFO]		= &info_request_ops,
 	[ETHNL_CMD_GET_SETTINGS]	= &settings_request_ops,
+	[ETHNL_CMD_GET_PARAMS]		= &params_request_ops,
 };
 
 /**
@@ -560,6 +561,7 @@ typedef void (*ethnl_notify_handler_t)(struct net_device *dev,
 
 ethnl_notify_handler_t ethnl_notify_handlers[] = {
 	[ETHNL_CMD_SET_SETTINGS]	= ethnl_std_notify,
+	[ETHNL_CMD_SET_PARAMS]		= ethnl_std_notify,
 };
 
 void ethtool_notify(struct net_device *dev, struct netlink_ext_ack *extack,
@@ -678,6 +680,13 @@ static const struct genl_ops ethtool_genl_ops[] = {
 		.cmd	= ETHNL_CMD_SET_SETTINGS,
 		.flags	= GENL_UNS_ADMIN_PERM,
 		.doit	= ethnl_set_settings,
+	},
+	{
+		.cmd	= ETHNL_CMD_GET_PARAMS,
+		.doit	= ethnl_get_doit,
+		.start	= ethnl_get_start,
+		.dumpit	= ethnl_get_dumpit,
+		.done	= ethnl_get_done,
 	},
 };
 
