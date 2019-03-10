@@ -134,7 +134,7 @@ List of message types
     ETHNL_CMD_GET_SETTINGS
     ETHNL_CMD_SET_SETTINGS
     ETHNL_CMD_GET_PARAMS
-    ETHNL_CMD_SET_PARAMS		response only (for now)
+    ETHNL_CMD_SET_PARAMS
 
 All constants use ETHNL_CMD_ prefix, usually followed by "GET", "SET" or "ACT"
 to indicate the type.
@@ -456,6 +456,38 @@ to them are broadcasted as notifications on change of these settings using
 netlink or ioctl ethtool interface.
 
 
+SET_PARAMS
+----------
+
+SET_PARAMS request modifies the settings retrieved by GET_PARAMS, i.e. it
+replaces ETHTOOL_SCOALESCE ioctl command. Relevant data attributes are
+contained in nest attribute ETHA_PARAMS_COALESCE.
+
+    ETHA_PARAMS_COALESCE	(nested)	coalescing parameters
+        ETHA_COALESCE_RX_USECS			(u32)
+        ETHA_COALESCE_RX_MAXFRM			(u32)
+        ETHA_COALESCE_RX_USECS_IRQ		(u32)
+        ETHA_COALESCE_RX_MAXFRM_IRQ		(u32)
+        ETHA_COALESCE_RX_USECS_LOW		(u32)
+        ETHA_COALESCE_RX_MAXFRM_LOW		(u32)
+        ETHA_COALESCE_RX_USECS_HIGH		(u32)
+        ETHA_COALESCE_RX_MAXFRM_HIGH		(u32)
+        ETHA_COALESCE_TX_USECS			(u32)
+        ETHA_COALESCE_TX_MAXFRM			(u32)
+        ETHA_COALESCE_TX_USECS_IRQ		(u32)
+        ETHA_COALESCE_TX_MAXFRM_IRQ		(u32)
+        ETHA_COALESCE_TX_USECS_LOW		(u32)
+        ETHA_COALESCE_TX_MAXFRM_LOW		(u32)
+        ETHA_COALESCE_TX_USECS_HIGH		(u32)
+        ETHA_COALESCE_TX_MAXFRM_HIGH		(u32)
+        ETHA_COALESCE_PKT_RATE_LOW		(u32)
+        ETHA_COALESCE_PKT_RATE_HIGH		(u32)
+        ETHA_COALESCE_RX_USE_ADAPTIVE		(bool)
+        ETHA_COALESCE_TX_USE_ADAPTIVE		(bool)
+        ETHA_COALESCE_RATE_SAMPLE_INTERVAL	(u32)
+        ETHA_COALESCE_STATS_BLOCK_USECS		(u32)
+
+
 Request translation
 -------------------
 
@@ -478,7 +510,7 @@ ETHTOOL_GLINK			ETHNL_CMD_GET_SETTINGS
 ETHTOOL_GEEPROM			n/a
 ETHTOOL_SEEPROM			n/a
 ETHTOOL_GCOALESCE		ETHNL_CMD_GET_PARAMS
-ETHTOOL_SCOALESCE		n/a
+ETHTOOL_SCOALESCE		ETHNL_CMD_SET_PARAMS
 ETHTOOL_GRINGPARAM		n/a
 ETHTOOL_SRINGPARAM		n/a
 ETHTOOL_GPAUSEPARAM		n/a

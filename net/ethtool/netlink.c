@@ -688,6 +688,11 @@ static const struct genl_ops ethtool_genl_ops[] = {
 		.dumpit	= ethnl_get_dumpit,
 		.done	= ethnl_get_done,
 	},
+	{
+		.cmd	= ETHNL_CMD_SET_PARAMS,
+		.flags	= GENL_UNS_ADMIN_PERM,
+		.doit	= ethnl_set_params,
+	},
 };
 
 static const struct genl_multicast_group ethtool_nl_mcgrps[] = {
