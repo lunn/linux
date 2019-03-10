@@ -188,3 +188,169 @@ const struct get_request_ops params_request_ops = {
 	.reply_size		= params_size,
 	.fill_reply		= fill_params,
 };
+
+/* SET_PARAMS */
+
+static const struct nla_policy set_params_policy[ETHTOOL_A_PARAMS_MAX + 1] = {
+	[ETHTOOL_A_PARAMS_UNSPEC]		= { .type = NLA_REJECT },
+	[ETHTOOL_A_PARAMS_DEV]			= { .type = NLA_NESTED },
+	[ETHTOOL_A_PARAMS_INFOMASK]		= { .type = NLA_REJECT },
+	[ETHTOOL_A_PARAMS_COMPACT]		= { .type = NLA_FLAG },
+	[ETHTOOL_A_PARAMS_COALESCE]		= { .type = NLA_NESTED },
+};
+
+static const struct nla_policy coalesce_policy[ETHTOOL_A_COALESCE_MAX + 1] = {
+	[ETHTOOL_A_COALESCE_UNSPEC]		= { .type = NLA_REJECT },
+	[ETHTOOL_A_COALESCE_RX_USECS]		= { .type = NLA_U32 },
+	[ETHTOOL_A_COALESCE_RX_MAXFRM]		= { .type = NLA_U32 },
+	[ETHTOOL_A_COALESCE_RX_USECS_IRQ]	= { .type = NLA_U32 },
+	[ETHTOOL_A_COALESCE_RX_MAXFRM_IRQ]	= { .type = NLA_U32 },
+	[ETHTOOL_A_COALESCE_RX_USECS_LOW]	= { .type = NLA_U32 },
+	[ETHTOOL_A_COALESCE_RX_MAXFRM_LOW]	= { .type = NLA_U32 },
+	[ETHTOOL_A_COALESCE_RX_USECS_HIGH]	= { .type = NLA_U32 },
+	[ETHTOOL_A_COALESCE_RX_MAXFRM_HIGH]	= { .type = NLA_U32 },
+	[ETHTOOL_A_COALESCE_TX_USECS]		= { .type = NLA_U32 },
+	[ETHTOOL_A_COALESCE_TX_MAXFRM]		= { .type = NLA_U32 },
+	[ETHTOOL_A_COALESCE_TX_USECS_IRQ]	= { .type = NLA_U32 },
+	[ETHTOOL_A_COALESCE_TX_MAXFRM_IRQ]	= { .type = NLA_U32 },
+	[ETHTOOL_A_COALESCE_TX_USECS_LOW]	= { .type = NLA_U32 },
+	[ETHTOOL_A_COALESCE_TX_MAXFRM_LOW]	= { .type = NLA_U32 },
+	[ETHTOOL_A_COALESCE_TX_USECS_HIGH]	= { .type = NLA_U32 },
+	[ETHTOOL_A_COALESCE_TX_MAXFRM_HIGH]	= { .type = NLA_U32 },
+	[ETHTOOL_A_COALESCE_PKT_RATE_LOW]	= { .type = NLA_U32 },
+	[ETHTOOL_A_COALESCE_PKT_RATE_HIGH]	= { .type = NLA_U32 },
+	[ETHTOOL_A_COALESCE_RX_USE_ADAPTIVE]	= { .type = NLA_U8 },
+	[ETHTOOL_A_COALESCE_TX_USE_ADAPTIVE]	= { .type = NLA_U8 },
+	[ETHTOOL_A_COALESCE_RATE_SAMPLE_INTERVAL] = { .type = NLA_U32 },
+	[ETHTOOL_A_COALESCE_STATS_BLOCK_USECS]	= { .type = NLA_U32 },
+};
+
+static int update_coalesce(struct genl_info *info, struct net_device *dev,
+			   struct nlattr *nest)
+{
+	struct nlattr *tb[ETHTOOL_A_COALESCE_MAX + 1];
+	struct ethtool_coalesce data = {};
+	bool mod = false;
+	int ret;
+
+	if (!nest)
+		return 0;
+	if (!dev->ethtool_ops->get_coalesce || !dev->ethtool_ops->set_coalesce)
+		return -EOPNOTSUPP;
+	ret = dev->ethtool_ops->get_coalesce(dev, &data);
+	if (ret < 0)
+		return ret;
+
+	ret = nla_parse_nested(tb, ETHTOOL_A_COALESCE_MAX, nest,
+			       coalesce_policy, info->extack);
+	if (ret < 0)
+		return ret;
+
+	if (ethnl_update_u32(&data.rx_coalesce_usecs,
+			     tb[ETHTOOL_A_COALESCE_RX_USECS]))
+		mod = true;
+	if (ethnl_update_u32(&data.rx_max_coalesced_frames,
+			     tb[ETHTOOL_A_COALESCE_RX_MAXFRM]))
+		mod = true;
+	if (ethnl_update_u32(&data.rx_coalesce_usecs_irq,
+			     tb[ETHTOOL_A_COALESCE_RX_USECS_IRQ]))
+		mod = true;
+	if (ethnl_update_u32(&data.rx_max_coalesced_frames_irq,
+			     tb[ETHTOOL_A_COALESCE_RX_MAXFRM_IRQ]))
+		mod = true;
+	if (ethnl_update_u32(&data.rx_coalesce_usecs_low,
+			     tb[ETHTOOL_A_COALESCE_RX_USECS_LOW]))
+		mod = true;
+	if (ethnl_update_u32(&data.rx_max_coalesced_frames_low,
+			     tb[ETHTOOL_A_COALESCE_RX_MAXFRM_LOW]))
+		mod = true;
+	if (ethnl_update_u32(&data.rx_coalesce_usecs_high,
+			     tb[ETHTOOL_A_COALESCE_RX_USECS_HIGH]))
+		mod = true;
+	if (ethnl_update_u32(&data.rx_max_coalesced_frames_high,
+			     tb[ETHTOOL_A_COALESCE_RX_MAXFRM_HIGH]))
+		mod = true;
+	if (ethnl_update_u32(&data.tx_coalesce_usecs,
+			     tb[ETHTOOL_A_COALESCE_TX_USECS]))
+		mod = true;
+	if (ethnl_update_u32(&data.tx_max_coalesced_frames,
+			     tb[ETHTOOL_A_COALESCE_TX_MAXFRM]))
+		mod = true;
+	if (ethnl_update_u32(&data.tx_coalesce_usecs_irq,
+			     tb[ETHTOOL_A_COALESCE_TX_USECS_IRQ]))
+		mod = true;
+	if (ethnl_update_u32(&data.tx_max_coalesced_frames_irq,
+			     tb[ETHTOOL_A_COALESCE_TX_MAXFRM_IRQ]))
+		mod = true;
+	if (ethnl_update_u32(&data.tx_coalesce_usecs_low,
+			     tb[ETHTOOL_A_COALESCE_TX_USECS_LOW]))
+		mod = true;
+	if (ethnl_update_u32(&data.tx_max_coalesced_frames_low,
+			     tb[ETHTOOL_A_COALESCE_TX_MAXFRM_LOW]))
+		mod = true;
+	if (ethnl_update_u32(&data.tx_coalesce_usecs_high,
+			     tb[ETHTOOL_A_COALESCE_TX_USECS_HIGH]))
+		mod = true;
+	if (ethnl_update_u32(&data.tx_max_coalesced_frames_high,
+			     tb[ETHTOOL_A_COALESCE_TX_MAXFRM_HIGH]))
+		mod = true;
+	if (ethnl_update_u32(&data.pkt_rate_low,
+			     tb[ETHTOOL_A_COALESCE_PKT_RATE_LOW]))
+		mod = true;
+	if (ethnl_update_u32(&data.pkt_rate_high,
+			     tb[ETHTOOL_A_COALESCE_PKT_RATE_HIGH]))
+		mod = true;
+	if (ethnl_update_bool32(&data.use_adaptive_rx_coalesce,
+				tb[ETHTOOL_A_COALESCE_RX_USE_ADAPTIVE]))
+		mod = true;
+	if (ethnl_update_bool32(&data.use_adaptive_tx_coalesce,
+				tb[ETHTOOL_A_COALESCE_TX_USE_ADAPTIVE]))
+		mod = true;
+	if (ethnl_update_u32(&data.rate_sample_interval,
+			     tb[ETHTOOL_A_COALESCE_RATE_SAMPLE_INTERVAL]))
+		mod = true;
+	if (ethnl_update_u32(&data.stats_block_coalesce_usecs,
+			     tb[ETHTOOL_A_COALESCE_STATS_BLOCK_USECS]))
+		mod = true;
+
+	if (!mod)
+		return 0;
+	ret = dev->ethtool_ops->set_coalesce(dev, &data);
+	return (ret < 0) ? ret : 1;
+}
+
+int ethnl_set_params(struct sk_buff *skb, struct genl_info *info)
+{
+	struct nlattr *tb[ETHTOOL_A_PARAMS_MAX + 1];
+	struct net_device *dev;
+	u32 req_mask = 0;
+	int ret;
+
+	ret = nlmsg_parse(info->nlhdr, GENL_HDRLEN, tb, ETHTOOL_A_PARAMS_MAX,
+			  set_params_policy, info->extack);
+	if (ret < 0)
+		return ret;
+	dev = ethnl_dev_get(info, tb[ETHTOOL_A_PARAMS_DEV]);
+	if (IS_ERR(dev))
+		return PTR_ERR(dev);
+
+	rtnl_lock();
+	ret = ethnl_before_ops(dev);
+	if (ret < 0)
+		goto out_rtnl;
+	ret = update_coalesce(info, dev, tb[ETHTOOL_A_PARAMS_COALESCE]);
+	if (ret < 0)
+		goto out_ops;
+	if (ret)
+		req_mask |= ETHTOOL_IM_PARAMS_COALESCE;
+
+	ret = 0;
+out_ops:
+	if (req_mask)
+		ethtool_notify(dev, NULL, ETHNL_CMD_SET_PARAMS, req_mask, NULL);
+	ethnl_after_ops(dev);
+out_rtnl:
+	rtnl_unlock();
+	dev_put(dev);
+	return ret;
+}
