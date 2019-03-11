@@ -406,8 +406,10 @@ changed and value their new values.
 GET_PARAMS
 ----------
 
-GET_PARAMS request retrieves information provided by ioctl comand
-ETHTOOL_GCOALESCE (coalescing parameters).
+GET_PARAMS request retrieves information provided by ioctl comands
+ETHTOOL_GCOALESCE (coalescing parameters) and ETHTOOL_GRINGPARAM (ring sizes).
+For each of these, there is a bit in header info_mask so that only one type of
+information can be requested.
 
 Request contents:
 
@@ -418,6 +420,7 @@ Request contents:
 Info mask bits:
 
     ETHTOOL_IM_PARAMS_COALESCE		coalescing parameters
+    ETHTOOL_IM_PARAMS_RING		ring sizes
 
 Response contents: On top level, there is one attribute for each of the
 information categories, the information is nested in it.
@@ -446,6 +449,15 @@ information categories, the information is nested in it.
         ETHTOOL_A_COALESCE_TX_USE_ADAPTIVE  (bool)
         ETHTOOL_A_COALESCE_RATE_SAMPLE_INTERVAL	(u32)
         ETHTOOL_A_COALESCE_STATS_BLOCK_USECS	(u32)
+    ETHTOOL_A_PARAMS_RING		(nested)	ring sizes
+        ETHTOOL_A_RING_RX_MAX_PENDING	    (u32)
+        ETHTOOL_A_RING_RX_MINI_MAX_PENDING  (u32)
+        ETHTOOL_A_RING_RX_JUMBO_MAX_PENDING (u32)
+        ETHTOOL_A_RING_TX_MAX_PENDING	    (u32)
+        ETHTOOL_A_RING_RX_PENDING	    (u32)
+        ETHTOOL_A_RING_RX_MINI_PENDING	    (u32)
+        ETHTOOL_A_RING_RX_JUMBO_PENDING	    (u32)
+        ETHTOOL_A_RING_TX_PENDING	    (u32)
 
 GET_PARAMS requests allow dumps and messages in the same format as response
 to them are broadcasted as notifications on change of these settings using
@@ -507,7 +519,7 @@ ETHTOOL_GEEPROM			n/a
 ETHTOOL_SEEPROM			n/a
 ETHTOOL_GCOALESCE		ETHNL_CMD_GET_PARAMS
 ETHTOOL_SCOALESCE		ETHNL_CMD_SET_PARAMS
-ETHTOOL_GRINGPARAM		n/a
+ETHTOOL_GRINGPARAM		ETHNL_CMD_GET_PARAMS
 ETHTOOL_SRINGPARAM		n/a
 ETHTOOL_GPAUSEPARAM		n/a
 ETHTOOL_SPAUSEPARAM		n/a
