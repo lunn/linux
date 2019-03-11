@@ -445,7 +445,7 @@ static const struct nla_policy set_params_policy[ETHA_PARAMS_MAX + 1] = {
 	[ETHA_PARAMS_RING]		= { .type = NLA_NESTED },
 	[ETHA_PARAMS_PAUSE]		= { .type = NLA_NESTED },
 	[ETHA_PARAMS_CHANNELS]		= { .type = NLA_NESTED },
-	[ETHA_PARAMS_EEE]		= { .type = NLA_REJECT },
+	[ETHA_PARAMS_EEE]		= { .type = NLA_NESTED },
 };
 
 static const struct nla_policy coalesce_policy[ETHA_COALESCE_MAX + 1] = {
@@ -725,6 +725,63 @@ static int update_channels(struct genl_info *info, struct net_device *dev,
 	return (ret < 0) ? ret : 1;
 }
 
+static const struct nla_policy eee_policy[ETHA_EEE_MAX + 1] = {
+	[ETHA_EEE_UNSPEC]		= { .type = NLA_REJECT },
+	[ETHA_EEE_LINK_MODES]		= { .type = NLA_NESTED },
+	[ETHA_EEE_PEER_MODES]		= { .type = NLA_NESTED },
+	[ETHA_EEE_ACTIVE]		= { .type = NLA_U8 },
+	[ETHA_EEE_ENABLED]		= { .type = NLA_U8 },
+	[ETHA_EEE_TX_LPI_ENABLED]	= { .type = NLA_U8 },
+	[ETHA_EEE_TX_LPI_TIMER]		= { .type = NLA_U32 },
+};
+
+static int update_eee(struct genl_info *info, struct net_device *dev,
+		      struct nlattr *nest)
+{
+	struct nlattr *tb[ETHA_EEE_MAX + 1];
+	struct ethtool_eee data = {};
+	bool mod = false;
+	int ret;
+
+	if (!nest)
+		return 0;
+	if (!dev->ethtool_ops->get_eee ||
+	    !dev->ethtool_ops->set_eee)
+		return -EOPNOTSUPP;
+	ret = dev->ethtool_ops->get_eee(dev, &data);
+	if (ret < 0)
+		return ret;
+
+	ret = nla_parse_nested_strict(tb, ETHA_EEE_MAX, nest, eee_policy,
+				      info->extack);
+	if (ret < 0)
+		return ret;
+	/* read only attributes */
+	if (tb[ETHA_EEE_PEER_MODES] || tb[ETHA_EEE_ACTIVE]) {
+		ETHNL_SET_ERRMSG(info, "attempt to set a read only attribute");
+		return -EINVAL;
+	}
+
+	if (ethnl_update_bitset32(&data.advertised, NULL, 32,
+				  tb[ETHA_EEE_LINK_MODES], &ret,
+				  link_mode_names, false, info))
+		mod = true;
+	if (ret < 0)
+		return ret;
+	if (ethnl_update_bool32(&data.eee_enabled, tb[ETHA_EEE_ENABLED]))
+		mod = true;
+	if (ethnl_update_bool32(&data.tx_lpi_enabled,
+				tb[ETHA_EEE_TX_LPI_ENABLED]))
+		mod = true;
+	if (ethnl_update_u32(&data.tx_lpi_timer, tb[ETHA_EEE_TX_LPI_TIMER]))
+		mod = true;
+
+	if (!mod)
+		return 0;
+	ret = dev->ethtool_ops->set_eee(dev, &data);
+	return (ret < 0) ? ret : 1;
+}
+
 int ethnl_set_params(struct sk_buff *skb, struct genl_info *info)
 {
 	struct nlattr *tb[ETHA_PARAMS_MAX + 1];
@@ -764,6 +821,11 @@ int ethnl_set_params(struct sk_buff *skb, struct genl_info *info)
 		goto out_ops;
 	if (ret)
 		req_mask |= ETH_PARAMS_IM_CHANNELS;
+	ret = update_eee(info, dev, tb[ETHA_PARAMS_EEE]);
+	if (ret < 0)
+		goto out_ops;
+	if (ret)
+		req_mask |= ETH_PARAMS_IM_EEE;
 
 	ret = 0;
 out_ops:
