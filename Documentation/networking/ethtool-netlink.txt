@@ -504,10 +504,10 @@ SET_PARAMS
 
 SET_PARAMS request modifies the settings retrieved by GET_PARAMS, i.e. it
 replaces ETHTOOL_SCOALESCE, ETHTOOL_SRINGPARAM, ETHTOOL_SPAUSEPARAM,
-ETHTOOL_SCHANNELS and ETHTOOL_SEEE ioctl commands. For each of these, relevant
-data attributes are contained in a corresponding nest attribute. Some of the
-attributes provided by GET_SETPARAMS are read only and cannot be set by
-SET_PARAMS request.
+ETHTOOL_SCHANNELS, ETHTOOL_SEEE and ETHTOOL_SFECPARAM ioctl commands. For each
+of these, relevant data attributes are contained in a corresponding nest
+attribute. Some of the attributes provided by GET_SETPARAMS are read only and
+cannot be set by SET_PARAMS request.
 
     ETHA_PARAMS_COALESCE	(nested)	coalescing parameters
         ETHA_COALESCE_RX_USECS			(u32)
@@ -552,6 +552,9 @@ SET_PARAMS request.
         ETHA_EEE_ENABLED			(bool)
         ETHA_EEE_TX_LPI_ENABLED			(bool)
         ETHA_EEE_TX_LPI_TIMER			(u32)
+    ETHA_PARAMS_FEC		(nested)	FEC parameters
+        ETHA_FEC_MODES				(bitfield32)
+		- change configured FEC encodings
 
 
 Request translation
@@ -642,4 +645,4 @@ ETHTOOL_SLINKSETTINGS		ETHNL_CMD_SET_SETTINGS
 ETHTOOL_PHY_GTUNABLE		n/a
 ETHTOOL_PHY_STUNABLE		n/a
 ETHTOOL_GFECPARAM		ETHNL_CMD_GET_PARAMS
-ETHTOOL_SFECPARAM		n/a
+ETHTOOL_SFECPARAM		ETHNL_CMD_SET_PARAMS
