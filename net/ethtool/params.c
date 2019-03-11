@@ -256,7 +256,7 @@ static const struct nla_policy set_params_policy[ETHTOOL_A_PARAMS_MAX + 1] = {
 	[ETHTOOL_A_PARAMS_INFOMASK]		= { .type = NLA_REJECT },
 	[ETHTOOL_A_PARAMS_COMPACT]		= { .type = NLA_FLAG },
 	[ETHTOOL_A_PARAMS_COALESCE]		= { .type = NLA_NESTED },
-	[ETHTOOL_A_PARAMS_RING]			= { .type = NLA_REJECT },
+	[ETHTOOL_A_PARAMS_RING]			= { .type = NLA_NESTED },
 };
 
 static const struct nla_policy coalesce_policy[ETHTOOL_A_COALESCE_MAX + 1] = {
@@ -379,6 +379,73 @@ static int update_coalesce(struct genl_info *info, struct net_device *dev,
 	return (ret < 0) ? ret : 1;
 }
 
+static const struct nla_policy ring_policy[ETHTOOL_A_RING_MAX + 1] = {
+	[ETHTOOL_A_RING_UNSPEC]			= { .type = NLA_REJECT },
+	[ETHTOOL_A_RING_RX_MAX_PENDING]		= { .type = NLA_REJECT },
+	[ETHTOOL_A_RING_RX_MINI_MAX_PENDING]	= { .type = NLA_REJECT },
+	[ETHTOOL_A_RING_RX_JUMBO_MAX_PENDING]	= { .type = NLA_REJECT },
+	[ETHTOOL_A_RING_TX_MAX_PENDING]		= { .type = NLA_REJECT },
+	[ETHTOOL_A_RING_RX_PENDING]		= { .type = NLA_U32 },
+	[ETHTOOL_A_RING_RX_MINI_PENDING]	= { .type = NLA_U32 },
+	[ETHTOOL_A_RING_RX_JUMBO_PENDING]	= { .type = NLA_U32 },
+	[ETHTOOL_A_RING_TX_PENDING]		= { .type = NLA_U32 },
+};
+
+static int update_ring(struct genl_info *info, struct net_device *dev,
+		       struct nlattr *nest)
+{
+	struct nlattr *tb[ETHTOOL_A_RING_MAX + 1];
+	struct ethtool_ringparam data = {};
+	const struct nlattr *err_attr;
+	bool mod = false;
+	int ret;
+
+	if (!nest)
+		return 0;
+	if (!dev->ethtool_ops->get_ringparam ||
+	    !dev->ethtool_ops->set_ringparam)
+		return -EOPNOTSUPP;
+	dev->ethtool_ops->get_ringparam(dev, &data);
+
+	ret = nla_parse_nested(tb, ETHTOOL_A_RING_MAX, nest, ring_policy,
+			       info->extack);
+	if (ret < 0)
+		return ret;
+
+	if (ethnl_update_u32(&data.rx_pending, tb[ETHTOOL_A_RING_RX_PENDING]))
+		mod = true;
+	if (ethnl_update_u32(&data.rx_mini_pending,
+			     tb[ETHTOOL_A_RING_RX_MINI_PENDING]))
+		mod = true;
+	if (ethnl_update_u32(&data.rx_jumbo_pending,
+			     tb[ETHTOOL_A_RING_RX_JUMBO_PENDING]))
+		mod = true;
+	if (ethnl_update_u32(&data.tx_pending, tb[ETHTOOL_A_RING_TX_PENDING]))
+		mod = true;
+	if (!mod)
+		return 0;
+
+	/* ensure new ring parameters are within the maximums */
+	if (data.rx_pending > data.rx_max_pending)
+		err_attr = tb[ETHTOOL_A_RING_RX_PENDING];
+	else if (data.rx_mini_pending > data.rx_mini_max_pending)
+		err_attr = tb[ETHTOOL_A_RING_RX_MINI_PENDING];
+	else if (data.rx_jumbo_pending > data.rx_jumbo_max_pending)
+		err_attr = tb[ETHTOOL_A_RING_RX_JUMBO_PENDING];
+	else if (data.tx_pending > data.tx_max_pending)
+		err_attr = tb[ETHTOOL_A_RING_TX_PENDING];
+	else
+		err_attr = NULL;
+	if (err_attr) {
+		NL_SET_ERR_MSG_ATTR(info->extack, err_attr,
+				    "requested ring size exceeeds maximum");
+		return -EINVAL;
+	}
+
+	ret = dev->ethtool_ops->set_ringparam(dev, &data);
+	return (ret < 0) ? ret : 1;
+}
+
 int ethnl_set_params(struct sk_buff *skb, struct genl_info *info)
 {
 	struct nlattr *tb[ETHTOOL_A_PARAMS_MAX + 1];
@@ -403,6 +470,11 @@ int ethnl_set_params(struct sk_buff *skb, struct genl_info *info)
 		goto out_ops;
 	if (ret)
 		req_mask |= ETHTOOL_IM_PARAMS_COALESCE;
+	ret = update_ring(info, dev, tb[ETHTOOL_A_PARAMS_RING]);
+	if (ret < 0)
+		goto out_ops;
+	if (ret)
+		req_mask |= ETHTOOL_IM_PARAMS_RING;
 
 	ret = 0;
 out_ops:
