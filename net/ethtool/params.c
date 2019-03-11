@@ -8,6 +8,7 @@ static const struct nla_policy get_params_policy[ETHA_PARAMS_MAX + 1] = {
 	[ETHA_PARAMS_INFOMASK]		= { .type = NLA_U32 },
 	[ETHA_PARAMS_COMPACT]		= { .type = NLA_FLAG },
 	[ETHA_PARAMS_COALESCE]		= { .type = NLA_REJECT },
+	[ETHA_PARAMS_RING]		= { .type = NLA_REJECT },
 };
 
 struct params_data {
@@ -16,6 +17,7 @@ struct params_data {
 	/* everything below here will be reset for each device in dumps */
 	struct common_reply_data	repdata_base;
 	struct ethtool_coalesce		coalesce;
+	struct ethtool_ringparam	ring;
 };
 
 static int parse_params(struct common_req_info *req_info, struct sk_buff *skb,
@@ -55,6 +57,15 @@ static int ethnl_get_coalesce(struct net_device *dev,
 	return dev->ethtool_ops->get_coalesce(dev, data);
 }
 
+static int ethnl_get_ring(struct net_device *dev,
+			  struct ethtool_ringparam *data)
+{
+	if (!dev->ethtool_ops->get_ringparam)
+		return -EOPNOTSUPP;
+	dev->ethtool_ops->get_ringparam(dev, data);
+	return 0;
+}
+
 static int prepare_params(struct common_req_info *req_info,
 			  struct genl_info *info)
 {
@@ -72,6 +83,11 @@ static int prepare_params(struct common_req_info *req_info,
 		if (ret < 0)
 			req_mask &= ~ETH_PARAMS_IM_COALESCE;
 	}
+	if (req_mask & ETH_PARAMS_IM_RING) {
+		ret = ethnl_get_ring(dev, &data->ring);
+		if (ret < 0)
+			req_mask &= ~ETH_PARAMS_IM_RING;
+	}
 	ethnl_after_ops(dev);
 
 	data->repdata_base.info_mask = req_mask;
@@ -86,6 +102,11 @@ static int coalesce_size(void)
 			      2 * nla_total_size(sizeof(u8)));
 }
 
+static int ring_size(void)
+{
+	return nla_total_size(8 * nla_total_size(sizeof(u32)));
+}
+
 static int params_size(const struct common_req_info *req_info)
 {
 	struct params_data *data =
@@ -96,6 +117,8 @@ static int params_size(const struct common_req_info *req_info)
 	len += dev_ident_size();
 	if (info_mask & ETH_PARAMS_IM_COALESCE)
 		len += coalesce_size();
+	if (info_mask & ETH_PARAMS_IM_RING)
+		len += ring_size();
 
 	return len;
 }
@@ -158,6 +181,36 @@ static int fill_coalesce(struct sk_buff *skb, struct ethtool_coalesce *data)
 	return 0;
 }
 
+static int fill_ring(struct sk_buff *skb, struct ethtool_ringparam *data)
+{
+	struct nlattr *nest = ethnl_nest_start(skb, ETHA_PARAMS_RING);
+
+	if (!nest)
+		return -EMSGSIZE;
+	if (nla_put_u32(skb, ETHA_RING_RX_MAX_PENDING,
+			data->rx_max_pending) ||
+	    nla_put_u32(skb, ETHA_RING_RX_MINI_MAX_PENDING,
+			data->rx_mini_max_pending) ||
+	    nla_put_u32(skb, ETHA_RING_RX_JUMBO_MAX_PENDING,
+			data->rx_jumbo_max_pending) ||
+	    nla_put_u32(skb, ETHA_RING_TX_MAX_PENDING,
+			data->tx_max_pending) ||
+	    nla_put_u32(skb, ETHA_RING_RX_PENDING,
+			data->rx_pending) ||
+	    nla_put_u32(skb, ETHA_RING_RX_MINI_PENDING,
+			data->rx_mini_pending) ||
+	    nla_put_u32(skb, ETHA_RING_RX_JUMBO_PENDING,
+			data->rx_jumbo_pending) ||
+	    nla_put_u32(skb, ETHA_RING_TX_PENDING,
+			data->tx_pending)) {
+		nla_nest_cancel(skb, nest);
+		return -EMSGSIZE;
+	}
+
+	nla_nest_end(skb, nest);
+	return 0;
+}
+
 static int fill_params(struct sk_buff *skb,
 		       const struct common_req_info *req_info)
 {
@@ -168,6 +221,11 @@ static int fill_params(struct sk_buff *skb,
 
 	if (info_mask & ETH_PARAMS_IM_COALESCE) {
 		ret = fill_coalesce(skb, &data->coalesce);
+		if (ret < 0)
+			return ret;
+	}
+	if (info_mask & ETH_PARAMS_IM_RING) {
+		ret = fill_ring(skb, &data->ring);
 		if (ret < 0)
 			return ret;
 	}
@@ -196,6 +254,7 @@ static const struct nla_policy set_params_policy[ETHA_PARAMS_MAX + 1] = {
 	[ETHA_PARAMS_INFOMASK]		= { .type = NLA_REJECT },
 	[ETHA_PARAMS_COMPACT]		= { .type = NLA_FLAG },
 	[ETHA_PARAMS_COALESCE]		= { .type = NLA_NESTED },
+	[ETHA_PARAMS_RING]		= { .type = NLA_REJECT },
 };
 
 static const struct nla_policy coalesce_policy[ETHA_COALESCE_MAX + 1] = {
