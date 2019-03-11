@@ -294,6 +294,7 @@ enum {
 	ETHA_PARAMS_COMPACT,			/* flag */
 	ETHA_PARAMS_COALESCE,			/* nest - ETHA_COALESCE_* */
 	ETHA_PARAMS_RING,			/* nest - ETHA_RING_* */
+	ETHA_PARAMS_PAUSE,			/* nest - ETHA_PAUSE_* */
 
 	__ETHA_PARAMS_CNT,
 	ETHA_PARAMS_MAX = (__ETHA_PARAMS_CNT - 1)
@@ -301,9 +302,11 @@ enum {
 
 #define ETH_PARAMS_IM_COALESCE			(1U << 0)
 #define ETH_PARAMS_IM_RING			(1U << 1)
+#define ETH_PARAMS_IM_PAUSE			(1U << 2)
 
 #define ETH_PARAMS_IM_ALL (ETH_PARAMS_IM_COALESCE | \
-			   ETH_PARAMS_IM_RING)
+			   ETH_PARAMS_IM_RING | \
+			   ETH_PARAMS_IM_PAUSE)
 
 enum {
 	ETHA_COALESCE_UNSPEC,
@@ -347,6 +350,16 @@ enum {
 
 	__ETHA_RING_CNT,
 	ETHA_RING_MAX = (__ETHA_RING_CNT - 1)
+};
+
+enum {
+	ETHA_PAUSE_UNSPEC,
+	ETHA_PAUSE_AUTONEG,			/* u8 */
+	ETHA_PAUSE_RX,				/* u8 */
+	ETHA_PAUSE_TX,				/* u8 */
+
+	__ETHA_PAUSE_CNT,
+	ETHA_PAUSE_MAX = (__ETHA_PAUSE_CNT - 1)
 };
 
 /* generic netlink info */

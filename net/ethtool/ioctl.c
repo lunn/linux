@@ -1588,6 +1588,7 @@ static int ethtool_get_pauseparam(struct net_device *dev, void __user *useraddr)
 static int ethtool_set_pauseparam(struct net_device *dev, void __user *useraddr)
 {
 	struct ethtool_pauseparam pauseparam;
+	int ret;
 
 	if (!dev->ethtool_ops->set_pauseparam)
 		return -EOPNOTSUPP;
@@ -1595,7 +1596,11 @@ static int ethtool_set_pauseparam(struct net_device *dev, void __user *useraddr)
 	if (copy_from_user(&pauseparam, useraddr, sizeof(pauseparam)))
 		return -EFAULT;
 
-	return dev->ethtool_ops->set_pauseparam(dev, &pauseparam);
+	ret = dev->ethtool_ops->set_pauseparam(dev, &pauseparam);
+	if (ret >= 0)
+		ethtool_notify(dev, NULL, ETHNL_CMD_SET_PARAMS,
+			       ETH_PARAMS_IM_PAUSE, NULL);
+	return ret;
 }
 
 static int ethtool_self_test(struct net_device *dev, char __user *useraddr)
