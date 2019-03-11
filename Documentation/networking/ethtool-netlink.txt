@@ -411,9 +411,10 @@ GET_PARAMS
 ----------
 
 GET_PARAMS request retrieves information provided by ioctl comands
-ETHTOOL_GCOALESCE (coalescing parameters), ETHTOOL_GRINGPARAM (ring sizes) and
-ETHTOOL_GPAUSEPARAM (pause parameters). For each of these, there is a bit in
-header info_mask so that only one type of information can be requested.
+ETHTOOL_GCOALESCE (coalescing parameters), ETHTOOL_GRINGPARAM (ring sizes),
+ETHTOOL_GPAUSEPARAM (pause parameters) and ETHTOOL_GCHANNELS (channel counts).
+For each of these, there is a bit in header info_mask so that only one type of
+information can be requested.
 
 Request contents:
 
@@ -426,6 +427,7 @@ Info mask bits:
     ETH_PARAMS_IM_COALESCE		coalescing parameters
     ETH_PARAMS_IM_RING			ring sizes
     ETH_PARAMS_IM_PAUSE			pause parameters
+    ETH_PARAMS_IM_CHANNELS		channel counts
 
 Response contents: On top level, there is one attribute for each of the
 information categories, the information is nested in it.
@@ -467,6 +469,15 @@ information categories, the information is nested in it.
         ETHA_PAUSE_AUTONEG			(bool)
         ETHA_PAUSE_RX				(bool)
         ETHA_PAUSE_TX				(bool)
+    ETHA_PARAMS_CHANNELS	(nested)	channel counts
+        ETHA_CHANNELS_MAX_RX			(u32)
+        ETHA_CHANNELS_MAX_TX			(u32)
+        ETHA_CHANNELS_MAX_OTHER			(u32)
+        ETHA_CHANNELS_MAX_COMBINED		(u32)
+        ETHA_CHANNELS_RX_COUNT			(u32)
+        ETHA_CHANNELS_TX_COUNT			(u32)
+        ETHA_CHANNELS_OTHER_COUNT		(u32)
+        ETHA_CHANNELS_COMBINED_COUNT		(u32)
 
 GET_PARAMS requests allow dumps and messages in the same format as response
 to them are broadcasted as notifications on change of these settings using
@@ -583,7 +594,7 @@ ETHTOOL_GRXFHINDIR		n/a
 ETHTOOL_SRXFHINDIR		n/a
 ETHTOOL_GFEATURES		ETHNL_CMD_GET_SETTINGS
 ETHTOOL_SFEATURES		ETHNL_CMD_SET_SETTINGS
-ETHTOOL_GCHANNELS		n/a
+ETHTOOL_GCHANNELS		ETHNL_CMD_GET_PARAMS
 ETHTOOL_SCHANNELS		n/a
 ETHTOOL_SET_DUMP		n/a
 ETHTOOL_GET_DUMP_FLAG		n/a

@@ -10,6 +10,7 @@ static const struct nla_policy get_params_policy[ETHA_PARAMS_MAX + 1] = {
 	[ETHA_PARAMS_COALESCE]		= { .type = NLA_REJECT },
 	[ETHA_PARAMS_RING]		= { .type = NLA_REJECT },
 	[ETHA_PARAMS_PAUSE]		= { .type = NLA_REJECT },
+	[ETHA_PARAMS_CHANNELS]		= { .type = NLA_REJECT },
 };
 
 struct params_data {
@@ -20,6 +21,7 @@ struct params_data {
 	struct ethtool_coalesce		coalesce;
 	struct ethtool_ringparam	ring;
 	struct ethtool_pauseparam	pause;
+	struct ethtool_channels		channels;
 };
 
 static int parse_params(struct common_req_info *req_info, struct sk_buff *skb,
@@ -77,6 +79,15 @@ static int ethnl_get_pause(struct net_device *dev,
 	return 0;
 }
 
+static int ethnl_get_channels(struct net_device *dev,
+			      struct ethtool_channels *data)
+{
+	if (!dev->ethtool_ops->get_channels)
+		return -EOPNOTSUPP;
+	dev->ethtool_ops->get_channels(dev, data);
+	return 0;
+}
+
 static int prepare_params(struct common_req_info *req_info,
 			  struct genl_info *info)
 {
@@ -104,6 +115,11 @@ static int prepare_params(struct common_req_info *req_info,
 		if (ret < 0)
 			req_mask &= ~ETH_PARAMS_IM_PAUSE;
 	}
+	if (req_mask & ETH_PARAMS_IM_CHANNELS) {
+		ret = ethnl_get_channels(dev, &data->channels);
+		if (ret < 0)
+			req_mask &= ~ETH_PARAMS_IM_CHANNELS;
+	}
 	ethnl_after_ops(dev);
 
 	data->repdata_base.info_mask = req_mask;
@@ -128,6 +144,11 @@ static int pause_size(void)
 	return nla_total_size(3 * nla_total_size(sizeof(u8)));
 }
 
+static int channels_size(void)
+{
+	return nla_total_size(8 * nla_total_size(sizeof(u32)));
+}
+
 static int params_size(const struct common_req_info *req_info)
 {
 	struct params_data *data =
@@ -142,6 +163,8 @@ static int params_size(const struct common_req_info *req_info)
 		len += ring_size();
 	if (info_mask & ETH_PARAMS_IM_PAUSE)
 		len += pause_size();
+	if (info_mask & ETH_PARAMS_IM_CHANNELS)
+		len += channels_size();
 
 	return len;
 }
@@ -251,6 +274,28 @@ static int fill_pause(struct sk_buff *skb, struct ethtool_pauseparam *data)
 	return 0;
 }
 
+static int fill_channels(struct sk_buff *skb, struct ethtool_channels *data)
+{
+	struct nlattr *nest = ethnl_nest_start(skb, ETHA_PARAMS_CHANNELS);
+
+	if (!nest)
+		return -EMSGSIZE;
+	if (nla_put_u32(skb, ETHA_CHANNELS_MAX_RX, data->max_rx) ||
+	    nla_put_u32(skb, ETHA_CHANNELS_MAX_TX, data->max_tx) ||
+	    nla_put_u32(skb, ETHA_CHANNELS_MAX_OTHER, data->max_other) ||
+	    nla_put_u32(skb, ETHA_CHANNELS_MAX_COMBINED, data->max_combined) ||
+	    nla_put_u32(skb, ETHA_CHANNELS_RX_COUNT, data->rx_count) ||
+	    nla_put_u32(skb, ETHA_CHANNELS_TX_COUNT, data->tx_count) ||
+	    nla_put_u32(skb, ETHA_CHANNELS_OTHER_COUNT, data->other_count) ||
+	    nla_put_u32(skb, ETHA_CHANNELS_COMBINED_COUNT,
+			data->combined_count)) {
+		return -EMSGSIZE;
+	}
+
+	nla_nest_end(skb, nest);
+	return 0;
+}
+
 static int fill_params(struct sk_buff *skb,
 		       const struct common_req_info *req_info)
 {
@@ -271,6 +316,11 @@ static int fill_params(struct sk_buff *skb,
 	}
 	if (info_mask & ETH_PARAMS_IM_PAUSE) {
 		ret = fill_pause(skb, &data->pause);
+		if (ret < 0)
+			return ret;
+	}
+	if (info_mask & ETH_PARAMS_IM_CHANNELS) {
+		ret = fill_channels(skb, &data->channels);
 		if (ret < 0)
 			return ret;
 	}
@@ -301,6 +351,7 @@ static const struct nla_policy set_params_policy[ETHA_PARAMS_MAX + 1] = {
 	[ETHA_PARAMS_COALESCE]		= { .type = NLA_NESTED },
 	[ETHA_PARAMS_RING]		= { .type = NLA_NESTED },
 	[ETHA_PARAMS_PAUSE]		= { .type = NLA_NESTED },
+	[ETHA_PARAMS_CHANNELS]		= { .type = NLA_REJECT },
 };
 
 static const struct nla_policy coalesce_policy[ETHA_COALESCE_MAX + 1] = {
