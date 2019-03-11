@@ -28,7 +28,6 @@
 #include <linux/sched/signal.h>
 #include <linux/net.h>
 #include <net/devlink.h>
-#include <net/xdp_sock.h>
 #include <net/flow_offload.h>
 #include <linux/ethtool_netlink.h>
 
@@ -845,37 +844,6 @@ void netdev_rss_key_fill(void *buffer, size_t len)
 }
 EXPORT_SYMBOL(netdev_rss_key_fill);
 
-static int ethtool_get_max_rxfh_channel(struct net_device *dev, u32 *max)
-{
-	u32 dev_size, current_max = 0;
-	u32 *indir;
-	int ret;
-
-	if (!dev->ethtool_ops->get_rxfh_indir_size ||
-	    !dev->ethtool_ops->get_rxfh)
-		return -EOPNOTSUPP;
-	dev_size = dev->ethtool_ops->get_rxfh_indir_size(dev);
-	if (dev_size == 0)
-		return -EOPNOTSUPP;
-
-	indir = kcalloc(dev_size, sizeof(indir[0]), GFP_USER);
-	if (!indir)
-		return -ENOMEM;
-
-	ret = dev->ethtool_ops->get_rxfh(dev, indir, NULL, NULL);
-	if (ret)
-		goto out;
-
-	while (dev_size--)
-		current_max = max(current_max, indir[dev_size]);
-
-	*max = current_max;
-
-out:
-	kfree(indir);
-	return ret;
-}
-
 static noinline_for_stack int ethtool_get_rxfh_indir(struct net_device *dev,
 						     void __user *useraddr)
 {
@@ -1534,9 +1502,6 @@ static noinline_for_stack int ethtool_set_channels(struct net_device *dev,
 						   void __user *useraddr)
 {
 	struct ethtool_channels channels, curr = { .cmd = ETHTOOL_GCHANNELS };
-	u16 from_channel, to_channel;
-	u32 max_rx_in_use = 0;
-	unsigned int i;
 	int ret;
 
 	if (!dev->ethtool_ops->set_channels || !dev->ethtool_ops->get_channels)
@@ -1547,29 +1512,7 @@ static noinline_for_stack int ethtool_set_channels(struct net_device *dev,
 
 	dev->ethtool_ops->get_channels(dev, &curr);
 
-	/* ensure new counts are within the maximums */
-	if (channels.rx_count > curr.max_rx ||
-	    channels.tx_count > curr.max_tx ||
-	    channels.combined_count > curr.max_combined ||
-	    channels.other_count > curr.max_other)
-		return -EINVAL;
-
-	/* ensure the new Rx count fits within the configured Rx flow
-	 * indirection table settings */
-	if (netif_is_rxfh_configured(dev) &&
-	    !ethtool_get_max_rxfh_channel(dev, &max_rx_in_use) &&
-	    (channels.combined_count + channels.rx_count) <= max_rx_in_use)
-	    return -EINVAL;
-
-	/* Disabling channels, query zero-copy AF_XDP sockets */
-	from_channel = channels.combined_count +
-		min(channels.rx_count, channels.tx_count);
-	to_channel = curr.combined_count + max(curr.rx_count, curr.tx_count);
-	for (i = from_channel; i < to_channel; i++)
-		if (xdp_get_umem_from_qid(dev, i))
-			return -EINVAL;
-
-	ret = dev->ethtool_ops->set_channels(dev, &channels);
+	ret = __ethtool_set_channels(dev, &curr, &channels);
 	if (ret == 0)
 		ethtool_notify(dev, NULL, ETHNL_CMD_SET_PARAMS,
 			       ETH_PARAMS_IM_CHANNELS, NULL);

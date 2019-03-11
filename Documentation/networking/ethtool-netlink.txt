@@ -488,10 +488,11 @@ SET_PARAMS
 ----------
 
 SET_PARAMS request modifies the settings retrieved by GET_PARAMS, i.e. it
-replaces ETHTOOL_SCOALESCE, ETHTOOL_SRINGPARAM and ETHTOOL_SPAUSEPARAM ioctl
-commands. For each of these, relevant data attributes are contained in
-a corresponding nest attribute. Some of the attributes provided by
-GET_SETPARAMS are read only and cannot be set by SET_PARAMS request.
+replaces ETHTOOL_SCOALESCE, ETHTOOL_SRINGPARAM, ETHTOOL_SPAUSEPARAM and
+ETHTOOL_SCHANNELS ioctl commands. For each of these, relevant data attributes
+are contained in a corresponding nest attribute. Some of the attributes
+provided by GET_SETPARAMS are read only and cannot be set by SET_PARAMS
+request.
 
     ETHA_PARAMS_COALESCE	(nested)	coalescing parameters
         ETHA_COALESCE_RX_USECS			(u32)
@@ -525,6 +526,11 @@ GET_SETPARAMS are read only and cannot be set by SET_PARAMS request.
         ETHA_PAUSE_AUTONEG			(bool)
         ETHA_PAUSE_RX				(bool)
         ETHA_PAUSE_TX				(bool)
+    ETHA_PARAMS_CHANNELS	(nested)	channel counts
+        ETHA_CHANNELS_RX_COUNT			(u32)
+        ETHA_CHANNELS_TX_COUNT			(u32)
+        ETHA_CHANNELS_OTHER_COUNT		(u32)
+        ETHA_CHANNELS_COMBINED_COUNT		(u32)
 
 
 Request translation
@@ -595,7 +601,7 @@ ETHTOOL_SRXFHINDIR		n/a
 ETHTOOL_GFEATURES		ETHNL_CMD_GET_SETTINGS
 ETHTOOL_SFEATURES		ETHNL_CMD_SET_SETTINGS
 ETHTOOL_GCHANNELS		ETHNL_CMD_GET_PARAMS
-ETHTOOL_SCHANNELS		n/a
+ETHTOOL_SCHANNELS		ETHNL_CMD_SET_PARAMS
 ETHTOOL_SET_DUMP		n/a
 ETHTOOL_GET_DUMP_FLAG		n/a
 ETHTOOL_GET_DUMP_DATA		n/a

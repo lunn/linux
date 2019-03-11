@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
 
 #include "netlink.h"
+#include "common.h"
 
 static const struct nla_policy get_params_policy[ETHA_PARAMS_MAX + 1] = {
 	[ETHA_PARAMS_UNSPEC]		= { .type = NLA_REJECT },
@@ -351,7 +352,7 @@ static const struct nla_policy set_params_policy[ETHA_PARAMS_MAX + 1] = {
 	[ETHA_PARAMS_COALESCE]		= { .type = NLA_NESTED },
 	[ETHA_PARAMS_RING]		= { .type = NLA_NESTED },
 	[ETHA_PARAMS_PAUSE]		= { .type = NLA_NESTED },
-	[ETHA_PARAMS_CHANNELS]		= { .type = NLA_REJECT },
+	[ETHA_PARAMS_CHANNELS]		= { .type = NLA_NESTED },
 };
 
 static const struct nla_policy coalesce_policy[ETHA_COALESCE_MAX + 1] = {
@@ -580,6 +581,57 @@ static int update_pause(struct genl_info *info, struct net_device *dev,
 	return (ret < 0) ? ret : 1;
 }
 
+static const struct nla_policy channels_policy[ETHA_CHANNELS_MAX + 1] = {
+	[ETHA_CHANNELS_UNSPEC]		= { .type = NLA_REJECT },
+	[ETHA_CHANNELS_MAX_RX]		= { .type = NLA_REJECT },
+	[ETHA_CHANNELS_MAX_TX]		= { .type = NLA_REJECT },
+	[ETHA_CHANNELS_MAX_OTHER]	= { .type = NLA_REJECT },
+	[ETHA_CHANNELS_MAX_COMBINED]	= { .type = NLA_REJECT },
+	[ETHA_CHANNELS_RX_COUNT]	= { .type = NLA_U32 },
+	[ETHA_CHANNELS_TX_COUNT]	= { .type = NLA_U32 },
+	[ETHA_CHANNELS_OTHER_COUNT]	= { .type = NLA_U32 },
+	[ETHA_CHANNELS_COMBINED_COUNT]	= { .type = NLA_U32 },
+};
+
+static int update_channels(struct genl_info *info, struct net_device *dev,
+			   struct nlattr *nest)
+{
+	struct ethtool_channels old = { .cmd = ETHTOOL_GCHANNELS };
+	struct ethtool_channels new = { .cmd = ETHTOOL_SCHANNELS };
+	struct nlattr *tb[ETHA_CHANNELS_MAX + 1];
+	bool mod = false;
+	int ret;
+
+	if (!nest)
+		return 0;
+	if (!dev->ethtool_ops->get_channels ||
+	    !dev->ethtool_ops->set_channels)
+		return -EOPNOTSUPP;
+	dev->ethtool_ops->get_channels(dev, &old);
+	new = old;
+	new.cmd = ETHTOOL_SCHANNELS;
+
+	ret = nla_parse_nested_strict(tb, ETHA_CHANNELS_MAX, nest,
+				      channels_policy, info->extack);
+	if (ret < 0)
+		return ret;
+
+	if (ethnl_update_u32(&new.rx_count, tb[ETHA_CHANNELS_RX_COUNT]))
+		mod = true;
+	if (ethnl_update_u32(&new.tx_count, tb[ETHA_CHANNELS_TX_COUNT]))
+		mod = true;
+	if (ethnl_update_u32(&new.other_count,tb[ETHA_CHANNELS_OTHER_COUNT]))
+		mod = true;
+	if (ethnl_update_u32(&new.combined_count,
+			     tb[ETHA_CHANNELS_COMBINED_COUNT]))
+		mod = true;
+	if (!mod)
+		return 0;
+
+	ret = __ethtool_set_channels(dev, &old, &new);
+	return (ret < 0) ? ret : 1;
+}
+
 int ethnl_set_params(struct sk_buff *skb, struct genl_info *info)
 {
 	struct nlattr *tb[ETHA_PARAMS_MAX + 1];
@@ -614,6 +666,11 @@ int ethnl_set_params(struct sk_buff *skb, struct genl_info *info)
 		goto out_ops;
 	if (ret)
 		req_mask |= ETH_PARAMS_IM_PAUSE;
+	ret = update_channels(info, dev, tb[ETHA_PARAMS_CHANNELS]);
+	if (ret < 0)
+		goto out_ops;
+	if (ret)
+		req_mask |= ETH_PARAMS_IM_CHANNELS;
 
 	ret = 0;
 out_ops:
