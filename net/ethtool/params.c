@@ -14,6 +14,7 @@ static const struct nla_policy get_params_policy[ETHA_PARAMS_MAX + 1] = {
 	[ETHA_PARAMS_PAUSE]		= { .type = NLA_REJECT },
 	[ETHA_PARAMS_CHANNELS]		= { .type = NLA_REJECT },
 	[ETHA_PARAMS_EEE]		= { .type = NLA_REJECT },
+	[ETHA_PARAMS_FEC]		= { .type = NLA_REJECT },
 };
 
 struct params_data {
@@ -26,6 +27,7 @@ struct params_data {
 	struct ethtool_pauseparam	pause;
 	struct ethtool_channels		channels;
 	struct ethtool_eee		eee;
+	struct ethtool_fecparam		fec;
 };
 
 static int parse_params(struct common_req_info *req_info, struct sk_buff *skb,
@@ -99,6 +101,13 @@ static int ethnl_get_eee(struct net_device *dev, struct ethtool_eee *data)
 	return dev->ethtool_ops->get_eee(dev, data);
 }
 
+static int ethnl_get_fec(struct net_device *dev, struct ethtool_fecparam *data)
+{
+	if (!dev->ethtool_ops->get_fecparam)
+		return -EOPNOTSUPP;
+	return dev->ethtool_ops->get_fecparam(dev, data);
+}
+
 static int prepare_params(struct common_req_info *req_info,
 			  struct genl_info *info)
 {
@@ -135,6 +144,11 @@ static int prepare_params(struct common_req_info *req_info,
 		ret = ethnl_get_eee(dev, &data->eee);
 		if (ret < 0)
 			req_mask &= ~ETH_PARAMS_IM_EEE;
+	}
+	if (req_mask & ETH_PARAMS_IM_FEC) {
+		ret = ethnl_get_fec(dev, &data->fec);
+		if (ret < 0)
+			req_mask &= ~ETH_PARAMS_IM_FEC;
 	}
 	ethnl_after_ops(dev);
 
@@ -194,6 +208,13 @@ static int eee_size(const struct ethtool_eee *eee, bool compact)
 	return nla_total_size(len);
 }
 
+static int fec_size(void)
+{
+	int len = nla_total_size(sizeof(struct nla_bitfield32));
+
+	return nla_total_size(len);
+}
+
 static int params_size(const struct common_req_info *req_info)
 {
 	struct params_data *data =
@@ -217,6 +238,8 @@ static int params_size(const struct common_req_info *req_info)
 			return ret;
 		len += ret;
 	}
+	if (info_mask & ETH_PARAMS_IM_FEC)
+		len += fec_size();
 
 	return len;
 }
@@ -384,6 +407,22 @@ err:
 	return ret;
 }
 
+static int fill_fec(struct sk_buff *skb, struct ethtool_fecparam *data)
+{
+	struct nlattr *nest = ethnl_nest_start(skb, ETHA_PARAMS_FEC);
+
+	if (!nest)
+		return -EMSGSIZE;
+	if (nla_put_bitfield32(skb, ETHA_FEC_MODES, data->active_fec,
+			       data->fec)) {
+		nla_nest_cancel(skb, nest);
+		return -EMSGSIZE;
+	}
+
+	nla_nest_end(skb, nest);
+	return 0;
+}
+
 static int fill_params(struct sk_buff *skb,
 		       const struct common_req_info *req_info)
 {
@@ -417,6 +456,11 @@ static int fill_params(struct sk_buff *skb,
 		if (ret < 0)
 			return ret;
 	}
+	if (info_mask & ETH_PARAMS_IM_FEC) {
+		ret = fill_fec(skb, &data->fec);
+		if (ret < 0)
+			return ret;
+	}
 
 	return 0;
 }
@@ -446,6 +490,7 @@ static const struct nla_policy set_params_policy[ETHA_PARAMS_MAX + 1] = {
 	[ETHA_PARAMS_PAUSE]		= { .type = NLA_NESTED },
 	[ETHA_PARAMS_CHANNELS]		= { .type = NLA_NESTED },
 	[ETHA_PARAMS_EEE]		= { .type = NLA_NESTED },
+	[ETHA_PARAMS_FEC]		= { .type = NLA_REJECT },
 };
 
 static const struct nla_policy coalesce_policy[ETHA_COALESCE_MAX + 1] = {

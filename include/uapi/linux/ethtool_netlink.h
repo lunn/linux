@@ -297,6 +297,7 @@ enum {
 	ETHA_PARAMS_PAUSE,			/* nest - ETHA_PAUSE_* */
 	ETHA_PARAMS_CHANNELS,			/* nest - ETHA_CHANNELS_* */
 	ETHA_PARAMS_EEE,			/* nest - ETHA_EEE_* */
+	ETHA_PARAMS_FEC,			/* nest - ETHA_FEC_* */
 
 	__ETHA_PARAMS_CNT,
 	ETHA_PARAMS_MAX = (__ETHA_PARAMS_CNT - 1)
@@ -307,12 +308,14 @@ enum {
 #define ETH_PARAMS_IM_PAUSE			(1U << 2)
 #define ETH_PARAMS_IM_CHANNELS			(1U << 3)
 #define ETH_PARAMS_IM_EEE			(1U << 4)
+#define ETH_PARAMS_IM_FEC			(1U << 5)
 
 #define ETH_PARAMS_IM_ALL (ETH_PARAMS_IM_COALESCE | \
 			   ETH_PARAMS_IM_RING | \
 			   ETH_PARAMS_IM_PAUSE | \
 			   ETH_PARAMS_IM_CHANNELS | \
-			   ETH_PARAMS_IM_EEE)
+			   ETH_PARAMS_IM_EEE | \
+			   ETH_PARAMS_IM_FEC)
 
 enum {
 	ETHA_COALESCE_UNSPEC,
@@ -394,6 +397,14 @@ enum {
 
 	__ETHA_EEE_CNT,
 	ETHA_EEE_MAX = (__ETHA_EEE_CNT - 1)
+};
+
+enum {
+	ETHA_FEC_UNSPEC,
+	ETHA_FEC_MODES,				/* bitfield32 */
+
+	__ETHA_FEC_CNT,
+	ETHA_FEC_MAX = (__ETHA_FEC_CNT - 1)
 };
 
 /* generic netlink info */
