@@ -2,6 +2,7 @@
 
 #include "netlink.h"
 #include "common.h"
+#include "bitset.h"
 
 static const struct nla_policy get_params_policy[ETHA_PARAMS_MAX + 1] = {
 	[ETHA_PARAMS_UNSPEC]		= { .type = NLA_REJECT },
@@ -12,6 +13,7 @@ static const struct nla_policy get_params_policy[ETHA_PARAMS_MAX + 1] = {
 	[ETHA_PARAMS_RING]		= { .type = NLA_REJECT },
 	[ETHA_PARAMS_PAUSE]		= { .type = NLA_REJECT },
 	[ETHA_PARAMS_CHANNELS]		= { .type = NLA_REJECT },
+	[ETHA_PARAMS_EEE]		= { .type = NLA_REJECT },
 };
 
 struct params_data {
@@ -23,6 +25,7 @@ struct params_data {
 	struct ethtool_ringparam	ring;
 	struct ethtool_pauseparam	pause;
 	struct ethtool_channels		channels;
+	struct ethtool_eee		eee;
 };
 
 static int parse_params(struct common_req_info *req_info, struct sk_buff *skb,
@@ -89,6 +92,13 @@ static int ethnl_get_channels(struct net_device *dev,
 	return 0;
 }
 
+static int ethnl_get_eee(struct net_device *dev, struct ethtool_eee *data)
+{
+	if (!dev->ethtool_ops->get_eee)
+		return -EOPNOTSUPP;
+	return dev->ethtool_ops->get_eee(dev, data);
+}
+
 static int prepare_params(struct common_req_info *req_info,
 			  struct genl_info *info)
 {
@@ -121,6 +131,11 @@ static int prepare_params(struct common_req_info *req_info,
 		if (ret < 0)
 			req_mask &= ~ETH_PARAMS_IM_CHANNELS;
 	}
+	if (req_mask & ETH_PARAMS_IM_EEE) {
+		ret = ethnl_get_eee(dev, &data->eee);
+		if (ret < 0)
+			req_mask &= ~ETH_PARAMS_IM_EEE;
+	}
 	ethnl_after_ops(dev);
 
 	data->repdata_base.info_mask = req_mask;
@@ -150,6 +165,35 @@ static int channels_size(void)
 	return nla_total_size(8 * nla_total_size(sizeof(u32)));
 }
 
+static int eee_size(const struct ethtool_eee *eee, bool compact)
+{
+	const unsigned int flags = compact ? ETHNL_BITSET_COMPACT : 0;
+	int len = 0;
+	int ret;
+
+	/* link_modes */
+	ret = ethnl_bitset32_size(sizeof(eee->advertised) * BITS_PER_BYTE,
+				  &eee->advertised, &eee->supported,
+				  link_mode_names, flags);
+	if (ret < 0)
+		return ret;
+	len += ret;
+	/* peer_modes */
+	ret = ethnl_bitset32_size(sizeof(eee->lp_advertised) * BITS_PER_BYTE,
+				  &eee->lp_advertised, NULL, link_mode_names,
+				  flags | ETHNL_BITSET_LIST);
+	if (ret < 0)
+		return ret;
+	len += ret;
+	/* active, enabled, tx_lpi_enabled */
+	len += 3 * nla_total_size(sizeof(u8));
+	/* tx_lpi_timer */
+	len += nla_total_size(sizeof(u32));
+
+	/* nest */
+	return nla_total_size(len);
+}
+
 static int params_size(const struct common_req_info *req_info)
 {
 	struct params_data *data =
@@ -166,6 +210,13 @@ static int params_size(const struct common_req_info *req_info)
 		len += pause_size();
 	if (info_mask & ETH_PARAMS_IM_CHANNELS)
 		len += channels_size();
+	if (info_mask & ETH_PARAMS_IM_EEE) {
+		int ret = eee_size(&data->eee, req_info->compact);
+
+		if (ret < 0)
+			return ret;
+		len += ret;
+	}
 
 	return len;
 }
@@ -297,6 +348,42 @@ static int fill_channels(struct sk_buff *skb, struct ethtool_channels *data)
 	return 0;
 }
 
+static int fill_eee(struct sk_buff *skb, struct ethtool_eee *data, bool compact)
+{
+	const unsigned int flags = compact ? ETHNL_BITSET_COMPACT : 0;
+	struct nlattr *nest = ethnl_nest_start(skb, ETHA_PARAMS_EEE);
+	int ret;
+
+	if (!nest)
+		return -EMSGSIZE;
+	ret = ethnl_put_bitset32(skb, ETHA_EEE_LINK_MODES,
+				 sizeof(data->advertised) * BITS_PER_BYTE,
+				 &data->advertised, &data->supported,
+				 link_mode_names, flags);
+	if (ret < 0)
+		goto err;
+	ret = ethnl_put_bitset32(skb, ETHA_EEE_PEER_MODES,
+				 sizeof(data->lp_advertised) * BITS_PER_BYTE,
+				 &data->lp_advertised, &data->lp_advertised,
+				 link_mode_names, flags | ETHNL_BITSET_LIST);
+	if (ret < 0)
+		goto err;
+
+	if (nla_put_u8(skb, ETHA_EEE_ACTIVE, !!data->eee_active) ||
+	    nla_put_u8(skb, ETHA_EEE_ENABLED, !!data->eee_enabled) ||
+	    nla_put_u8(skb, ETHA_EEE_TX_LPI_ENABLED, !!data->tx_lpi_enabled) ||
+	    nla_put_u32(skb, ETHA_EEE_TX_LPI_TIMER, data->tx_lpi_timer)) {
+		ret = -EMSGSIZE;
+		goto err;
+	}
+
+	nla_nest_end(skb, nest);
+	return 0;
+err:
+	nla_nest_cancel(skb, nest);
+	return ret;
+}
+
 static int fill_params(struct sk_buff *skb,
 		       const struct common_req_info *req_info)
 {
@@ -322,6 +409,11 @@ static int fill_params(struct sk_buff *skb,
 	}
 	if (info_mask & ETH_PARAMS_IM_CHANNELS) {
 		ret = fill_channels(skb, &data->channels);
+		if (ret < 0)
+			return ret;
+	}
+	if (info_mask & ETH_PARAMS_IM_EEE) {
+		ret = fill_eee(skb, &data->eee, req_info->compact);
 		if (ret < 0)
 			return ret;
 	}
@@ -353,6 +445,7 @@ static const struct nla_policy set_params_policy[ETHA_PARAMS_MAX + 1] = {
 	[ETHA_PARAMS_RING]		= { .type = NLA_NESTED },
 	[ETHA_PARAMS_PAUSE]		= { .type = NLA_NESTED },
 	[ETHA_PARAMS_CHANNELS]		= { .type = NLA_NESTED },
+	[ETHA_PARAMS_EEE]		= { .type = NLA_REJECT },
 };
 
 static const struct nla_policy coalesce_policy[ETHA_COALESCE_MAX + 1] = {
