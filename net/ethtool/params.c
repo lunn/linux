@@ -499,7 +499,7 @@ static const struct nla_policy set_params_policy[ETHTOOL_A_PARAMS_MAX + 1] = {
 	[ETHTOOL_A_PARAMS_PAUSE]		= { .type = NLA_NESTED },
 	[ETHTOOL_A_PARAMS_CHANNELS]		= { .type = NLA_NESTED },
 	[ETHTOOL_A_PARAMS_EEE]			= { .type = NLA_NESTED },
-	[ETHTOOL_A_PARAMS_FEC]			= { .type = NLA_REJECT },
+	[ETHTOOL_A_PARAMS_FEC]			= { .type = NLA_NESTED },
 };
 
 static const struct nla_policy coalesce_policy[ETHTOOL_A_COALESCE_MAX + 1] = {
@@ -852,6 +852,42 @@ static int update_eee(struct genl_info *info, struct net_device *dev,
 	return (ret < 0) ? ret : 1;
 }
 
+static const struct nla_policy fec_policy[ETHTOOL_A_FEC_MAX + 1] = {
+	[ETHTOOL_A_FEC_UNSPEC]		= { .type = NLA_REJECT },
+	[ETHTOOL_A_FEC_MODES]		= { .type = NLA_U32 },
+};
+
+static int update_fec(struct genl_info *info, struct net_device *dev,
+		      struct nlattr *nest)
+{
+	struct nlattr *tb[ETHTOOL_A_FEC_MAX + 1];
+	struct ethtool_fecparam data = {};
+	bool mod = false;
+	int ret;
+
+	if (!nest)
+		return 0;
+	if (!dev->ethtool_ops->get_fecparam ||
+	    !dev->ethtool_ops->set_fecparam)
+		return -EOPNOTSUPP;
+	ret = dev->ethtool_ops->get_fecparam(dev, &data);
+	if (ret < 0)
+		return ret;
+
+	ret = nla_parse_nested(tb, ETHTOOL_A_FEC_MAX, nest, fec_policy,
+			       info->extack);
+	if (ret < 0)
+		return ret;
+
+	if (ethnl_update_bitfield32(&data.fec, tb[ETHTOOL_A_FEC_MODES]))
+		mod = true;
+
+	if (!mod)
+		return 0;
+	ret = dev->ethtool_ops->set_fecparam(dev, &data);
+	return (ret < 0) ? ret : 1;
+}
+
 int ethnl_set_params(struct sk_buff *skb, struct genl_info *info)
 {
 	struct nlattr *tb[ETHTOOL_A_PARAMS_MAX + 1];
@@ -896,6 +932,11 @@ int ethnl_set_params(struct sk_buff *skb, struct genl_info *info)
 		goto out_ops;
 	if (ret)
 		req_mask |= ETHTOOL_IM_PARAMS_EEE;
+	ret = update_fec(info, dev, tb[ETHTOOL_A_PARAMS_FEC]);
+	if (ret < 0)
+		goto out_ops;
+	if (ret)
+		req_mask |= ETHTOOL_IM_PARAMS_FEC;
 
 	ret = 0;
 out_ops:
