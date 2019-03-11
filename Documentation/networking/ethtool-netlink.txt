@@ -472,8 +472,10 @@ SET_PARAMS
 ----------
 
 SET_PARAMS request modifies the settings retrieved by GET_PARAMS, i.e. it
-replaces ETHTOOL_SCOALESCE ioctl command. Relevant data attributes are
-contained in nest attribute ETHA_PARAMS_COALESCE.
+replaces ETHTOOL_SCOALESCE and ETHTOOL_SRINGPARAM ioctl commands. For each of
+these, relevant data attributes are contained in a corresponding nest
+attribute. Some of the attributes provided by GET_SETPARAMS are read only and
+cannot be set by SET_PARAMS request.
 
     ETHA_PARAMS_COALESCE	(nested)	coalescing parameters
         ETHA_COALESCE_RX_USECS			(u32)
@@ -498,6 +500,11 @@ contained in nest attribute ETHA_PARAMS_COALESCE.
         ETHA_COALESCE_TX_USE_ADAPTIVE		(bool)
         ETHA_COALESCE_RATE_SAMPLE_INTERVAL	(u32)
         ETHA_COALESCE_STATS_BLOCK_USECS		(u32)
+    ETHA_PARAMS_RING		(nested)	ring sizes
+        ETHA_RING_RX_PENDING			(u32)
+        ETHA_RING_RX_MINI_PENDING		(u32)
+        ETHA_RING_RX_JUMBO_PENDING		(u32)
+        ETHA_RING_TX_PENDING			(u32)
 
 
 Request translation
@@ -524,7 +531,7 @@ ETHTOOL_SEEPROM			n/a
 ETHTOOL_GCOALESCE		ETHNL_CMD_GET_PARAMS
 ETHTOOL_SCOALESCE		ETHNL_CMD_SET_PARAMS
 ETHTOOL_GRINGPARAM		ETHNL_CMD_GET_PARAMS
-ETHTOOL_SRINGPARAM		n/a
+ETHTOOL_SRINGPARAM		ETHNL_CMD_SET_PARAMS
 ETHTOOL_GPAUSEPARAM		n/a
 ETHTOOL_SPAUSEPARAM		n/a
 ETHTOOL_GRXCSUM			ETHNL_CMD_GET_SETTINGS
