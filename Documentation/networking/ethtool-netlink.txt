@@ -408,9 +408,9 @@ GET_PARAMS
 
 GET_PARAMS request retrieves information provided by ioctl comands
 ETHTOOL_GCOALESCE (coalescing parameters), ETHTOOL_GRINGPARAM (ring sizes),
-ETHTOOL_GPAUSEPARAM (pause parameters) and ETHTOOL_GCHANNELS (channel counts).
-For each of these, there is a bit in header info_mask so that only one type of
-information can be requested.
+ETHTOOL_GPAUSEPARAM (pause parameters), ETHTOOL_GCHANNELS (channel counts) and
+ETHTOOL_GEEE (EEE settings). For each of these, there is a bit in header
+info_mask so that only one type of information can be requested.
 
 Request contents:
 
@@ -424,6 +424,7 @@ Info mask bits:
     ETHTOOL_IM_PARAMS_RING		ring sizes
     ETHTOOL_IM_PARAMS_PAUSE		pause parameters
     ETHTOOL_IM_PARAMS_CHANNELS		channel counts
+    ETHTOOL_IM_PARAMS_EEE		EEE settings
 
 Response contents: On top level, there is one attribute for each of the
 information categories, the information is nested in it.
@@ -474,6 +475,15 @@ information categories, the information is nested in it.
         ETHTOOL_A_CHANNELS_TX_COUNT	    (u32)
         ETHTOOL_A_CHANNELS_OTHER_COUNT	    (u32)
         ETHTOOL_A_CHANNELS_COMBINED_COUNT   (u32)
+    ETHTOOL_A_PARAMS_EEE		(nested)	EEE settings
+        ETHTOOL_A_EEE_LINK_MODES	    (bitset)
+		- modes for which EEE is advertised (value) or supported (mask)
+        ETHTOOL_A_EEE_PEER_MODES	    (bitset)
+		- modes for which link partner advertises EEE
+        ETHTOOL_A_EEE_ACTIVE		    (bool)
+        ETHTOOL_A_EEE_ENABLED		    (bool)
+        ETHTOOL_A_EEE_TX_LPI_ENABLED	    (bool)
+        ETHTOOL_A_EEE_TX_LPI_TIMER	    (u32)
 
 GET_PARAMS requests allow dumps and messages in the same format as response
 to them are broadcasted as notifications on change of these settings using
@@ -604,7 +614,7 @@ ETHTOOL_GET_DUMP_DATA		n/a
 ETHTOOL_GET_TS_INFO		ETHNL_CMD_GET_INFO
 ETHTOOL_GMODULEINFO		n/a
 ETHTOOL_GMODULEEEPROM		n/a
-ETHTOOL_GEEE			n/a
+ETHTOOL_GEEE			ETHNL_CMD_GET_PARAMS
 ETHTOOL_SEEE			n/a
 ETHTOOL_GRSSH			n/a
 ETHTOOL_SRSSH			n/a
