@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
 
 #include "netlink.h"
+#include "common.h"
 
 static const struct nla_policy get_params_policy[ETHTOOL_A_PARAMS_MAX + 1] = {
 	[ETHTOOL_A_PARAMS_UNSPEC]		= { .type = NLA_REJECT },
@@ -357,7 +358,7 @@ static const struct nla_policy set_params_policy[ETHTOOL_A_PARAMS_MAX + 1] = {
 	[ETHTOOL_A_PARAMS_COALESCE]		= { .type = NLA_NESTED },
 	[ETHTOOL_A_PARAMS_RING]			= { .type = NLA_NESTED },
 	[ETHTOOL_A_PARAMS_PAUSE]		= { .type = NLA_NESTED },
-	[ETHTOOL_A_PARAMS_CHANNELS]		= { .type = NLA_REJECT },
+	[ETHTOOL_A_PARAMS_CHANNELS]		= { .type = NLA_NESTED },
 };
 
 static const struct nla_policy coalesce_policy[ETHTOOL_A_COALESCE_MAX + 1] = {
@@ -587,6 +588,76 @@ static int update_pause(struct genl_info *info, struct net_device *dev,
 	return (ret < 0) ? ret : 1;
 }
 
+static const struct nla_policy channels_policy[ETHTOOL_A_CHANNELS_MAX + 1] = {
+	[ETHTOOL_A_CHANNELS_UNSPEC]		= { .type = NLA_REJECT },
+	[ETHTOOL_A_CHANNELS_MAX_RX]		= { .type = NLA_REJECT },
+	[ETHTOOL_A_CHANNELS_MAX_TX]		= { .type = NLA_REJECT },
+	[ETHTOOL_A_CHANNELS_MAX_OTHER]		= { .type = NLA_REJECT },
+	[ETHTOOL_A_CHANNELS_MAX_COMBINED]	= { .type = NLA_REJECT },
+	[ETHTOOL_A_CHANNELS_RX_COUNT]		= { .type = NLA_U32 },
+	[ETHTOOL_A_CHANNELS_TX_COUNT]		= { .type = NLA_U32 },
+	[ETHTOOL_A_CHANNELS_OTHER_COUNT]	= { .type = NLA_U32 },
+	[ETHTOOL_A_CHANNELS_COMBINED_COUNT]	= { .type = NLA_U32 },
+};
+
+static int update_channels(struct genl_info *info, struct net_device *dev,
+			   struct nlattr *nest)
+{
+	struct ethtool_channels old = { .cmd = ETHTOOL_GCHANNELS };
+	struct ethtool_channels new = { .cmd = ETHTOOL_SCHANNELS };
+	struct nlattr *tb[ETHTOOL_A_CHANNELS_MAX + 1];
+	const struct nlattr *err_attr;
+	bool mod = false;
+	int ret;
+
+	if (!nest)
+		return 0;
+	if (!dev->ethtool_ops->get_channels ||
+	    !dev->ethtool_ops->set_channels)
+		return -EOPNOTSUPP;
+	dev->ethtool_ops->get_channels(dev, &old);
+	new = old;
+	new.cmd = ETHTOOL_SCHANNELS;
+
+	ret = nla_parse_nested(tb, ETHTOOL_A_CHANNELS_MAX, nest,
+			       channels_policy, info->extack);
+	if (ret < 0)
+		return ret;
+
+	if (ethnl_update_u32(&new.rx_count, tb[ETHTOOL_A_CHANNELS_RX_COUNT]))
+		mod = true;
+	if (ethnl_update_u32(&new.tx_count, tb[ETHTOOL_A_CHANNELS_TX_COUNT]))
+		mod = true;
+	if (ethnl_update_u32(&new.other_count,
+			     tb[ETHTOOL_A_CHANNELS_OTHER_COUNT]))
+		mod = true;
+	if (ethnl_update_u32(&new.combined_count,
+			     tb[ETHTOOL_A_CHANNELS_COMBINED_COUNT]))
+		mod = true;
+	if (!mod)
+		return 0;
+
+	/* check new values against maximum */
+	if (new.rx_count > new.max_rx)
+		err_attr = tb[ETHTOOL_A_CHANNELS_RX_COUNT];
+	else if (new.tx_count > new.max_tx)
+		err_attr = tb[ETHTOOL_A_CHANNELS_TX_COUNT];
+	else if (new.other_count > new.max_other)
+		err_attr = tb[ETHTOOL_A_CHANNELS_OTHER_COUNT];
+	else if (new.combined_count > new.max_combined)
+		err_attr = tb[ETHTOOL_A_CHANNELS_COMBINED_COUNT];
+	else
+		err_attr = NULL;
+	if (err_attr) {
+		NL_SET_ERR_MSG_ATTR(info->extack, err_attr,
+				    "requested channel count exceeeds maximum");
+		return -EINVAL;
+	}
+
+	ret = __ethtool_set_channels(dev, &old, &new);
+	return (ret < 0) ? ret : 1;
+}
+
 int ethnl_set_params(struct sk_buff *skb, struct genl_info *info)
 {
 	struct nlattr *tb[ETHTOOL_A_PARAMS_MAX + 1];
@@ -621,6 +692,11 @@ int ethnl_set_params(struct sk_buff *skb, struct genl_info *info)
 		goto out_ops;
 	if (ret)
 		req_mask |= ETHTOOL_IM_PARAMS_PAUSE;
+	ret = update_channels(info, dev, tb[ETHTOOL_A_PARAMS_CHANNELS]);
+	if (ret < 0)
+		goto out_ops;
+	if (ret)
+		req_mask |= ETHTOOL_IM_PARAMS_CHANNELS;
 
 	ret = 0;
 out_ops:

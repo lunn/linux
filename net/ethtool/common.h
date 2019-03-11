@@ -21,6 +21,9 @@ int __ethtool_get_drvinfo(struct net_device *dev, struct ethtool_drvinfo *info);
 int __ethtool_get_ts_info(struct net_device *dev, struct ethtool_ts_info *info);
 int __ethtool_get_link(struct net_device *dev);
 int __ethtool_get_wol(struct net_device *dev, struct ethtool_wolinfo *wol);
+int __ethtool_set_channels(struct net_device *dev,
+			   const struct ethtool_channels *curr,
+			   struct ethtool_channels *channels);
 
 bool convert_legacy_settings_to_link_ksettings(
 	struct ethtool_link_ksettings *link_ksettings,
