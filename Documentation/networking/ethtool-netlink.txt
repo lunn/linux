@@ -408,9 +408,10 @@ GET_PARAMS
 
 GET_PARAMS request retrieves information provided by ioctl comands
 ETHTOOL_GCOALESCE (coalescing parameters), ETHTOOL_GRINGPARAM (ring sizes),
-ETHTOOL_GPAUSEPARAM (pause parameters), ETHTOOL_GCHANNELS (channel counts) and
-ETHTOOL_GEEE (EEE settings). For each of these, there is a bit in header
-info_mask so that only one type of information can be requested.
+ETHTOOL_GPAUSEPARAM (pause parameters), ETHTOOL_GCHANNELS (channel counts),
+ETHTOOL_GEEE (EEE settings) and ETHTOOL_GFECPARAM (FEC parameters). For each of
+these, there is a bit in header info_mask so that only one type of information
+can be requested.
 
 Request contents:
 
@@ -425,6 +426,7 @@ Info mask bits:
     ETHTOOL_IM_PARAMS_PAUSE		pause parameters
     ETHTOOL_IM_PARAMS_CHANNELS		channel counts
     ETHTOOL_IM_PARAMS_EEE		EEE settings
+    ETHTOOL_IM_PARAMS_FEC		FEC parameters
 
 Response contents: On top level, there is one attribute for each of the
 information categories, the information is nested in it.
@@ -484,6 +486,9 @@ information categories, the information is nested in it.
         ETHTOOL_A_EEE_ENABLED		    (bool)
         ETHTOOL_A_EEE_TX_LPI_ENABLED	    (bool)
         ETHTOOL_A_EEE_TX_LPI_TIMER	    (u32)
+    ETHTOOL_A_PARAMS_FEC		(nested)	FEC parameters
+        ETHTOOL_A_FEC_MODES		    (bitfield32)
+		- active (value) and configured (selector) FEC encodings
 
 GET_PARAMS requests allow dumps and messages in the same format as response
 to them are broadcasted as notifications on change of these settings using
@@ -632,5 +637,5 @@ ETHTOOL_GLINKSETTINGS		ETHNL_CMD_GET_SETTINGS
 ETHTOOL_SLINKSETTINGS		ETHNL_CMD_SET_SETTINGS
 ETHTOOL_PHY_GTUNABLE		n/a
 ETHTOOL_PHY_STUNABLE		n/a
-ETHTOOL_GFECPARAM		n/a
+ETHTOOL_GFECPARAM		ETHNL_CMD_GET_PARAMS
 ETHTOOL_SFECPARAM		n/a

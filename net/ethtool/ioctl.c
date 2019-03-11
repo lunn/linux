@@ -2336,6 +2336,7 @@ static int ethtool_get_fecparam(struct net_device *dev, void __user *useraddr)
 static int ethtool_set_fecparam(struct net_device *dev, void __user *useraddr)
 {
 	struct ethtool_fecparam fecparam;
+	int ret;
 
 	if (!dev->ethtool_ops->set_fecparam)
 		return -EOPNOTSUPP;
@@ -2343,7 +2344,11 @@ static int ethtool_set_fecparam(struct net_device *dev, void __user *useraddr)
 	if (copy_from_user(&fecparam, useraddr, sizeof(fecparam)))
 		return -EFAULT;
 
-	return dev->ethtool_ops->set_fecparam(dev, &fecparam);
+	ret = dev->ethtool_ops->set_fecparam(dev, &fecparam);
+	if (ret >= 0)
+		ethtool_notify(dev, NULL, ETHNL_CMD_SET_PARAMS,
+			       ETHTOOL_IM_PARAMS_FEC, NULL);
+	return ret;
 }
 
 /* The main entry point in this file.  Called from net/core/dev_ioctl.c */
