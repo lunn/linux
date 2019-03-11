@@ -300,7 +300,7 @@ static const struct nla_policy set_params_policy[ETHA_PARAMS_MAX + 1] = {
 	[ETHA_PARAMS_COMPACT]		= { .type = NLA_FLAG },
 	[ETHA_PARAMS_COALESCE]		= { .type = NLA_NESTED },
 	[ETHA_PARAMS_RING]		= { .type = NLA_NESTED },
-	[ETHA_PARAMS_PAUSE]		= { .type = NLA_REJECT },
+	[ETHA_PARAMS_PAUSE]		= { .type = NLA_NESTED },
 };
 
 static const struct nla_policy coalesce_policy[ETHA_COALESCE_MAX + 1] = {
@@ -489,6 +489,46 @@ static int update_ring(struct genl_info *info, struct net_device *dev,
 	return (ret < 0) ? ret : 1;
 }
 
+static const struct nla_policy pause_policy[ETHA_PAUSE_MAX + 1] = {
+	[ETHA_PAUSE_UNSPEC]	= { .type = NLA_REJECT },
+	[ETHA_PAUSE_AUTONEG]	= { .type = NLA_U8 },
+	[ETHA_PAUSE_RX]		= { .type = NLA_U8 },
+	[ETHA_PAUSE_TX]		= { .type = NLA_U8 },
+};
+
+static int update_pause(struct genl_info *info, struct net_device *dev,
+			struct nlattr *nest)
+{
+	struct nlattr *tb[ETHA_RING_MAX + 1];
+	struct ethtool_pauseparam data = {};
+	bool mod = false;
+	int ret;
+
+	if (!nest)
+		return 0;
+	if (!dev->ethtool_ops->get_pauseparam ||
+	    !dev->ethtool_ops->set_pauseparam)
+		return -EOPNOTSUPP;
+	dev->ethtool_ops->get_pauseparam(dev, &data);
+
+	ret = nla_parse_nested_strict(tb, ETHA_PAUSE_MAX, nest, pause_policy,
+				      info->extack);
+	if (ret < 0)
+		return ret;
+
+	if (ethnl_update_u32(&data.autoneg, tb[ETHA_PAUSE_AUTONEG]))
+		mod = true;
+	if (ethnl_update_u32(&data.rx_pause, tb[ETHA_PAUSE_RX]))
+		mod = true;
+	if (ethnl_update_u32(&data.tx_pause, tb[ETHA_PAUSE_TX]))
+		mod = true;
+
+	if (!mod)
+		return 0;
+	ret = dev->ethtool_ops->set_pauseparam(dev, &data);
+	return (ret < 0) ? ret : 1;
+}
+
 int ethnl_set_params(struct sk_buff *skb, struct genl_info *info)
 {
 	struct nlattr *tb[ETHA_PARAMS_MAX + 1];
@@ -518,6 +558,11 @@ int ethnl_set_params(struct sk_buff *skb, struct genl_info *info)
 		goto out_ops;
 	if (ret)
 		req_mask |= ETH_PARAMS_IM_RING;
+	ret = update_pause(info, dev, tb[ETHA_PARAMS_PAUSE]);
+	if (ret < 0)
+		goto out_ops;
+	if (ret)
+		req_mask |= ETH_PARAMS_IM_PAUSE;
 
 	ret = 0;
 out_ops:
