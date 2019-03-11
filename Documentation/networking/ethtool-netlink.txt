@@ -407,9 +407,9 @@ GET_PARAMS
 ----------
 
 GET_PARAMS request retrieves information provided by ioctl comands
-ETHTOOL_GCOALESCE (coalescing parameters) and ETHTOOL_GRINGPARAM (ring sizes).
-For each of these, there is a bit in header info_mask so that only one type of
-information can be requested.
+ETHTOOL_GCOALESCE (coalescing parameters), ETHTOOL_GRINGPARAM (ring sizes) and
+ETHTOOL_GPAUSEPARAM (pause parameters). For each of these, there is a bit in
+header info_mask so that only one type of information can be requested.
 
 Request contents:
 
@@ -421,6 +421,7 @@ Info mask bits:
 
     ETHTOOL_IM_PARAMS_COALESCE		coalescing parameters
     ETHTOOL_IM_PARAMS_RING		ring sizes
+    ETHTOOL_IM_PARAMS_PAUSE		pause parameters
 
 Response contents: On top level, there is one attribute for each of the
 information categories, the information is nested in it.
@@ -458,6 +459,10 @@ information categories, the information is nested in it.
         ETHTOOL_A_RING_RX_MINI_PENDING	    (u32)
         ETHTOOL_A_RING_RX_JUMBO_PENDING	    (u32)
         ETHTOOL_A_RING_TX_PENDING	    (u32)
+    ETHTOOL_A_PARAMS_PAUSE		(nested)	pause parameters
+        ETHTOOL_A_PAUSE_AUTONEG		    (bool)
+        ETHTOOL_A_PAUSE_RX		    (bool)
+        ETHTOOL_A_PAUSE_TX		    (bool)
 
 GET_PARAMS requests allow dumps and messages in the same format as response
 to them are broadcasted as notifications on change of these settings using
@@ -528,7 +533,7 @@ ETHTOOL_GCOALESCE		ETHNL_CMD_GET_PARAMS
 ETHTOOL_SCOALESCE		ETHNL_CMD_SET_PARAMS
 ETHTOOL_GRINGPARAM		ETHNL_CMD_GET_PARAMS
 ETHTOOL_SRINGPARAM		ETHNL_CMD_SET_PARAMS
-ETHTOOL_GPAUSEPARAM		n/a
+ETHTOOL_GPAUSEPARAM		ETHNL_CMD_GET_PARAMS
 ETHTOOL_SPAUSEPARAM		n/a
 ETHTOOL_GRXCSUM			ETHNL_CMD_GET_SETTINGS
 ETHTOOL_SRXCSUM			ETHNL_CMD_SET_SETTINGS
