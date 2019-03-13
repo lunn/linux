@@ -79,6 +79,35 @@ static int enable_bwb = 0;
 module_param(enable_bwb, int, 0644);
 MODULE_PARM_DESC(enable_bwb, "Enable BWB unit for decoding, may crash on certain streams");
 
+static const char * const coda_state_names[] = {
+	[CODA_STATE_INITIALIZATION] = "initialization",
+	[CODA_STATE_CAPTURE_SETUP] = "capture setup",
+	[CODA_STATE_STOPPED] = "stopped",
+	[CODA_STATE_DECODING] = "decoding",
+	[CODA_STATE_ENCODING] = "encoding",
+	[CODA_STATE_DRAIN] = "drain",
+	[CODA_STATE_END_OF_STREAM] = "end of stream",
+	[CODA_STATE_SEEK] = "seek",
+	[CODA_STATE_RESET] = "reset",
+	[CODA_STATE_DYNAMIC_RESOLUTION_CHANGE] = "dynamic resolution change",
+};
+
+static const char *coda_state_name(enum coda_state state)
+{
+	if (state < ARRAY_SIZE(coda_state_names))
+		return coda_state_names[state];
+	return "invalid";
+}
+
+static void coda_set_state(struct coda_ctx *ctx, enum coda_state state)
+{
+	if (state != ctx->state) {
+		coda_dbg(1, ctx, "state transition: %s -> %s\n",
+			coda_state_name(ctx->state), coda_state_name(state));
+		ctx->state = state;
+	}
+}
+
 void coda_write(struct coda_dev *dev, u32 data, u32 reg)
 {
 	v4l2_dbg(3, coda_debug, &dev->v4l2_dev,
@@ -486,14 +515,23 @@ static int coda_enum_fmt(struct file *file, void *priv,
 
 	f->pixelformat = formats[f->index];
 
+	if (ctx->inst_type == CODA_INST_DECODER) {
+		if (ctx->state != CODA_STATE_INITIALIZATION &&
+		    ctx->state != CODA_STATE_CAPTURE_SETUP) {
+			coda_dbg(1, ctx, "enum_fmt(%s): invalid state: %s\n",
+				 v4l2_type_names[f->type],
+				 coda_state_name(ctx->state));
+		}
+	}
+
 	return 0;
 }
 
-static int coda_g_fmt(struct file *file, void *priv,
-		      struct v4l2_format *f)
+static int __coda_g_fmt(struct file *file, void *priv,
+			struct v4l2_format *f)
 {
-	struct coda_q_data *q_data;
 	struct coda_ctx *ctx = fh_to_ctx(priv);
+	struct coda_q_data *q_data;
 
 	q_data = get_q_data(ctx, f->type);
 	if (!q_data)
@@ -512,6 +550,28 @@ static int coda_g_fmt(struct file *file, void *priv,
 	f->fmt.pix.quantization	= ctx->quantization;
 
 	return 0;
+}
+
+static int coda_g_fmt_vid_cap(struct file *file, void *priv,
+			      struct v4l2_format *f)
+{
+	struct coda_ctx *ctx = fh_to_ctx(priv);
+
+	if (ctx->inst_type == CODA_INST_DECODER) {
+		if (ctx->state != CODA_STATE_CAPTURE_SETUP) {
+			coda_dbg(1, ctx, "g_fmt(%s): invalid state: %s\n",
+				 v4l2_type_names[f->type],
+				 coda_state_name(ctx->state));
+		}
+	}
+
+	return __coda_g_fmt(file, priv, f);
+}
+
+static int coda_g_fmt_vid_out(struct file *file, void *priv,
+			      struct v4l2_format *f)
+{
+	return __coda_g_fmt(file, priv, f);
 }
 
 static int coda_try_pixelformat(struct coda_ctx *ctx, struct v4l2_format *f)
@@ -686,7 +746,6 @@ static int coda_try_fmt_vid_cap(struct file *file, void *priv,
 	f->fmt.pix.ycbcr_enc = ctx->ycbcr_enc;
 	f->fmt.pix.quantization = ctx->quantization;
 
-	q_data_src = get_q_data(ctx, V4L2_BUF_TYPE_VIDEO_OUTPUT);
 	codec = coda_find_codec(ctx->dev, q_data_src->fourcc,
 				f->fmt.pix.pixelformat);
 	if (!codec)
@@ -862,6 +921,7 @@ static int coda_s_fmt_vid_cap(struct file *file, void *priv,
 		return ret;
 
 	q_data_src = get_q_data(ctx, V4L2_BUF_TYPE_VIDEO_OUTPUT);
+
 	r.left = 0;
 	r.top = 0;
 	r.width = q_data_src->width;
@@ -887,6 +947,21 @@ static int coda_s_fmt_vid_cap(struct file *file, void *priv,
 	ctx->xfer_func = f->fmt.pix.xfer_func;
 	ctx->ycbcr_enc = f->fmt.pix.ycbcr_enc;
 	ctx->quantization = f->fmt.pix.quantization;
+
+	if (ctx->inst_type == CODA_INST_DECODER) {
+		if (ctx->state != CODA_STATE_INITIALIZATION &&
+		    ctx->state != CODA_STATE_CAPTURE_SETUP) {
+			coda_dbg(1, ctx, "s_fmt(%s): invalid state: %s\n",
+				 v4l2_type_names[f->type],
+				 coda_state_name(ctx->state));
+		}
+
+		/* CAPTURE format established */
+		coda_set_state(ctx, CODA_STATE_CAPTURE_SETUP);
+
+		/* CAPTURE buffers ready */
+		/* FIXME */
+	}
 
 	return 0;
 }
@@ -925,6 +1000,11 @@ static int coda_s_fmt_vid_out(struct file *file, void *priv,
 	}
 	ctx->codec = codec;
 
+	if (ctx->state != CODA_STATE_INITIALIZATION) {
+		coda_dbg(1, ctx, "%s: invalid state: %s\n", __func__,
+			 coda_state_name(ctx->state));
+	}
+
 	dst_vq = v4l2_m2m_get_vq(ctx->fh.m2m_ctx, V4L2_BUF_TYPE_VIDEO_CAPTURE);
 	if (!dst_vq)
 		return -EINVAL;
@@ -940,7 +1020,7 @@ static int coda_s_fmt_vid_out(struct file *file, void *priv,
 
 	memset(&f_cap, 0, sizeof(f_cap));
 	f_cap.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	coda_g_fmt(file, priv, &f_cap);
+	__coda_g_fmt(file, priv, &f_cap);
 	f_cap.fmt.pix.width = f->fmt.pix.width;
 	f_cap.fmt.pix.height = f->fmt.pix.height;
 
@@ -961,14 +1041,80 @@ static int coda_reqbufs(struct file *file, void *priv,
 	 * Allow to allocate instance specific per-context buffers, such as
 	 * bitstream ringbuffer, slice buffer, work buffer, etc. if needed.
 	 */
-	if (rb->type == V4L2_BUF_TYPE_VIDEO_OUTPUT && ctx->ops->reqbufs)
-		return ctx->ops->reqbufs(ctx, rb);
+	if (rb->type == V4L2_BUF_TYPE_VIDEO_OUTPUT && ctx->ops->reqbufs) {
+		ret = ctx->ops->reqbufs(ctx, rb);
+		if (ret)
+			return ret;
+	}
+
+	if (ctx->inst_type == CODA_INST_DECODER) {
+		if (rb->type == V4L2_BUF_TYPE_VIDEO_OUTPUT) {
+			struct vb2_queue *dst_vq;
+
+			dst_vq = v4l2_m2m_get_vq(ctx->fh.m2m_ctx,
+						 V4L2_BUF_TYPE_VIDEO_OUTPUT);
+
+			if (rb->count) {
+				if (ctx->state != CODA_STATE_INITIALIZATION) {
+					coda_dbg(1, ctx,
+						 "reqbufs(%s, %d): invalid state: %s\n",
+						 v4l2_type_names[rb->type],
+						 rb->count,
+						 coda_state_name(ctx->state));
+				}
+			} else {
+				/*
+				 * Only the seek -> initialization transition
+				 * is valid for the decoder state machine.
+				 * GStreamer uses REQBUFS(0) to check MMAP /
+				 * DMABUF / USERPTR memory support during
+				 * initialization, and the capture setup ->
+				 * initialization transition is useful in case
+				 * the application wants to abort.
+				 */
+				if (ctx->state != CODA_STATE_INITIALIZATION &&
+				    ctx->state != CODA_STATE_CAPTURE_SETUP &&
+				    ctx->state != CODA_STATE_SEEK) {
+					coda_dbg(1, ctx,
+						 "reqbufs(%s, %d): invalid state: %s\n",
+						 v4l2_type_names[rb->type],
+						 rb->count,
+						 coda_state_name(ctx->state));
+				}
+
+				/*
+				 * The capture queue should be stopped before
+				 * releasing output buffers.
+				 */
+				if (vb2_is_streaming(dst_vq)) {
+					coda_dbg(1, ctx,
+						 "reqbufs(%s, %d): vid-cap queue still streaming\n",
+						 v4l2_type_names[rb->type],
+						 rb->count);
+				}
+
+				coda_set_state(ctx, CODA_STATE_INITIALIZATION);
+			}
+		} else {
+			if (rb->count) {
+				if (ctx->state != CODA_STATE_CAPTURE_SETUP) {
+					coda_dbg(1, ctx,
+						 "reqbufs(%s, %d): invalid state: %s\n",
+						 v4l2_type_names[rb->type],
+						 rb->count,
+						 coda_state_name(ctx->state));
+				}
+				/* CAPTURE buffers ready */
+				coda_set_state(ctx, CODA_STATE_STOPPED);
+			}
+			/* No state limitations for REQBUFS(CAPTURE, 0) */
+		}
+	}
 
 	return 0;
 }
 
-static int coda_qbuf(struct file *file, void *priv,
-		     struct v4l2_buffer *buf)
+static int coda_qbuf(struct file *file, void *priv, struct v4l2_buffer *buf)
 {
 	struct coda_ctx *ctx = fh_to_ctx(priv);
 
@@ -989,6 +1135,17 @@ static int coda_dqbuf(struct file *file, void *priv, struct v4l2_buffer *buf)
 	if (ctx->inst_type == CODA_INST_DECODER &&
 	    buf->type == V4L2_BUF_TYPE_VIDEO_OUTPUT)
 		buf->flags &= ~V4L2_BUF_FLAG_LAST;
+
+	if (ctx->inst_type == CODA_INST_DECODER &&
+	    buf->type == V4L2_BUF_TYPE_VIDEO_CAPTURE &&
+	    buf->flags & V4L2_BUF_FLAG_LAST) {
+		if (ctx->state != CODA_STATE_DRAIN) {
+			coda_dbg(1, ctx, "dqbuf(vid-cap): invalid state: %s\n",
+				 coda_state_name(ctx->state));
+		}
+		/* All CAPTURE buffers dequeued */
+		coda_set_state(ctx, CODA_STATE_STOPPED);
+	}
 
 	return ret;
 }
@@ -1046,6 +1203,19 @@ static int coda_g_selection(struct file *file, void *fh,
 	}
 
 	s->r = *rsel;
+
+	if (ctx->inst_type == CODA_INST_DECODER) {
+		/*
+		 * No state limitations for G_SELECTION, but we expect this to
+		 * be called during initialization and capture setup only.
+		 */
+		if (ctx->state != CODA_STATE_INITIALIZATION &&
+		    ctx->state != CODA_STATE_CAPTURE_SETUP) {
+			coda_dbg(1, ctx, "g_selection(%s): unexpected state: %s\n",
+				 v4l2_type_names[s->type],
+				 coda_state_name(ctx->state));
+		}
+	}
 
 	return 0;
 }
@@ -1190,6 +1360,12 @@ static int coda_decoder_cmd(struct file *file, void *fh,
 		ctx->bit_stream_param &= ~CODA_BIT_STREAM_END_FLAG;
 		coda_fill_bitstream(ctx, NULL);
 		mutex_unlock(&ctx->bitstream_mutex);
+
+		if (ctx->state != CODA_STATE_STOPPED) {
+			coda_dbg(1, ctx, "dec_cmd_start: invalid state: %s\n",
+				 coda_state_name(ctx->state));
+		}
+		coda_set_state(ctx, CODA_STATE_DECODING);
 		break;
 	case V4L2_DEC_CMD_STOP:
 		stream_end = false;
@@ -1238,6 +1414,12 @@ static int coda_decoder_cmd(struct file *file, void *fh,
 			/* If there is no buffer in flight, wake up */
 			coda_wake_up_capture_queue(ctx);
 		}
+
+		if (ctx->state != CODA_STATE_DECODING) {
+			coda_dbg(1, ctx, "dec_cmd_stop: invalid state: %s\n",
+				 coda_state_name(ctx->state));
+		}
+		coda_set_state(ctx, CODA_STATE_DRAIN);
 
 		break;
 	default:
@@ -1448,12 +1630,12 @@ static const struct v4l2_ioctl_ops coda_ioctl_ops = {
 	.vidioc_querycap	= coda_querycap,
 
 	.vidioc_enum_fmt_vid_cap = coda_enum_fmt,
-	.vidioc_g_fmt_vid_cap	= coda_g_fmt,
+	.vidioc_g_fmt_vid_cap	= coda_g_fmt_vid_cap,
 	.vidioc_try_fmt_vid_cap	= coda_try_fmt_vid_cap,
 	.vidioc_s_fmt_vid_cap	= coda_s_fmt_vid_cap,
 
 	.vidioc_enum_fmt_vid_out = coda_enum_fmt,
-	.vidioc_g_fmt_vid_out	= coda_g_fmt,
+	.vidioc_g_fmt_vid_out	= coda_g_fmt_vid_out,
 	.vidioc_try_fmt_vid_out	= coda_try_fmt_vid_out,
 	.vidioc_s_fmt_vid_out	= coda_s_fmt_vid_out,
 
@@ -1948,8 +2130,19 @@ static void coda_buf_queue(struct vb2_buffer *vb)
 				flush_work(&ctx->seq_init_work);
 			}
 
-			if (ctx->initialized)
+			if (ctx->initialized) {
 				coda_queue_source_change_event(ctx);
+
+				if (ctx->state != CODA_STATE_INITIALIZATION &&
+				    ctx->state != CODA_STATE_CAPTURE_SETUP) {
+					coda_dbg(1, ctx,
+						 "qbuf(vid-out): invalid state: %s\n",
+						 coda_state_name(ctx->state));
+				}
+
+				/* CAPTURE format established */
+				coda_set_state(ctx, CODA_STATE_CAPTURE_SETUP);
+			}
 		}
 	} else {
 		if ((ctx->inst_type == CODA_INST_ENCODER || !ctx->use_bit) &&
@@ -2124,6 +2317,34 @@ out:
 			list_del(&m2m_buf->list);
 			v4l2_m2m_buf_done(&m2m_buf->vb, VB2_BUF_STATE_DONE);
 		}
+
+		/* initialization -> capture setup */
+		if (ctx->state == CODA_STATE_INITIALIZATION) {
+			if (q_data_src->width && q_data_src->height) {
+				/* CAPTURE format established */
+				coda_set_state(ctx, CODA_STATE_CAPTURE_SETUP);
+			}
+			/*
+			 * Otherwise, keep queueing OUTPUT buffers until
+			 * SEQ_INIT can parse stream headers.
+			 */
+		} else if (ctx->state == CODA_STATE_SEEK) {
+			if (q_data_src->width && q_data_src->height)
+				coda_set_state(ctx, CODA_STATE_DECODING);
+		} else {
+			coda_dbg(1, ctx,
+				 "start streaming(%s): invalid state: %s\n",
+				 v4l2_type_names[q->type],
+				 coda_state_name(ctx->state));
+		}
+	} else {
+		if (ctx->state != CODA_STATE_STOPPED) {
+			coda_dbg(1, ctx,
+				 "start streaming(%s): invalid state transition: %s -> decoding\n",
+				 v4l2_type_names[q->type],
+				 coda_state_name(ctx->state));
+		}
+		coda_set_state(ctx, CODA_STATE_DECODING);
 	}
 	return 0;
 
@@ -2160,6 +2381,16 @@ static void coda_stop_streaming(struct vb2_queue *q)
 
 		ctx->qsequence = 0;
 
+		if (ctx->state != CODA_STATE_STOPPED &&
+		    ctx->state != CODA_STATE_DECODING &&
+		    ctx->state != CODA_STATE_DRAIN) {
+			coda_dbg(1, ctx,
+				 "stop streaming(%s): invalid state: %s\n",
+				 v4l2_type_names[q->type],
+				 coda_state_name(ctx->state));
+		}
+		coda_set_state(ctx, CODA_STATE_SEEK);
+
 		while ((buf = v4l2_m2m_src_buf_remove(ctx->fh.m2m_ctx)))
 			v4l2_m2m_buf_done(buf, VB2_BUF_STATE_ERROR);
 	} else {
@@ -2167,6 +2398,29 @@ static void coda_stop_streaming(struct vb2_queue *q)
 
 		ctx->osequence = 0;
 		ctx->sequence_offset = 0;
+
+		if (ctx->state == CODA_STATE_INITIALIZATION ||
+		    ctx->state == CODA_STATE_SEEK) {
+			/*
+			 * If the output queue was already stopped, we are back
+			 * in seek state. Further, if REQBUFS(OUT, 0) released
+			 * the output queue, we are back in initialization
+			 * state. Both scenarios happen with legacy userspace.
+			 */
+			coda_dbg(1, ctx,
+				"stop streaming(%s): unexpected state: %s\n",
+				v4l2_type_names[q->type],
+				coda_state_name(ctx->state));
+		} else if (ctx->state != CODA_STATE_DECODING &&
+			   ctx->state != CODA_STATE_DRAIN) {
+			coda_dbg(1, ctx,
+				 "stop streaming(%s): invalid state: %s\n",
+				 v4l2_type_names[q->type],
+				 coda_state_name(ctx->state));
+		}
+
+		if (ctx->state != CODA_STATE_INITIALIZATION)
+			coda_set_state(ctx, CODA_STATE_STOPPED);
 
 		while ((buf = v4l2_m2m_dst_buf_remove(ctx->fh.m2m_ctx)))
 			v4l2_m2m_buf_done(buf, VB2_BUF_STATE_ERROR);
@@ -2675,6 +2929,7 @@ static int coda_open(struct file *file)
 	v4l2_fh_add(&ctx->fh);
 	ctx->dev = dev;
 	ctx->idx = idx;
+	ctx->state = CODA_STATE_INITIALIZATION;
 
 	coda_dbg(1, ctx, "open instance (%p)\n", ctx);
 
