@@ -208,6 +208,20 @@ struct coda_context_ops {
 	void (*release)(struct coda_ctx *ctx);
 };
 
+/* States according to stateful codec API */
+enum coda_state {
+	CODA_STATE_INITIALIZATION,
+	CODA_STATE_CAPTURE_SETUP,		/* decoder only */
+	CODA_STATE_STOPPED,
+	CODA_STATE_DECODING,			/* decoder only */
+	CODA_STATE_ENCODING,			/* encoder only */
+	CODA_STATE_DRAIN,
+	CODA_STATE_END_OF_STREAM,		/* decoder only */
+	CODA_STATE_SEEK,			/* decoder only */
+	CODA_STATE_RESET,			/* encoder only */
+	CODA_STATE_DYNAMIC_RESOLUTION_CHANGE,	/* decoder only */
+};
+
 struct coda_internal_frame {
 	struct coda_aux_buf		buf;
 	struct coda_buffer_meta		meta;
@@ -225,6 +239,7 @@ struct coda_ctx {
 	unsigned long			dma_attrs;
 	const struct coda_video_device	*cvd;
 	const struct coda_context_ops	*ops;
+	enum coda_state			state;
 	int				aborting;
 	int				initialized;
 	int				streamon_out;
