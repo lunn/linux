@@ -10,6 +10,7 @@
 #include <linux/i2c.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
+#include <linux/leds.h>
 #include <linux/mdio-gpio.h>
 #include <linux/module.h>
 #include <linux/phy.h>
@@ -86,6 +87,28 @@ static const struct mdio_board_info bdinfo = {
 	.platform_data = &dsa_mv88e6xxx_pdata,
 };
 
+static struct gpio_led zii_rap_gpio_leds[] = {
+	{
+		.name = "sw_status",
+		.default_trigger = "none",
+		.default_state = LEDS_GPIO_DEFSTATE_OFF,
+	},
+};
+
+static struct gpio_led_platform_data zii_rap_led = {
+	.leds = zii_rap_gpio_leds,
+	.num_leds = ARRAY_SIZE(zii_rap_gpio_leds),
+};
+
+static void zii_rap_leds(struct device *dev)
+{
+	zii_rap_gpio_leds[0].gpiod = devm_gpiod_get(dev, "sw_status", 0);
+
+	platform_device_register_data(dev, "leds-gpio", 1,
+				      &zii_rap_led,
+				      sizeof(zii_rap_led));
+}
+
 static int zii_rap_i2c_adap_name_match(struct device *dev, void *data)
 {
 	struct i2c_adapter *adap = i2c_verify_adapter(dev);
@@ -153,6 +176,7 @@ static int zii_rap_mdio_init(struct device *dev)
 static struct gpiod_lookup_table zii_rap_gpiod_table = {
 	.dev_id = "zii_rap",
 	.table = {
+		GPIO_LOOKUP_IDX("gpio-tqmx86", 2, "sw_status", 0, 0),
 		GPIO_LOOKUP_IDX("gpio-tqmx86", 6, "irq", 0,
 				GPIO_ACTIVE_LOW),
 	}
@@ -232,7 +256,13 @@ static int zii_rap_probe(struct platform_device *pdev)
 	if (err)
 		return err;
 
-	return zii_rap_marvell_switch(data);
+	err = zii_rap_marvell_switch(data);
+	if (err)
+		return err;
+
+	zii_rap_leds(dev);
+
+	return 0;
 }
 
 static struct platform_driver zii_rap_driver = {
