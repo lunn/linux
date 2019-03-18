@@ -1763,6 +1763,18 @@ static int coda_alloc_bitstream_buffer(struct coda_ctx *ctx,
 	kfifo_init(&ctx->bitstream_fifo,
 		   ctx->bitstream.vaddr, ctx->bitstream.size);
 
+	if (ctx->debugfs_entry) {
+		ctx->bitstream.blob.data = ctx->bitstream.vaddr;
+		ctx->bitstream.blob.size = ctx->bitstream.size;
+		ctx->bitstream.dentry = debugfs_create_blob("bitstream", 0644,
+							    ctx->debugfs_entry,
+							    &ctx->bitstream.blob);
+		if (!ctx->bitstream.dentry) {
+			dev_warn(ctx->dev->dev,
+				 "failed to create debugfs entry bitstream\n");
+		}
+	}
+
 	return 0;
 }
 
@@ -1775,6 +1787,8 @@ static void coda_free_bitstream_buffer(struct coda_ctx *ctx)
 		    ctx->bitstream.paddr);
 	ctx->bitstream.vaddr = NULL;
 	kfifo_init(&ctx->bitstream_fifo, NULL, 0);
+	debugfs_remove(ctx->bitstream.dentry);
+	ctx->bitstream.dentry = NULL;
 }
 
 static int coda_decoder_reqbufs(struct coda_ctx *ctx,
