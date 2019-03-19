@@ -2731,6 +2731,20 @@ irqreturn_t coda_irq_handler(int irq, void *data)
 			pr_debug("coda: after: rd = 0x%x, wr = 0x%x\n",
 				 kfifo->out & kfifo->mask,
 				 kfifo->in & kfifo->mask);
+
+			if (ctx->codec->src_fourcc == V4L2_PIX_FMT_H264) {
+				mutex_lock(&ctx->bitstream_mutex);
+				/* Pad the bitstream */
+				coda_h264_bitstream_pad(ctx, 768);
+
+				pr_debug("coda: padded: rd = 0x%x, wr = 0x%x\n",
+					 kfifo->out & kfifo->mask,
+					 kfifo->in & kfifo->mask);
+
+				/* Sync read pointer to device */
+				coda_kfifo_sync_to_device_write(ctx);
+				mutex_unlock(&ctx->bitstream_mutex);
+			}
 		}
 		break;
 	default:
