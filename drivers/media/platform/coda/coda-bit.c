@@ -1933,9 +1933,16 @@ static int __coda_decoder_seq_init(struct coda_ctx *ctx)
 	coda_kfifo_sync_from_device(ctx);
 
 	if (coda_read(dev, CODA_RET_DEC_SEQ_SUCCESS) == 0) {
-		v4l2_err(&dev->v4l2_dev,
-			"CODA_COMMAND_SEQ_INIT failed, error code = 0x%x\n",
-			coda_read(dev, CODA_RET_DEC_SEQ_ERR_REASON));
+		val = coda_read(dev, CODA_RET_DEC_SEQ_ERR_REASON);
+		if (val == 0x80000000) {
+			v4l2_err(&dev->v4l2_dev,
+				 "CODA_COMMAND_SEQ_INIT failed, error code = 0x%x (already initialized)\n",
+				 val);
+		} else {
+			v4l2_err(&dev->v4l2_dev,
+				 "CODA_COMMAND_SEQ_INIT failed, error code = 0x%x\n",
+				 val);
+		}
 		return -EAGAIN;
 	}
 
