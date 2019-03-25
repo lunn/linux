@@ -2375,6 +2375,7 @@ static void coda_finish_decode(struct coda_ctx *ctx)
 	int success;
 	u32 err_mb;
 	int err_vdoa = 0;
+	bool mpeg2_eos = false;
 	u32 val;
 
 	/* Update kfifo out pointer from coda bitstream read pointer */
@@ -2396,7 +2397,12 @@ static void coda_finish_decode(struct coda_ctx *ctx)
 	val = coda_read(dev, CODA_RET_DEC_PIC_SUCCESS);
 	if (val == 0x40001 && src_fourcc == V4L2_PIX_FMT_MPEG2) {
 		coda_dbg(1, ctx, "end of stream signal?\n");
-		/* TODO: stop if no frame finished */
+		/*
+		 * We expect that from this point on no new frames are decoded.
+		 * The firmware will continue to point out which already
+		 * decoded frames to present.
+		 */
+		mpeg2_eos = true;
 	} else if (val != 1) {
 		pr_err("DEC_PIC_SUCCESS = 0x%x\n", val);
 	}
@@ -2588,7 +2594,8 @@ static void coda_finish_decode(struct coda_ctx *ctx)
 			 */
 			coda_dbg(1, ctx, "last meta, marking as last frame\n");
 			dst_buf->flags |= V4L2_BUF_FLAG_LAST;
-		} else if (ctx->bit_stream_param & CODA_BIT_STREAM_END_FLAG &&
+		} else if ((ctx->bit_stream_param & CODA_BIT_STREAM_END_FLAG ||
+			    mpeg2_eos) &&
 			   display_idx == -1) {
 			/*
 			 * If there is no designated presentation frame anymore,
