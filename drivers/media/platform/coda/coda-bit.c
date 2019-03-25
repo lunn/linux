@@ -2297,8 +2297,12 @@ static void coda_finish_decode(struct coda_ctx *ctx)
 	src_fourcc = q_data_src->fourcc;
 
 	val = coda_read(dev, CODA_RET_DEC_PIC_SUCCESS);
-	if (val != 1)
-		pr_err("DEC_PIC_SUCCESS = %d\n", val);
+	if (val == 0x40001 && src_fourcc == V4L2_PIX_FMT_MPEG2) {
+		coda_dbg(1, ctx, "end of stream signal?\n");
+		/* TODO: stop if no frame finished */
+	} else if (val != 1) {
+		pr_err("DEC_PIC_SUCCESS = 0x%x\n", val);
+	}
 
 	success = val & 0x1;
 	if (!success)
