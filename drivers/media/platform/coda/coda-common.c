@@ -1844,7 +1844,8 @@ static int coda_start_streaming(struct vb2_queue *q, unsigned int count)
 	if (count < 1)
 		return -EINVAL;
 
-	coda_dbg(1, ctx, "start streaming %s\n", v4l2_type_names[q->type]);
+	coda_dbg(1, ctx, "start streaming %s (count: %u)\n",
+		 v4l2_type_names[q->type], count);
 
 	INIT_LIST_HEAD(&list);
 
