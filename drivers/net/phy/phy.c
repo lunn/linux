@@ -42,6 +42,7 @@ static const char *phy_state_to_str(enum phy_state st)
 	PHY_STATE_STR(RUNNING)
 	PHY_STATE_STR(NOLINK)
 	PHY_STATE_STR(FORCING)
+	PHY_STATE_STR(CABLETEST)
 	PHY_STATE_STR(HALTED)
 	PHY_STATE_STR(RESUMING)
 	}
@@ -469,6 +470,44 @@ static void phy_trigger_machine(struct phy_device *phydev)
 	phy_queue_state_machine(phydev, 0);
 }
 
+static void phy_cable_test_abort(struct phy_device *phydev)
+{
+	phydev->drv->cable_test_abort(phydev);
+}
+
+int phy_start_cable_test(struct phy_device *phydev)
+{
+	int err;
+
+	if (!(phydev->drv &&
+	      phydev->drv->cable_test_start &&
+	      phydev->drv->cable_test_get_status &&
+	      phydev->drv->cable_test_abort))
+		return -EOPNOTSUPP;
+
+	mutex_lock(&phydev->lock);
+	if (phydev->state < PHY_UP ||
+	    phydev->state >= PHY_CABLETEST) {
+		err = -EBUSY;
+		goto out;
+	}
+
+	/* Mark the carrier down until the test is complete */
+	phy_link_down(phydev, true);
+
+	err = phydev->drv->cable_test_start(phydev);
+	if (err)
+		goto out;
+
+	phydev->state = PHY_CABLETEST;
+
+out:
+	mutex_unlock(&phydev->lock);
+
+	return err;
+}
+EXPORT_SYMBOL(phy_start_cable_test);
+
 static int phy_config_aneg(struct phy_device *phydev)
 {
 	if (phydev->drv->config_aneg)
@@ -814,6 +853,9 @@ void phy_stop(struct phy_device *phydev)
 
 	mutex_lock(&phydev->lock);
 
+	if (phydev->state == PHY_CABLETEST)
+		phy_cable_test_abort(phydev);
+
 	if (phy_interrupt_is_valid(phydev))
 		phy_disable_interrupts(phydev);
 
@@ -885,6 +927,7 @@ void phy_state_machine(struct work_struct *work)
 			container_of(dwork, struct phy_device, state_queue);
 	bool needs_aneg = false, do_suspend = false;
 	enum phy_state old_state;
+	bool finished;
 	int err = 0;
 
 	mutex_lock(&phydev->lock);
@@ -920,6 +963,15 @@ void phy_state_machine(struct work_struct *work)
 				needs_aneg = true;
 			phy_link_down(phydev, false);
 		}
+		break;
+	case PHY_CABLETEST:
+		err = phydev->drv->cable_test_get_status(phydev, &finished);
+		if (err) {
+			phy_cable_test_abort(phydev);
+			break;
+		}
+		if (finished)
+			phydev->state = PHY_UP;
 		break;
 	case PHY_HALTED:
 		if (phydev->link) {

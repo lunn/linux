@@ -306,6 +306,12 @@ struct phy_device *mdiobus_scan(struct mii_bus *bus, int addr);
  * - irq or timer will set NOLINK if link goes down
  * - phy_stop moves to HALTED
  *
+ * CABLETEST: PHY is performing a cable test. Packet reception/sending
+ * is not expected to work, carrier will be indicated as down. PHY will be
+ * poll once per second, or on interrupt for it current state.
+ * Once complete, move to UP to restart the PHY.
+ * - phy_stop aborts the running test and moves to HALTED
+ *
  * HALTED: PHY is up, but no polling or interrupts are done. Or
  * PHY is in an error state.
  *
@@ -324,6 +330,7 @@ enum phy_state {
 	PHY_RUNNING,
 	PHY_NOLINK,
 	PHY_FORCING,
+	PHY_CABLETEST,
 	PHY_RESUMING
 };
 
@@ -622,6 +629,14 @@ struct phy_driver {
 	/* Get the eeprom information from the plug-in module */
 	int (*module_eeprom)(struct phy_device *dev,
 			     struct ethtool_eeprom *ee, u8 *data);
+
+	/* Start a cable test */
+	int (*cable_test_start)(struct phy_device *dev);
+	/* Once per second, or on interrupt, request the status of the
+	 * test. */
+	int (*cable_test_get_status)(struct phy_device *dev, bool *finished);
+	/* Phy  disconnected, or to be suspended. Abort the test */
+	void (*cable_test_abort)(struct phy_device *dev);
 
 	/* Get statistics from the phy using ethtool */
 	int (*get_sset_count)(struct phy_device *dev);
@@ -1046,6 +1061,7 @@ int phy_speed_up(struct phy_device *phydev);
 
 int phy_restart_aneg(struct phy_device *phydev);
 int phy_reset_after_clk_enable(struct phy_device *phydev);
+int phy_start_cable_test(struct phy_device *phydev);
 
 static inline void phy_device_reset(struct phy_device *phydev, int value)
 {
