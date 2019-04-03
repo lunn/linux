@@ -1348,6 +1348,12 @@ static int coda_decoder_cmd(struct file *file, void *fh,
 	if (ret < 0)
 		return ret;
 
+	if (ctx->state == CODA_STATE_DRAIN) {
+		coda_dbg(1, ctx, "dec_cmd: invalid state: %s\n",
+			 coda_state_name(ctx->state));
+		return -EBUSY;
+	}
+
 	switch (dc->cmd) {
 	case V4L2_DEC_CMD_START:
 		mutex_lock(&ctx->bitstream_mutex);
