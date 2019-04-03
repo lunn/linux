@@ -1378,6 +1378,19 @@ static int coda_decoder_cmd(struct file *file, void *fh,
 			/* Mark last buffer */
 			buf->flags |= V4L2_BUF_FLAG_LAST;
 
+			/*
+			 * TODO: Copy *all* currently queued output
+			 * buffers into the bitstream ring buffer, not
+			 * just enough to allow a PIC_RUN to succeed.
+			 * If not all buffers fit, the marked last
+			 * buffer will stop decoding later.
+			 */
+			if (ctx->use_bit) {
+				mutex_lock(&ctx->bitstream_mutex);
+				coda_fill_bitstream(ctx, NULL);
+				mutex_unlock(&ctx->bitstream_mutex);
+			}
+
 			if (v4l2_m2m_num_src_bufs_ready(ctx->fh.m2m_ctx) == 0) {
 				coda_dbg(1, ctx, "all remaining buffers queued\n");
 				stream_end = true;
