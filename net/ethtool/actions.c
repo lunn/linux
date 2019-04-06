@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
 
+#include <linux/phy.h>
 #include "netlink.h"
 #include "common.h"
 #include "bitset.h"
@@ -373,5 +374,81 @@ out_dev:
 out:
 	if (reply_ret < 0)
 		GENL_SET_ERR_MSG(info, "failed to send reply message");
+	return ret;
+}
+
+/* ACT_CABLE_TEST */
+
+static const struct
+nla_policy cable_test_policy[ETHTOOL_A_CABLE_TEST_MAX + 1] = {
+	[ETHTOOL_A_CABLE_TEST_UNSPEC]	= { .type = NLA_REJECT },
+	[ETHTOOL_A_CABLE_TEST_DEV]		= { .type = NLA_NESTED },
+};
+
+void ethnl_cable_test_notify(struct net_device *dev,
+			     struct netlink_ext_ack *extack, unsigned int cmd,
+			     u32 req_mask, const void *data)
+{
+	struct sk_buff *skb;
+	void *msg_payload;
+	int msg_len;
+	int ret;
+
+	msg_len = dev_ident_size();
+	skb = genlmsg_new(msg_len, GFP_KERNEL);
+	if (!skb)
+		return;
+
+	msg_payload = ethnl_bcastmsg_put(skb, ETHNL_CMD_ACT_CABLE_TEST);
+	if (!msg_payload)
+		goto err_skb;
+
+	ret = ethnl_fill_dev(skb, dev, ETHTOOL_A_CABLE_TEST_DEV);
+	if (ret < 0)
+		goto err_skb;
+
+	genlmsg_end(skb, msg_payload);
+	ethnl_multicast(skb, dev);
+	return;
+
+err_skb:
+	nlmsg_free(skb);
+}
+
+int ethnl_act_cable_test(struct sk_buff *skb, struct genl_info *info)
+{
+	struct nlattr *tb[ETHTOOL_A_CABLE_TEST_MAX + 1];
+	struct net_device *dev;
+	int ret;
+
+	ret = nlmsg_parse(info->nlhdr, GENL_HDRLEN, tb,
+			  ETHTOOL_A_CABLE_TEST_MAX, cable_test_policy,
+			  info->extack);
+	if (ret < 0)
+		return ret;
+
+	dev = ethnl_dev_get(info, tb[ETHTOOL_A_CABLE_TEST_DEV]);
+	if (IS_ERR(dev))
+		return PTR_ERR(dev);
+
+	ret = -EOPNOTSUPP;
+	if (!dev->phydev)
+		goto out_dev;
+
+	rtnl_lock();
+	ret = ethnl_before_ops(dev);
+	if (ret < 0)
+		goto out_rtnl;
+
+	ret = phy_start_cable_test(dev->phydev, info->extack);
+	ethnl_after_ops(dev);
+
+	if (ret == 0)
+		ethtool_notify(dev, NULL, ETHNL_CMD_ACT_CABLE_TEST, 0, NULL);
+
+out_rtnl:
+	rtnl_unlock();
+out_dev:
+	dev_put(dev);
 	return ret;
 }
