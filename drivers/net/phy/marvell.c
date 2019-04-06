@@ -40,6 +40,7 @@
 #define MII_MARVELL_FIBER_PAGE		0x01
 #define MII_MARVELL_MSCR_PAGE		0x02
 #define MII_MARVELL_LED_PAGE		0x03
+#define MII_MARVELL_VCT_PAGE		0x05
 #define MII_MARVELL_MISC_TEST_PAGE	0x06
 #define MII_MARVELL_WOL_PAGE		0x11
 
@@ -145,6 +146,50 @@
 #define MII_88E1510_GEN_CTRL_REG_1_MODE_MASK	0x7
 #define MII_88E1510_GEN_CTRL_REG_1_MODE_SGMII	0x1	/* SGMII to copper */
 #define MII_88E1510_GEN_CTRL_REG_1_RESET	0x8000	/* Soft reset */
+
+/* Virtual Cable Test, page 5. */
+#define MII_88E6390_VCT_TX_RX_MDI0_COUPLING	0x10
+#define MII_88E6390_VCT_TX_RX_MDI1_COUPLING	0x11
+#define MII_88E6390_VCT_TX_RX_MDI2_COUPLING	0x12
+#define MII_88E6390_VCT_TX_RX_MDI3_COUPLING	0x13
+#define MII_88E6390_VCT_TX_RX_COUPLING_POSITIVE_REFLECTION	BIT(15)
+#define MII_88E6390_VCT_TX_RX_DISTANCE_MASK			0xff
+
+#define MII_88E6390_VCT_1000BASE_T_PAIR_SKEW	0x14
+#define MII_88E6390_VCT_1000BASE_T_PAIR_SKEW_MDI0_MASK	0x000f
+#define MII_88E6390_VCT_1000BASE_T_PAIR_SKEW_MDI0_SHIFT	0
+#define MII_88E6390_VCT_1000BASE_T_PAIR_SKEW_MDI1_MASK	0x00f0
+#define MII_88E6390_VCT_1000BASE_T_PAIR_SKEW_MDI1_SHIFT	4
+#define MII_88E6390_VCT_1000BASE_T_PAIR_SKEW_MDI2_MASK	0x0f00
+#define MII_88E6390_VCT_1000BASE_T_PAIR_SKEW_MDI2_SHIFT	8
+#define MII_88E6390_VCT_1000BASE_T_PAIR_SKEW_MDI3_MASK	0xf000
+#define MII_88E6390_VCT_1000BASE_T_PAIR_SKEW_MDI3_SHIFT	12
+/* Each bit represent 8ns */
+#define MII_88E6390_VCT_1000BASE_T_PAIR_SKEW_MULTIPLIER	8
+
+#define MII_88E6390_VCT_1000BASE_T_PAIR_SWAP_POLARITY	0x15
+#define MII_88E6390_VCT_1000BASE_T_PAIR_SWAP_POLARITY_VALID	BIT(6)
+#define MII_88E6390_VCT_1000BASE_T_PAIR_SWAP_POLARITY_CD_CROSS	BIT(5)
+#define MII_88E6390_VCT_1000BASE_T_PAIR_SWAP_POLARITY_AB_CROSS	BIT(4)
+#define MII_88E6390_VCT_1000BASE_T_PAIR_SWAP_POLARITY_MDI3_NEG	BIT(3)
+#define MII_88E6390_VCT_1000BASE_T_PAIR_SWAP_POLARITY_MDI2_NEG	BIT(2)
+#define MII_88E6390_VCT_1000BASE_T_PAIR_SWAP_POLARITY_MDI1_NEG	BIT(1)
+#define MII_88E6390_VCT_1000BASE_T_PAIR_SWAP_POLARITY_MDI0_NEG	BIT(0)
+
+#define MII_88E6390_VCT_CTRL				0x17
+#define MII_88E6390_VCT_CTRL_ENABLE				BIT(15)
+#define MII_88E6390_VCT_CTRL_COMPLETE				BIT(14)
+#define MII_88E6390_VCT_CTRL_SAME_CHANNEL			(0 << 11)
+#define MII_88E6390_VCT_CTRL_TX0_CHANNEL			(1 << 11)
+#define MII_88E6390_VCT_CTRL_TX1_CHANNEL			(2 << 11)
+#define MII_88E6390_VCT_CTRL_TX2_CHANNEL			(3 << 11)
+#define MII_88E6390_VCT_CTRL_TX3_CHANNEL			(4 << 11)
+#define MII_88E6390_VCT_CTRL_SAMPLES_DEFAULT			(6 << 8)
+#define MII_88E6390_VCT_CTRL_MODE_MAXIMUM_PEEK			(0 << 6)
+#define MII_88E6390_VCT_CTRL_MODE_FIRST_LAST_PEEK		(1 << 6)
+#define MII_88E6390_VCT_CTRL_MODE_OFFSET			(2 << 6)
+#define MII_88E6390_VCT_CTRL_SAMPLE_POINT			(3 << 6)
+#define MII_88E6390_VCT_CTRL_PEEK_HYST_DEFAULT			3
 
 #define LPA_FIBER_1000HALF	0x40
 #define LPA_FIBER_1000FULL	0x20
@@ -1525,6 +1570,195 @@ static void marvell_get_stats(struct phy_device *phydev,
 		data[i] = marvell_get_stat(phydev, i);
 }
 
+static void m88e6390_cable_test_dump(struct phy_device *phydev)
+{
+	int reg;
+	int ret;
+
+	for (reg = 16; reg <= 28; reg++) {
+		ret = phy_read_paged(phydev, MII_MARVELL_VCT_PAGE, reg);
+		phydev_info(phydev, "reg %02d: %04x\n", reg, ret);
+	}
+}
+
+static int m88e6390_cable_test_start(struct phy_device *phydev)
+{
+	u16 reg;
+
+	phydev_info(phydev, "%s\n", __func__);
+
+	m88e6390_cable_test_dump(phydev);
+
+	reg = MII_88E6390_VCT_CTRL_ENABLE |
+		MII_88E6390_VCT_CTRL_SAME_CHANNEL |
+		MII_88E6390_VCT_CTRL_SAMPLES_DEFAULT |
+		MII_88E6390_VCT_CTRL_MODE_MAXIMUM_PEEK |
+		MII_88E6390_VCT_CTRL_PEEK_HYST_DEFAULT;
+
+	return phy_write_paged(phydev, MII_MARVELL_VCT_PAGE,
+			       MII_88E6390_VCT_CTRL, reg);
+}
+
+static int m88e6390_cable_test_report_mdi(struct phy_device *phydev, int pair)
+{
+	int reg = MII_88E6390_VCT_TX_RX_MDI0_COUPLING + pair;
+	bool polarity;
+	int distance;
+	int ret;
+
+	ret = phy_read_paged(phydev, MII_MARVELL_VCT_PAGE, reg);
+	if (ret < 0)
+		return ret;
+	phydev_info(phydev, "%s: %x\n", __func__, ret);
+
+	polarity = !!(ret & MII_88E6390_VCT_TX_RX_COUPLING_POSITIVE_REFLECTION);
+	distance = ret & MII_88E6390_VCT_TX_RX_DISTANCE_MASK;
+
+	/* 32 = 0m, 224 = 150m. */
+	if (distance < 32) {
+		distance = 0;
+	} else {
+		distance -= 32;
+		distance = distance * 150 / 192;
+	}
+
+	phydev_info(phydev, "pair %d polarity %d, distance %d\n",
+		    pair, polarity, distance);
+
+	return 0;
+}
+
+static int m88e6390_cable_test_report_skew(struct phy_device *phydev)
+{
+	int ret;
+	int mdi0, mdi1, mdi2, mdi3;
+
+	ret = phy_read_paged(phydev, MII_MARVELL_VCT_PAGE,
+			     MII_88E6390_VCT_1000BASE_T_PAIR_SKEW);
+	if (ret < 0)
+		return ret;
+
+	phydev_info(phydev, "%s: %x\n", __func__, ret);
+
+	mdi0 = (ret & MII_88E6390_VCT_1000BASE_T_PAIR_SKEW_MDI0_MASK) >>
+		MII_88E6390_VCT_1000BASE_T_PAIR_SKEW_MDI0_SHIFT;
+	mdi1 = (ret & MII_88E6390_VCT_1000BASE_T_PAIR_SKEW_MDI1_MASK) >>
+		MII_88E6390_VCT_1000BASE_T_PAIR_SKEW_MDI1_SHIFT;
+	mdi2 = (ret & MII_88E6390_VCT_1000BASE_T_PAIR_SKEW_MDI2_MASK) >>
+		MII_88E6390_VCT_1000BASE_T_PAIR_SKEW_MDI2_SHIFT;
+	mdi3 = (ret & MII_88E6390_VCT_1000BASE_T_PAIR_SKEW_MDI3_MASK) >>
+		MII_88E6390_VCT_1000BASE_T_PAIR_SKEW_MDI3_SHIFT;
+
+	phydev_info(phydev, "Skew: 0: %dns 1: %dns 2: %dns 3: %dns\n",
+		    mdi0 * MII_88E6390_VCT_1000BASE_T_PAIR_SKEW_MULTIPLIER,
+		    mdi1 * MII_88E6390_VCT_1000BASE_T_PAIR_SKEW_MULTIPLIER,
+		    mdi2 * MII_88E6390_VCT_1000BASE_T_PAIR_SKEW_MULTIPLIER,
+		    mdi3 * MII_88E6390_VCT_1000BASE_T_PAIR_SKEW_MULTIPLIER);
+
+	return 0;
+}
+
+static int m88e6390_cable_test_report_pair_swap(struct phy_device *phydev)
+{
+	int mdi0_pol, mdi1_pol, mdi2_pol, mdi3_pol;
+	int ab_cross, cd_cross;
+	int ret;
+
+	ret = phy_read_paged(phydev, MII_MARVELL_VCT_PAGE,
+			     MII_88E6390_VCT_1000BASE_T_PAIR_SWAP_POLARITY);
+	if (ret < 0)
+		return ret;
+
+	phydev_info(phydev, "%s: %x\n", __func__, ret);
+
+	mdi0_pol = !!(ret &
+		      MII_88E6390_VCT_1000BASE_T_PAIR_SWAP_POLARITY_MDI0_NEG);
+	mdi1_pol = !!(ret &
+		      MII_88E6390_VCT_1000BASE_T_PAIR_SWAP_POLARITY_MDI1_NEG);
+	mdi2_pol = !!(ret &
+		      MII_88E6390_VCT_1000BASE_T_PAIR_SWAP_POLARITY_MDI2_NEG);
+	mdi3_pol = !!(ret &
+		      MII_88E6390_VCT_1000BASE_T_PAIR_SWAP_POLARITY_MDI3_NEG);
+
+	ab_cross = !!(ret &
+		      MII_88E6390_VCT_1000BASE_T_PAIR_SWAP_POLARITY_AB_CROSS);
+	cd_cross = !!(ret &
+		      MII_88E6390_VCT_1000BASE_T_PAIR_SWAP_POLARITY_CD_CROSS);
+
+	phydev_info(phydev,
+		    "mdi0_pol %d, mdi1_pol %d, mdi2_pol %d, mdi3_pol %d\n",
+		    mdi0_pol, mdi1_pol, mdi2_pol, mdi3_pol);
+
+	phydev_info(phydev,
+		    "ab_cross %d, cd_cross %d\n", ab_cross, cd_cross);
+
+	return 0;
+}
+
+static int m88e6390_cable_test_report(struct phy_device *phydev)
+{
+	int pair;
+	int ret;
+
+	phydev_info(phydev, "%s\n", __func__);
+	for (pair = 0; pair < 4; pair++) {
+		ret = m88e6390_cable_test_report_mdi(phydev, pair);
+		if (ret)
+			return ret;
+	}
+
+	ret = phy_read_paged(phydev, MII_MARVELL_VCT_PAGE,
+			     MII_88E6390_VCT_1000BASE_T_PAIR_SWAP_POLARITY);
+	if (ret < 0)
+		return ret;
+
+	phydev_info(phydev, "1000BASE_T_PAIR_SWAP_POLARITY %x\n", ret);
+	if (ret & MII_88E6390_VCT_1000BASE_T_PAIR_SWAP_POLARITY_VALID) {
+		ret = m88e6390_cable_test_report_skew(phydev);
+		if (ret < 0)
+			return ret;
+
+		ret = m88e6390_cable_test_report_pair_swap(phydev);
+		if (ret < 0)
+			return ret;
+	} else {
+		phydev_info(phydev, "Pair swap polarity invalid\n");
+	}
+
+	return 0;
+}
+
+static int m88e6390_cable_test_get_status(struct phy_device *phydev,
+	bool *finished)
+{
+	int ret;
+
+	*finished = false;
+
+	ret = phy_read_paged(phydev, MII_MARVELL_VCT_PAGE,
+			     MII_88E6390_VCT_CTRL);
+
+	phydev_info(phydev, "%s: %x\n", __func__, ret);
+
+	if (ret < 0)
+		return ret;
+
+	if (ret & MII_88E6390_VCT_CTRL_COMPLETE) {
+		*finished = true;
+
+		return m88e6390_cable_test_report(phydev);
+	}
+
+	return 0;
+}
+
+/* Perform a software reset to abort a cable test.
+ */
+static void m88e6390_cable_test_abort(struct phy_device *phydev)
+{
+	genphy_soft_reset(phydev);
+}
+
 #ifdef CONFIG_HWMON
 static int m88e1121_get_temp(struct phy_device *phydev, long *temp)
 {
@@ -2232,6 +2466,7 @@ static struct phy_driver marvell_drivers[] = {
 		.phy_id = MARVELL_PHY_ID_88E1540,
 		.phy_id_mask = MARVELL_PHY_ID_MASK,
 		.name = "Marvell 88E1540",
+		.flags = PHY_POLL_CABLE_TEST,
 		.features = PHY_GBIT_FEATURES,
 		.probe = m88e1510_probe,
 		.config_init = &marvell_config_init,
@@ -2247,6 +2482,9 @@ static struct phy_driver marvell_drivers[] = {
 		.get_sset_count = marvell_get_sset_count,
 		.get_strings = marvell_get_strings,
 		.get_stats = marvell_get_stats,
+		.cable_test_start = m88e6390_cable_test_start,
+		.cable_test_get_status = m88e6390_cable_test_get_status,
+		.cable_test_abort = m88e6390_cable_test_abort,
 	},
 	{
 		.phy_id = MARVELL_PHY_ID_88E1545,
@@ -2292,6 +2530,7 @@ static struct phy_driver marvell_drivers[] = {
 		.phy_id = MARVELL_PHY_ID_88E6390,
 		.phy_id_mask = MARVELL_PHY_ID_MASK,
 		.name = "Marvell 88E6390",
+		.flags = PHY_POLL_CABLE_TEST,
 		.features = PHY_GBIT_FEATURES,
 		.probe = m88e6390_probe,
 		.config_init = &marvell_config_init,
@@ -2307,6 +2546,9 @@ static struct phy_driver marvell_drivers[] = {
 		.get_sset_count = marvell_get_sset_count,
 		.get_strings = marvell_get_strings,
 		.get_stats = marvell_get_stats,
+		.cable_test_start = m88e6390_cable_test_start,
+		.cable_test_get_status = m88e6390_cable_test_get_status,
+		.cable_test_abort = m88e6390_cable_test_abort,
 	},
 };
 
