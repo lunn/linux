@@ -1284,6 +1284,7 @@ config ZII_RAP
 	select GPIOLIB
 	select MFD_TQMX86
 	select GPIO_TQMX86
+	select KEYBOARD_GPIO_POLLED
 	select I2C_OCORES
 	select TQMX86_WDT
 	select EEPROM_AT24
