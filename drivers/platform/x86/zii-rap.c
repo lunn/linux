@@ -7,6 +7,7 @@
 #include <linux/dmi.h>
 #include <linux/gpio/consumer.h>
 #include <linux/gpio/machine.h>
+#include <linux/gpio_keys.h>
 #include <linux/i2c.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
@@ -18,6 +19,7 @@
 #include <linux/platform_data/mv88e6xxx.h>
 #include <linux/platform_device.h>
 #include <net/dsa.h>
+#include <uapi/linux/input-event-codes.h>
 
 struct zii_rap_data {
 	struct platform_device *pdev;
@@ -109,6 +111,54 @@ static void zii_rap_leds(struct device *dev)
 				      sizeof(zii_rap_led));
 }
 
+static struct gpio_keys_button zii_rap_buttons[] = {
+	{
+		.code = KEY_COFFEE,
+		.desc = "Debug",
+		.active_low = 1,
+	},
+	{
+		.code = KEY_RFKILL,
+		.desc = "RF KILL",
+		.active_low = 1,
+	},
+};
+
+static const struct gpio_keys_platform_data zii_rap_key = {
+	.buttons = zii_rap_buttons,
+	.nbuttons = ARRAY_SIZE(zii_rap_buttons),
+	.name = "ZII RAP keys",
+};
+
+static void zii_rap_keys(struct device *dev)
+{
+	struct gpio_desc *desc;
+
+	desc = gpiod_get(dev, "debug", 0);
+	if (!IS_ERR(desc)) {
+		zii_rap_buttons[0].gpio = desc_to_gpio(desc);
+		gpiod_put(desc);
+	} else {
+		dev_info(dev, "Getting 'debug' GPIO failed: %ld\n",
+			 PTR_ERR(desc));
+		return;
+	}
+
+	desc = gpiod_get(dev, "RF-enable", 0);
+	if (!IS_ERR(desc)) {
+		zii_rap_buttons[1].gpio = desc_to_gpio(desc);
+		gpiod_put(desc);
+	} else {
+		dev_info(dev, "Getting 'RF-enable' gpio failed: %ld\n",
+			 PTR_ERR(desc));
+		return;
+	}
+
+	platform_device_register_data(dev, "gpio-keys", 1,
+				      &zii_rap_key,
+				      sizeof(zii_rap_key));
+}
+
 static int zii_rap_i2c_adap_name_match(struct device *dev, void *data)
 {
 	struct i2c_adapter *adap = i2c_verify_adapter(dev);
@@ -177,7 +227,11 @@ static struct gpiod_lookup_table zii_rap_gpiod_table = {
 	.dev_id = "zii_rap",
 	.table = {
 		GPIO_LOOKUP_IDX("gpio-tqmx86", 2, "sw_status", 0, 0),
+		GPIO_LOOKUP_IDX("gpio-tqmx86", 4, "debug", 0,
+				GPIO_ACTIVE_LOW),
 		GPIO_LOOKUP_IDX("gpio-tqmx86", 6, "irq", 0,
+				GPIO_ACTIVE_LOW),
+		GPIO_LOOKUP_IDX("gpio-tqmx86", 7, "RF-enable", 0,
 				GPIO_ACTIVE_LOW),
 	}
 };
@@ -261,6 +315,7 @@ static int zii_rap_probe(struct platform_device *pdev)
 		return err;
 
 	zii_rap_leds(dev);
+	zii_rap_keys(dev);
 
 	return 0;
 }
