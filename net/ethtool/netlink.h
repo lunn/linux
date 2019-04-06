@@ -300,6 +300,7 @@ int ethnl_set_rxflow(struct sk_buff *skb, struct genl_info *info);
 int ethnl_act_nway_rst(struct sk_buff *skb, struct genl_info *info);
 int ethnl_act_phys_id(struct sk_buff *skb, struct genl_info *info);
 int ethnl_act_reset(struct sk_buff *skb, struct genl_info *info);
+int ethnl_act_cable_test(struct sk_buff *skb, struct genl_info *info);
 
 /* notify handlers */
 
@@ -312,5 +313,8 @@ void ethnl_reset_notify(struct net_device *dev, struct netlink_ext_ack *extack,
 			unsigned int cmd, u32 req_mask, const void *data);
 void ethnl_rxflow_notify(struct net_device *dev, struct netlink_ext_ack *extack,
 			 unsigned int cmd, u32 req_mask, const void *data);
+void ethnl_cable_test_notify(struct net_device *dev,
+			     struct netlink_ext_ack *extack,
+			     unsigned int cmd, u32 req_mask, const void *data);
 
 #endif /* _NET_ETHTOOL_NETLINK_H */

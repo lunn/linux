@@ -567,6 +567,7 @@ ethnl_notify_handler_t ethnl_notify_handlers[] = {
 	[ETHNL_CMD_ACT_PHYS_ID]		= ethnl_physid_notify,
 	[ETHNL_CMD_ACT_RESET]		= ethnl_reset_notify,
 	[ETHNL_CMD_SET_RXFLOW]		= ethnl_rxflow_notify,
+	[ETHNL_CMD_ACT_CABLE_TEST]	= ethnl_cable_test_notify,
 };
 
 void ethtool_notify(struct net_device *dev, struct netlink_ext_ack *extack,
@@ -724,6 +725,11 @@ static const struct genl_ops ethtool_genl_ops[] = {
 		.cmd	= ETHNL_CMD_SET_RXFLOW,
 		.flags	= GENL_UNS_ADMIN_PERM,
 		.doit	= ethnl_set_rxflow,
+	},
+	{
+		.cmd	= ETHNL_CMD_ACT_CABLE_TEST,
+		.flags	= GENL_UNS_ADMIN_PERM,
+		.doit	= ethnl_act_cable_test,
 	},
 };
 
