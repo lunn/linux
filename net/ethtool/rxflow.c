@@ -970,6 +970,7 @@ static int set_rxflow_prep_indtbl(struct net_device *dev,
 		}
 		mod = true;
 	}
+#if 0
 	if (!mod) {
 		unsigned int i;
 
@@ -977,6 +978,7 @@ static int set_rxflow_prep_indtbl(struct net_device *dev,
 			table[i] = i % rx_rings.data;
 		*reset = true;
 	}
+#endif
 	*pindtbl = table;
 	*info_mask |= ETH_RXFLOW_IM_INDTBL;
 
