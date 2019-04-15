@@ -772,6 +772,14 @@ int etnaviv_gpu_init(struct etnaviv_gpu *gpu)
 		gpu->identity.features &= ~chipFeatures_FAST_CLEAR;
 	}
 
+	/*
+	 * If the GPU is part of a system with only 32bit bus addressing
+	 * capabilities, request pages for our SHM backend buffers from the
+	 * DMA32 zone to avoid performance killing SWIOTLB bounce buffering.
+	 */
+	if (*gpu->dev->dma_mask < BIT_ULL(32) && !device_iommu_mapped(gpu->dev))
+		priv->shm_gfp_mask |= GFP_DMA32;
+
 	/* Create buffer: */
 	ret = etnaviv_cmdbuf_init(priv->cmdbuf_suballoc, &gpu->buffer,
 				  PAGE_SIZE);
