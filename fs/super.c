@@ -926,6 +926,10 @@ int reconfigure_super(struct fs_context *fc)
 	}
 
 	if (remount_ro) {
+		retval = sync_filesystem(sb);
+		if (retval)
+			return retval;
+
 		if (!hlist_empty(&sb->s_pins)) {
 			up_write(&sb->s_umount);
 			group_pin_kill(&sb->s_pins);
