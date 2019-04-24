@@ -173,7 +173,7 @@ static int rave_sp_wdt_restart(struct watchdog_device *wdd,
 	 */
 	mdelay(2 * RAVE_SP_RESET_DELAY_MS);
 
-	return -EIO;
+	return 0;
 }
 
 static int rave_sp_wdt_start(struct watchdog_device *wdd)
