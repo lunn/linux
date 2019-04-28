@@ -793,6 +793,12 @@ static inline int nla_validate(const struct nlattr *head, int len, int maxtype,
  * @maxtype: maximum attribute type to be expected
  * @policy: validation policy
  * @extack: extended ACK report struct
+ *
+ * Validates all attributes in a netlink message against the specified policy.
+ * Validation is done in liberal mode. See documentation of struct nla_policy
+ * for mor details.
+ *
+ * Returns 0 on success or a negative error code.
  */
 static inline int nlmsg_validate_deprecated(const struct nlmsghdr *nlh,
 					    int hdrlen, int maxtype,
@@ -805,6 +811,32 @@ static inline int nlmsg_validate_deprecated(const struct nlmsghdr *nlh,
 	return __nla_validate(nlmsg_attrdata(nlh, hdrlen),
 			      nlmsg_attrlen(nlh, hdrlen), maxtype,
 			      policy, NL_VALIDATE_LIBERAL, extack);
+}
+
+/**
+ * nlmsg_validate - validate a netlink message including attributes
+ * @nlh: netlinket message header
+ * @hdrlen: length of familiy specific header
+ * @maxtype: maximum attribute type to be expected
+ * @policy: validation policy
+ * @extack: extended ACK report struct
+ *
+ * Validates all attributes in a netlink message against the specified policy.
+ * Validation is done in strict mode. See documentation of struct nla_policy
+ * for mor details.
+ *
+ * Returns 0 on success or a negative error code.
+ */
+static inline int nlmsg_validate(const struct nlmsghdr *nlh, int hdrlen,
+				 int maxtype, const struct nla_policy *policy,
+				 struct netlink_ext_ack *extack)
+{
+	if (nlh->nlmsg_len < nlmsg_msg_size(hdrlen))
+		return -EINVAL;
+
+	return __nla_validate(nlmsg_attrdata(nlh, hdrlen),
+			      nlmsg_attrlen(nlh, hdrlen), maxtype,
+			      policy, NL_VALIDATE_STRICT, extack);
 }
 
 
