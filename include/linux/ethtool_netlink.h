@@ -14,4 +14,9 @@ enum ethtool_multicast_groups {
 	ETHNL_MCGRP_MONITOR,
 };
 
+struct phy_device;
+int ethnl_cable_test_alloc(struct phy_device *phydev);
+void ethnl_cable_test_free(struct phy_device *phydev);
+void ethnl_cable_test_finished(struct phy_device *phydev);
+
 #endif /* _LINUX_ETHTOOL_NETLINK_H_ */

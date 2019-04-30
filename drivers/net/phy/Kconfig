@@ -244,6 +244,7 @@ menuconfig PHYLIB
 	tristate "PHY Device support and infrastructure"
 	depends on NETDEVICES
 	select MDIO_DEVICE
+	select ETHTOOL_NETLINK
 	help
 	  Ethernet controllers are usually attached to PHY
 	  devices.  This option provides infrastructure for
