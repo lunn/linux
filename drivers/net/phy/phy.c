@@ -22,6 +22,7 @@
 #include <linux/module.h>
 #include <linux/mii.h>
 #include <linux/ethtool.h>
+#include <linux/ethtool_netlink.h>
 #include <linux/phy.h>
 #include <linux/phy_led_triggers.h>
 #include <linux/workqueue.h>
@@ -29,6 +30,9 @@
 #include <linux/io.h>
 #include <linux/uaccess.h>
 #include <linux/atomic.h>
+#include <net/netlink.h>
+#include <net/genetlink.h>
+#include <net/sock.h>
 
 #define PHY_STATE_STR(_state)			\
 	case PHY_##_state:			\
@@ -467,15 +471,25 @@ static void phy_trigger_machine(struct phy_device *phydev)
 	phy_queue_state_machine(phydev, 0);
 }
 
+static void phy_cable_test_finished(struct phy_device *phydev)
+{
+	nla_nest_end(phydev->skb, phydev->nest);
+	genlmsg_end(phydev->skb, phydev->ehdr);
+
+	ethnl_multicast(phydev->skb, phydev->attached_dev);
+}
+
 static void phy_cable_test_abort(struct phy_device *phydev)
 {
+	phy_cable_test_finished(phydev);
 	genphy_soft_reset(phydev);
 }
 
 int phy_start_cable_test(struct phy_device *phydev,
 			 struct netlink_ext_ack *extack)
 {
-	int err;
+	int err = -ENOMEM;
+	int ret;
 
 	if (!(phydev->drv &&
 	      phydev->drv->cable_test_start &&
@@ -494,19 +508,44 @@ int phy_start_cable_test(struct phy_device *phydev,
 		goto out;
 	}
 
+	phydev->skb = genlmsg_new(NLMSG_GOODSIZE, GFP_KERNEL);
+	if (!phydev->skb)
+		goto out;
+
+	phydev->ehdr = ethnl_bcastmsg_put(phydev->skb, ETHNL_CMD_EVENT);
+	if (!phydev->ehdr)
+		goto out_free;
+
+	phydev->nest = ethnl_nest_start(phydev->skb,
+					ETHTOOL_A_EVENT_CABLE_TEST);
+	if (!phydev->nest)
+		goto out_free;
+
+	ret = ethnl_fill_dev(phydev->skb, phydev->attached_dev,
+			     ETHTOOL_A_CABLE_TEST_DEV);
+	if (ret < 0)
+		goto out_free;
+
 	/* Mark the carrier down until the test is complete */
 	phy_link_down(phydev, true);
 
 	err = phydev->drv->cable_test_start(phydev);
 	if (err) {
 		phy_link_up(phydev);
-		goto out;
+		goto out_free;
 	}
 
 	phydev->state = PHY_CABLETEST;
 
 	if (phy_polling_mode(phydev))
 		phy_trigger_machine(phydev);
+
+	mutex_unlock(&phydev->lock);
+
+	return 0;
+
+out_free:
+	nlmsg_free(phydev->skb);
 out:
 	mutex_unlock(&phydev->lock);
 
@@ -977,6 +1016,7 @@ void phy_state_machine(struct work_struct *work)
 		}
 
 		if (finished) {
+			phy_cable_test_finished(phydev);
 			needs_aneg = true;
 			phydev->state = PHY_UP;
 		}
