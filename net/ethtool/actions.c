@@ -440,7 +440,8 @@ int ethnl_act_cable_test(struct sk_buff *skb, struct genl_info *info)
 	if (ret < 0)
 		goto out_rtnl;
 
-	ret = phy_start_cable_test(dev->phydev, info->extack);
+	ret = phy_start_cable_test(dev->phydev, info->extack, info->snd_seq);
+
 	ethnl_after_ops(dev);
 
 	if (ret == 0)

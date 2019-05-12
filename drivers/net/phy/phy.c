@@ -486,7 +486,7 @@ static void phy_cable_test_abort(struct phy_device *phydev)
 }
 
 int phy_start_cable_test(struct phy_device *phydev,
-			 struct netlink_ext_ack *extack)
+			 struct netlink_ext_ack *extack, u32 seq)
 {
 	int err = -ENOMEM;
 	int ret;
@@ -512,7 +512,8 @@ int phy_start_cable_test(struct phy_device *phydev,
 	if (!phydev->skb)
 		goto out;
 
-	phydev->ehdr = ethnl_bcastmsg_put(phydev->skb, ETHNL_CMD_EVENT);
+	phydev->ehdr = ethnl_bcastmsg_put_seq(phydev->skb, ETHNL_CMD_EVENT,
+					      seq);
 	if (!phydev->ehdr)
 		goto out_free;
 

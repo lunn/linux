@@ -240,10 +240,14 @@ err:
 	return NULL;
 }
 
+void *ethnl_bcastmsg_put_seq(struct sk_buff *skb, u8 cmd, u32 seq)
+{
+	return genlmsg_put(skb, 0, seq, &ethtool_genl_family, 0, cmd);
+}
+
 void *ethnl_bcastmsg_put(struct sk_buff *skb, u8 cmd)
 {
-	return genlmsg_put(skb, 0, ++ethnl_bcast_seq, &ethtool_genl_family, 0,
-			   cmd);
+	return ethnl_bcastmsg_put_seq(skb, cmd, ++ethnl_bcast_seq);
 }
 
 int ethnl_multicast(struct sk_buff *skb, struct net_device *dev)

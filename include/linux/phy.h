@@ -1077,11 +1077,13 @@ int phy_reset_after_clk_enable(struct phy_device *phydev);
 
 #if IS_ENABLED(CONFIG_PHYLIB)
 int phy_start_cable_test(struct phy_device *phydev,
-			 struct netlink_ext_ack *extack);
+			 struct netlink_ext_ack *extack,
+			 u32 seq);
 #else
 static inline
 int phy_start_cable_test(struct phy_device *phydev,
-			 struct netlink_ext_ack *extack)
+			 struct netlink_ext_ack *extack,
+			 u32 seq)
 {
 	NL_SET_ERR_MSG(extack, "Kernel not compiled with PHYLIB support");
 	return -EOPNOTSUPP;
