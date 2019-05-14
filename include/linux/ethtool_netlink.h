@@ -18,5 +18,7 @@ struct phy_device;
 int ethnl_cable_test_alloc(struct phy_device *phydev);
 void ethnl_cable_test_free(struct phy_device *phydev);
 void ethnl_cable_test_finished(struct phy_device *phydev);
+int ethnl_cable_test_result(struct phy_device *phydev, u8 pair, u16 result);
+int ethnl_cable_test_fault_length(struct phy_device *phydev, u8 pair, u16 cm);
 
 #endif /* _LINUX_ETHTOOL_NETLINK_H_ */
