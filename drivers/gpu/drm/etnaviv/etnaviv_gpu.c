@@ -4,8 +4,10 @@
  */
 
 #include <linux/clk.h>
+#include <linux/cma.h>
 #include <linux/component.h>
 #include <linux/delay.h>
+#include <linux/dma-contiguous.h>
 #include <linux/dma-fence.h>
 #include <linux/dma-mapping.h>
 #include <linux/module.h>
@@ -761,11 +763,18 @@ int etnaviv_gpu_init(struct etnaviv_gpu *gpu)
 	 */
 	if (!(gpu->identity.features & chipFeatures_PIPE_3D) ||
 	    (gpu->identity.minor_features0 & chipMinorFeatures0_MC20)) {
-		u32 dma_mask = (u32)dma_get_required_mask(gpu->dev);
-		if (dma_mask < PHYS_OFFSET + SZ_2G)
+		struct cma *cma = dev_get_cma_area(gpu->dev);
+		phys_addr_t end_mask;
+
+		if (cma)
+			end_mask = cma_get_base(cma) - 1 + cma_get_size(cma);
+		else
+			end_mask = dma_get_required_mask(gpu->dev);
+
+		if (end_mask < PHYS_OFFSET + SZ_2G)
 			priv->mmu_global->memory_base = PHYS_OFFSET;
 		else
-			priv->mmu_global->memory_base = dma_mask - SZ_2G + 1;
+			priv->mmu_global->memory_base = end_mask - SZ_2G + 1;
 	} else if (PHYS_OFFSET >= SZ_2G) {
 		dev_info(gpu->dev, "Need to move linear window on MC1.0, disabling TS\n");
 		priv->mmu_global->memory_base = PHYS_OFFSET;
