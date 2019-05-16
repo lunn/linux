@@ -533,7 +533,8 @@ err:
 EXPORT_SYMBOL_GPL(phy_cable_test_fault_length);
 
 int phy_start_cable_test(struct phy_device *phydev,
-			 struct netlink_ext_ack *extack, u32 seq)
+			 struct netlink_ext_ack *extack, u32 seq,
+			 int options)
 {
 	int err = -ENOMEM;
 	int ret;
@@ -577,7 +578,7 @@ int phy_start_cable_test(struct phy_device *phydev,
 	/* Mark the carrier down until the test is complete */
 	phy_link_down(phydev, true);
 
-	err = phydev->drv->cable_test_start(phydev);
+	err = phydev->drv->cable_test_start(phydev, options);
 	if (err) {
 		phy_link_up(phydev);
 		goto out_free;

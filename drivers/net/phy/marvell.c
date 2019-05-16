@@ -1667,9 +1667,13 @@ static void marvell_get_stats(struct phy_device *phydev,
 		data[i] = marvell_get_stat(phydev, i);
 }
 
-static int marvell_vct7_cable_test_start(struct phy_device *phydev)
+static int marvell_vct7_cable_test_start(struct phy_device *phydev,
+					 int options)
 {
 	int bmcr, bmsr, ret;
+
+	if (options)
+		return -EOPNOTSUPP;
 
 	/* If auto-negotiation is enabled, but not complete, the
 	   cable test never completes. So disable auto-neg.

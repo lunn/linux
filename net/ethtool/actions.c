@@ -382,7 +382,8 @@ out:
 static const struct
 nla_policy cable_test_policy[ETHTOOL_A_CABLE_TEST_MAX + 1] = {
 	[ETHTOOL_A_CABLE_TEST_UNSPEC]	= { .type = NLA_REJECT },
-	[ETHTOOL_A_CABLE_TEST_DEV]		= { .type = NLA_NESTED },
+	[ETHTOOL_A_CABLE_TEST_DEV]	= { .type = NLA_NESTED },
+	[ETHTOOL_A_CABLE_TEST_AMPLITUDE_GRAPH] = { .type = NLA_FLAG },
 };
 
 void ethnl_cable_test_notify(struct net_device *dev,
@@ -418,6 +419,7 @@ err_skb:
 int ethnl_act_cable_test(struct sk_buff *skb, struct genl_info *info)
 {
 	struct nlattr *tb[ETHTOOL_A_CABLE_TEST_MAX + 1];
+	int options = 0;
 	struct net_device *dev;
 	int ret;
 
@@ -435,12 +437,16 @@ int ethnl_act_cable_test(struct sk_buff *skb, struct genl_info *info)
 	if (!dev->phydev)
 		goto out_dev;
 
+	if (tb[ETHTOOL_A_CABLE_TEST_AMPLITUDE_GRAPH])
+		options = PHY_CABLE_TEST_AMPLITUDE_GRAPH;
+
 	rtnl_lock();
 	ret = ethnl_before_ops(dev);
 	if (ret < 0)
 		goto out_rtnl;
 
-	ret = phy_start_cable_test(dev->phydev, info->extack, info->snd_seq);
+	ret = phy_start_cable_test(dev->phydev, info->extack, info->snd_seq,
+				   options);
 
 	ethnl_after_ops(dev);
 

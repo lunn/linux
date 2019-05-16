@@ -641,7 +641,7 @@ struct phy_driver {
 			     struct ethtool_eeprom *ee, u8 *data);
 
 	/* Start a cable test */
-	int (*cable_test_start)(struct phy_device *dev);
+	int (*cable_test_start)(struct phy_device *dev, int options);
 	/* Once per second, or on interrupt, request the status of the
 	 * test.
 	 */
@@ -1078,12 +1078,12 @@ int phy_reset_after_clk_enable(struct phy_device *phydev);
 #if IS_ENABLED(CONFIG_PHYLIB)
 int phy_start_cable_test(struct phy_device *phydev,
 			 struct netlink_ext_ack *extack,
-			 u32 seq);
+			 u32 seq, int options);
 #else
 static inline
 int phy_start_cable_test(struct phy_device *phydev,
 			 struct netlink_ext_ack *extack,
-			 u32 seq)
+			 u32 seq, int options)
 {
 	NL_SET_ERR_MSG(extack, "Kernel not compiled with PHYLIB support");
 	return -EOPNOTSUPP;
@@ -1093,6 +1093,7 @@ int phy_start_cable_test(struct phy_device *phydev,
 int phy_cable_test_result(struct phy_device *phydev, u8 pair, u16 result);
 int phy_cable_test_fault_length(struct phy_device *phydev, u8 pair,
 				u16 cm);
+#define PHY_CABLE_TEST_AMPLITUDE_GRAPH BIT(0)
 
 static inline void phy_device_reset(struct phy_device *phydev, int value)
 {
