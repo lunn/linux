@@ -532,6 +532,55 @@ err:
 }
 EXPORT_SYMBOL_GPL(phy_cable_test_fault_length);
 
+int phy_cable_test_amplitude(struct phy_device *phydev,
+			     int distance, u8 pair, int mV)
+{
+	struct nlattr *nest;
+	int ret = -EMSGSIZE;
+
+	nest = ethnl_nest_start(phydev->skb,
+				ETHTOOL_A_CABLE_TEST_EVENT_AMPLITUDE);
+	if (!nest)
+		return -EMSGSIZE;
+
+	if (nla_put_u16(phydev->skb, ETHTOOL_A_CABLE_AMPLITUDE_DISTANCE,
+			distance))
+		goto err;
+	if (nla_put_u8(phydev->skb, ETHTOOL_A_CABLE_AMPLITUDE_PAIR, pair))
+		goto err;
+	if (nla_put_u16(phydev->skb, ETHTOOL_A_CABLE_AMPLITUDE_mV, mV))
+		goto err;
+
+	nla_nest_end(phydev->skb, nest);
+	return 0;
+
+err:
+	nla_nest_cancel(phydev->skb, nest);
+	return ret;
+}
+EXPORT_SYMBOL_GPL(phy_cable_test_amplitude);
+
+int phy_cable_test_pulse(struct phy_device *phydev, int mV)
+{
+	struct nlattr *nest;
+	int ret = -EMSGSIZE;
+
+	nest = ethnl_nest_start(phydev->skb, ETHTOOL_A_CABLE_TEST_EVENT_PULSE);
+	if (!nest)
+		return -EMSGSIZE;
+
+	if (nla_put_u16(phydev->skb, ETHTOOL_A_CABLE_PULSE_mV, mV))
+		goto err;
+
+	nla_nest_end(phydev->skb, nest);
+	return 0;
+
+err:
+	nla_nest_cancel(phydev->skb, nest);
+	return ret;
+}
+EXPORT_SYMBOL_GPL(phy_cable_test_pulse);
+
 int phy_start_cable_test(struct phy_device *phydev,
 			 struct netlink_ext_ack *extack, u32 seq,
 			 int options)
@@ -556,7 +605,7 @@ int phy_start_cable_test(struct phy_device *phydev,
 		goto out;
 	}
 
-	phydev->skb = genlmsg_new(NLMSG_GOODSIZE, GFP_KERNEL);
+	phydev->skb = genlmsg_new(8192, GFP_KERNEL);
 	if (!phydev->skb)
 		goto out;
 

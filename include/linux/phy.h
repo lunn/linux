@@ -1093,6 +1093,10 @@ int phy_start_cable_test(struct phy_device *phydev,
 int phy_cable_test_result(struct phy_device *phydev, u8 pair, u16 result);
 int phy_cable_test_fault_length(struct phy_device *phydev, u8 pair,
 				u16 cm);
+int phy_cable_test_amplitude(struct phy_device *phydev, int distance, u8 pair,
+			     int mV);
+int phy_cable_test_pulse(struct phy_device *phydev, int mV);
+
 #define PHY_CABLE_TEST_AMPLITUDE_GRAPH BIT(0)
 
 static inline void phy_device_reset(struct phy_device *phydev, int value)
