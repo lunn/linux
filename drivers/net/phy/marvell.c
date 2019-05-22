@@ -42,6 +42,7 @@
 #define MII_MARVELL_FIBER_PAGE		0x01
 #define MII_MARVELL_MSCR_PAGE		0x02
 #define MII_MARVELL_LED_PAGE		0x03
+#define MII_MARVELL_VCT5_PAGE		0x05
 #define MII_MARVELL_MISC_TEST_PAGE	0x06
 #define MII_MARVELL_VCT7_PAGE		0x07
 #define MII_MARVELL_WOL_PAGE		0x11
@@ -158,6 +159,46 @@
 #define MII_88E1510_GEN_CTRL_REG_1_MODE_SGMII	0x1	/* SGMII to copper */
 #define MII_88E1510_GEN_CTRL_REG_1_RESET	0x8000	/* Soft reset */
 
+#define MII_VCT5_TX_RX_MDI0_COUPLING	0x10
+#define MII_VCT5_TX_RX_MDI1_COUPLING	0x11
+#define MII_VCT5_TX_RX_MDI2_COUPLING	0x12
+#define MII_VCT5_TX_RX_MDI3_COUPLING	0x13
+#define MII_VCT5_TX_RX_AMPLITUDE_MASK	0x7f00
+#define MII_VCT5_TX_RX_AMPLITUDE_SHIFT	8
+#define MII_VCT5_TX_RX_COUPLING_POSITIVE_REFLECTION	BIT(15)
+
+#define MII_VCT5_CTRL				0x17
+#define MII_VCT5_CTRL_ENABLE				BIT(15)
+#define MII_VCT5_CTRL_COMPLETE				BIT(14)
+#define MII_VCT5_CTRL_SAME_CHANNEL			(0 << 11)
+#define MII_VCT5_CTRL_TX0_CHANNEL			(1 << 11)
+#define MII_VCT5_CTRL_TX1_CHANNEL			(2 << 11)
+#define MII_VCT5_CTRL_TX2_CHANNEL			(3 << 11)
+#define MII_VCT5_CTRL_TX3_CHANNEL			(4 << 11)
+#define MII_VCT5_CTRL_SAMPLES_2				(0 << 8)
+#define MII_VCT5_CTRL_SAMPLES_4				(1 << 8)
+#define MII_VCT5_CTRL_SAMPLES_8				(2 << 8)
+#define MII_VCT5_CTRL_SAMPLES_16			(3 << 8)
+#define MII_VCT5_CTRL_SAMPLES_32			(4 << 8)
+#define MII_VCT5_CTRL_SAMPLES_64			(5 << 8)
+#define MII_VCT5_CTRL_SAMPLES_126			(5 << 8)
+#define MII_VCT5_CTRL_SAMPLES_DEFAULT			(6 << 8)
+#define MII_VCT5_CTRL_MODE_MAXIMUM_PEEK			(0 << 6)
+#define MII_VCT5_CTRL_MODE_FIRST_LAST_PEEK		(1 << 6)
+#define MII_VCT5_CTRL_MODE_OFFSET			(2 << 6)
+#define MII_VCT5_CTRL_SAMPLE_POINT			(3 << 6)
+#define MII_VCT5_CTRL_PEEK_HYST_DEFAULT			3
+
+#define MII_VCT5_SAMPLE_POINT_DISTANCE		0x18
+#define MII_VCT5_TX_PULSE_CTRL			0x1c
+#define MII_VCT5_TX_PULSE_CTRL_DONT_WAIT_LINK_DOWN	BIT(12)
+#define MII_VCT5_TX_PULSE_CTRL_PULSE_WIDTH_128nS	(0 << 10)
+#define MII_VCT5_TX_PULSE_CTRL_PULSE_WIDTH_96nS		(1 << 10)
+#define MII_VCT5_TX_PULSE_CTRL_PULSE_WIDTH_64nS		(2 << 10)
+#define MII_VCT5_TX_PULSE_CTRL_PULSE_WIDTH_32nS		(3 << 10)
+#define MII_VCT5_TX_PULSE_CTRL_MAX_AMP			BIT(7)
+#define MII_VCT5_TX_PULSE_CTRL_GT_140m_46_86mV		(6 << 0)
+
 #define MII_VCT7_PAIR_0_DISTANCE	0x10
 #define MII_VCT7_PAIR_1_DISTANCE	0x11
 #define MII_VCT7_PAIR_2_DISTANCE	0x12
@@ -224,6 +265,7 @@ struct marvell_priv {
 	u64 stats[ARRAY_SIZE(marvell_hw_stats)];
 	char *hwmon_name;
 	struct device *hwmon_dev;
+	int cable_test_options;
 };
 
 static int marvell_read_page(struct phy_device *phydev)
@@ -1667,13 +1709,130 @@ static void marvell_get_stats(struct phy_device *phydev,
 		data[i] = marvell_get_stat(phydev, i);
 }
 
+static int marvell_vct5_wait_complete(struct phy_device *phydev)
+{
+	int i;
+	u16 val;
+
+	for (i = 0; i < 32; i++) {
+		val = phy_read_paged(phydev, MII_MARVELL_VCT5_PAGE,
+				     MII_VCT5_CTRL);
+		if (val < 0)
+			return val;
+
+		if (val & MII_VCT5_CTRL_COMPLETE)
+			return 0;
+
+		usleep_range(1000, 2000);
+	}
+
+	phydev_err(phydev, "Timeout while waiting for cable test to finish\n");
+	return -ETIMEDOUT;
+}
+
+static int marvell_vct5_amplitude(struct phy_device *phydev, int pair)
+{
+	int amplitude;
+	int val;
+	int reg;
+
+	reg = MII_VCT5_TX_RX_MDI0_COUPLING + pair;
+	val = phy_read_paged(phydev, MII_MARVELL_VCT5_PAGE, reg);
+
+	if (val < 0)
+		return 0;
+
+	amplitude = (val & MII_VCT5_TX_RX_AMPLITUDE_MASK) >>
+		MII_VCT5_TX_RX_AMPLITUDE_SHIFT;
+
+	if (!(val & MII_VCT5_TX_RX_COUPLING_POSITIVE_REFLECTION))
+		amplitude = -amplitude;
+
+	return 1000 * amplitude / 128;
+}
+
+static int marvell_vct5_amplitude_distance(struct phy_device *phydev,
+					   int distance)
+{
+	int mV_pair0, mV_pair1, mV_pair2, mV_pair3;
+	u16 reg;
+	int err;
+
+	err = phy_write_paged(phydev, MII_MARVELL_VCT5_PAGE,
+			      MII_VCT5_SAMPLE_POINT_DISTANCE,
+			      distance);
+	if (err)
+		return err;
+
+	reg = MII_VCT5_CTRL_ENABLE |
+		MII_VCT5_CTRL_SAME_CHANNEL |
+		MII_VCT5_CTRL_SAMPLES_DEFAULT |
+		MII_VCT5_CTRL_SAMPLE_POINT |
+		MII_VCT5_CTRL_PEEK_HYST_DEFAULT;
+	err = phy_write_paged(phydev, MII_MARVELL_VCT5_PAGE,
+			      MII_VCT5_CTRL, reg);
+	if (err)
+		return err;
+
+	err = marvell_vct5_wait_complete(phydev);
+	if (err)
+		return err;
+
+	mV_pair0 = marvell_vct5_amplitude(phydev, 0);
+	mV_pair1 = marvell_vct5_amplitude(phydev, 1);
+	mV_pair2 = marvell_vct5_amplitude(phydev, 2);
+	mV_pair3 = marvell_vct5_amplitude(phydev, 3);
+
+	phy_cable_test_amplitude(phydev, distance, ETHTOOL_A_CABLE_PAIR_0,
+				 mV_pair0);
+	phy_cable_test_amplitude(phydev, distance, ETHTOOL_A_CABLE_PAIR_1,
+				 mV_pair1);
+	phy_cable_test_amplitude(phydev, distance, ETHTOOL_A_CABLE_PAIR_2,
+				 mV_pair2);
+	phy_cable_test_amplitude(phydev, distance, ETHTOOL_A_CABLE_PAIR_3,
+				 mV_pair3);
+
+	return 0;
+}
+
+static int marvell_vct5_amplitude_graph(struct phy_device *phydev)
+{
+	int distance;
+	int err;
+	u16 reg;
+
+	/* Disable  VCT7 */
+	err = phy_write_paged(phydev, MII_MARVELL_VCT7_PAGE,
+			      MII_VCT7_CTRL, 0);
+
+	/* Allow the cable time to become idle */
+	msleep(1500);
+
+	reg = MII_VCT5_TX_PULSE_CTRL_GT_140m_46_86mV |
+		MII_VCT5_TX_PULSE_CTRL_DONT_WAIT_LINK_DOWN |
+		MII_VCT5_TX_PULSE_CTRL_MAX_AMP |
+		MII_VCT5_TX_PULSE_CTRL_PULSE_WIDTH_32nS;
+
+	err = phy_write_paged(phydev, MII_MARVELL_VCT5_PAGE,
+			      MII_VCT5_TX_PULSE_CTRL, reg);
+	if (err)
+		return err;
+
+	for (distance = 0; distance <= 100; distance++) {
+		err = marvell_vct5_amplitude_distance(phydev, distance);
+		if (err)
+			return err;
+	}
+
+	/* 1000 mV pulse is used */
+	return phy_cable_test_pulse(phydev, 1000);
+}
+
 static int marvell_vct7_cable_test_start(struct phy_device *phydev,
 					 int options)
 {
+	struct marvell_priv *priv = phydev->priv;
 	int bmcr, bmsr, ret;
-
-	if (options)
-		return -EOPNOTSUPP;
 
 	/* If auto-negotiation is enabled, but not complete, the
 	   cable test never completes. So disable auto-neg.
@@ -1695,6 +1854,12 @@ static int marvell_vct7_cable_test_start(struct phy_device *phydev,
 		ret = genphy_soft_reset(phydev);
 		if (ret < 0)
 			return ret;
+	}
+
+	priv->cable_test_options = options;
+
+	if (options & PHY_CABLE_TEST_AMPLITUDE_GRAPH) {
+		return 0;
 	}
 
 	return phy_write_paged(phydev, MII_MARVELL_VCT7_PAGE,
@@ -1806,7 +1971,14 @@ static int marvell_vct7_cable_test_report(struct phy_device *phydev)
 static int marvell_vct7_cable_test_get_status(struct phy_device *phydev,
 					      bool *finished)
 {
+	struct marvell_priv *priv = phydev->priv;
 	int ret;
+
+	if (priv->cable_test_options & PHY_CABLE_TEST_AMPLITUDE_GRAPH) {
+		ret = marvell_vct5_amplitude_graph(phydev);
+		*finished = true;
+		return ret;
+	}
 
 	*finished = false;
 
