@@ -403,6 +403,84 @@
 	bus-num = <0>;
 	status = "okay";
 
+	hi3593@0 {
+		compatible = "hi3593";
+		reg = <0>;
+		spi-max-frequency = <10000000>;	/* min sclk period is 100 ns */
+		pinctrl-0 = <&pinctrl_hi3593_1>;
+		pinctrl-names = "default";
+		arinc-frequency = <1000000>;
+
+		master_reset-gpio = <&gpio5 0 GPIO_ACTIVE_HIGH>;
+		rx1-chan {
+			label = "arinc429rx1";
+			int-gpio = <&gpio0 30 GPIO_ACTIVE_HIGH>;
+			flag-gpio = <&gpio0 31 GPIO_ACTIVE_HIGH>;
+		};
+		rx2-chan {
+			label = "arinc429rx2";
+			int-gpio = <&gpio0 28 GPIO_ACTIVE_HIGH>;
+			flag-gpio = <&gpio0 29 GPIO_ACTIVE_HIGH>;
+		};
+		tx-chan {
+			label = "arinc429tx1";
+			full-gpio = <&gpio0 27 GPIO_ACTIVE_HIGH>;
+			empty-gpio = <&gpio0 26 GPIO_ACTIVE_HIGH>;
+		};
+	};
+
+	hi3593@1 {
+		compatible = "hi3593";
+		reg = <1>;
+		spi-max-frequency = <10000000>;	/* min sclk period is 100 ns */
+		pinctrl-0 = <&pinctrl_hi3593_2>;
+		pinctrl-names = "default";
+		arinc-frequency = <1000000>;
+
+		master_reset-gpio = <&gpio5 1 GPIO_ACTIVE_HIGH>;
+		rx1-chan {
+			label = "arinc429rx3";
+			int-gpio = <&gpio0 9 GPIO_ACTIVE_HIGH>;
+			flag-gpio = <&gpio0 10 GPIO_ACTIVE_HIGH>;
+		};
+		rx2-chan {
+			label = "arinc429rx4";
+			int-gpio = <&gpio0 7 GPIO_ACTIVE_HIGH>;
+			flag-gpio = <&gpio0 8 GPIO_ACTIVE_HIGH>;
+		};
+		tx-chan {
+			label = "arinc429tx2";
+			full-gpio = <&gpio0 6 GPIO_ACTIVE_HIGH>;
+			empty-gpio = <&gpio0 5 GPIO_ACTIVE_HIGH>;
+		};
+	};
+
+	hi3593@4 {
+		compatible = "hi3593";
+		reg = <4>;
+		spi-max-frequency = <10000000>;	/* min sclk period is 100 ns */
+		pinctrl-0 = <&pinctrl_hi3593_3>;
+		pinctrl-names = "default";
+		arinc-frequency = <1000000>;
+
+		master_reset-gpio = <&gpio5 2 GPIO_ACTIVE_HIGH>;
+		rx1-chan {
+			label = "arinc429rx5";
+			int-gpio = <&gpio0 24 GPIO_ACTIVE_HIGH>;
+			flag-gpio = <&gpio0 25 GPIO_ACTIVE_HIGH>;
+		};
+		rx2-chan {
+			label = "arinc429rx6";
+			int-gpio = <&gpio0 22 GPIO_ACTIVE_HIGH>;
+			flag-gpio = <&gpio0 23 GPIO_ACTIVE_HIGH>;
+		};
+		tx-chan {
+			label = "arinc429tx3";
+			full-gpio = <&gpio0 21 GPIO_ACTIVE_HIGH>;
+			empty-gpio = <&gpio0 20 GPIO_ACTIVE_HIGH>;
+		};
+	};
+
 	adc@5 {
 		compatible = "holt,hi8435";
 		reg = <5>;
@@ -848,6 +926,39 @@
 			VF610_PAD_PTD0__UART2_TX		0x21a2
 			VF610_PAD_PTD1__UART2_RX		0x21a1
 			VF610_PAD_PTD2__UART2_RTS		0x21a2 /* Used as DE signal for the RS-485 transceiver */
+		>;
+	};
+
+	pinctrl_hi3593_1: pinctrl-hi3593-1 {
+		fsl,pins = <
+			VF610_PAD_PTB4__GPIO_26			0x33e1
+			VF610_PAD_PTB5__GPIO_27			0x33e1
+			VF610_PAD_PTB6__GPIO_28			0x33e1
+			VF610_PAD_PTB7__GPIO_29			0x33e1
+			VF610_PAD_PTB8__GPIO_30			0x33e1
+			VF610_PAD_PTB9__GPIO_31			0x33e1
+		>;
+	};
+
+	pinctrl_hi3593_2: pinctrl-hi3593-2 {
+		fsl,pins = <
+			VF610_PAD_PTA12__GPIO_5			0x33e1
+			VF610_PAD_PTA16__GPIO_6			0x33e1
+			VF610_PAD_PTA17__GPIO_7			0x33e1
+			VF610_PAD_PTA18__GPIO_8			0x33e1
+			VF610_PAD_PTA19__GPIO_9			0x33e1
+			VF610_PAD_PTA20__GPIO_10		0x33e1
+		>;
+	};
+
+	pinctrl_hi3593_3: pinctrl-hi3593-3 {
+		fsl,pins = <
+			VF610_PAD_PTA30__GPIO_20		0x33e1
+			VF610_PAD_PTA31__GPIO_21		0x33e1
+			VF610_PAD_PTB0__GPIO_22			0x33e1
+			VF610_PAD_PTB1__GPIO_23			0x33e1
+			VF610_PAD_PTB2__GPIO_24			0x33e1
+			VF610_PAD_PTB3__GPIO_25			0x33e1
 		>;
 	};
 };
