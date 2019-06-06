@@ -266,6 +266,40 @@
 	};
 };
 
+&dspi2 {
+	bus-num = <2>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_dspi2>;
+	status = "okay";
+	spi-num-chipselects = <2>;
+
+	hi3593@0 {
+		compatible = "hi3593";
+		reg = <0>;
+		spi-max-frequency = <10000000>;	/* min sclk period is 100 ns */
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_hi3593>;
+		arinc-frequency = <1000000>;
+		master_reset-gpio = <&gpio6 2 GPIO_ACTIVE_HIGH>;
+
+		rx1-chan {
+			label = "arinc429rx1";
+			int-gpio = <&gpio3 13 GPIO_ACTIVE_HIGH>;
+			flag-gpio = <&gpio3 15 GPIO_ACTIVE_HIGH>;
+		};
+		rx2-chan {
+			label = "arinc429rx2";
+			int-gpio = <&gpio3 14 GPIO_ACTIVE_HIGH>;
+			flag-gpio = <&gpio3 1 GPIO_ACTIVE_HIGH>;
+		};
+		tx-chan {
+			label = "arinc429tx1";
+			empty-gpio = <&gpio3 11 GPIO_ACTIVE_HIGH>;
+			full-gpio = <&gpio3 12 GPIO_ACTIVE_HIGH>;
+		};
+	};
+};
+
 &i2c0 {
 	/*
 	 * U712
@@ -451,6 +485,17 @@
 	pinctrl_fec0_phy_int: pinctrl-fec0-phy-int {
 		fsl,pins = <
 			VF610_PAD_PTB28__GPIO_98	0x219d
+		>;
+	};
+
+	pinctrl_hi3593: pinctrl-hi3593 {
+		fsl,pins = <
+			VF610_PAD_PTB27__GPIO_97	0x33e1
+			VF610_PAD_PTE2__GPIO_107	0x33e1
+			VF610_PAD_PTE3__GPIO_108	0x33e1
+			VF610_PAD_PTE4__GPIO_109	0x33e1
+			VF610_PAD_PTE5__GPIO_110	0x33e1
+			VF610_PAD_PTE6__GPIO_111	0x33e1
 		>;
 	};
 };
