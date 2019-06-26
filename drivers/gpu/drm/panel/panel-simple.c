@@ -2186,6 +2186,12 @@ static const struct panel_desc newhaven_nhd_43_480272ef_atxl = {
 		     DRM_BUS_FLAG_SYNC_DRIVE_POSEDGE,
 };
 
+static const struct panel_desc nlt_nl192108ac13_02d = {
+	.delay = {
+		.unprepare = 500,
+	},
+};
+
 static const struct display_timing nlt_nl192108ac18_02d_timing = {
 	.pixelclock = { 130000000, 148350000, 163000000 },
 	.hactive = { 1920, 1920, 1920 },
@@ -3299,6 +3305,9 @@ static const struct of_device_id platform_of_match[] = {
 	}, {
 		.compatible = "newhaven,nhd-4.3-480272ef-atxl",
 		.data = &newhaven_nhd_43_480272ef_atxl,
+	}, {
+		.compatible = "nlt,nl192108ac13-02d",
+		.data = &nlt_nl192108ac13_02d,
 	}, {
 		.compatible = "nlt,nl192108ac18-02d",
 		.data = &nlt_nl192108ac18_02d,
