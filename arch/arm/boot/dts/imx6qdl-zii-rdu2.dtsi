@@ -559,6 +559,14 @@
 					remote-endpoint = <&disp0_out>;
 				};
 			};
+
+			port@2 {
+				reg = <2>;
+
+				tc358767_out: endpoint {
+					remote-endpoint = <&panel_in>;
+				};
+			};
 		};
 	};
 };
