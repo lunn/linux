@@ -68,21 +68,6 @@ struct s_pstats   arinc429_pstats;      /* receive list statistics */
  * af_arinc429 socket functions
  */
 
-int arinc429_ioctl(struct socket *sock, unsigned int cmd, unsigned long arg)
-{
-	struct sock *sk = sock->sk;
-
-	switch (cmd) {
-
-	case SIOCGSTAMP:
-		return sock_get_timestamp(sk, (struct timeval __user *)arg);
-
-	default:
-		return -ENOIOCTLCMD;
-	}
-}
-EXPORT_SYMBOL(arinc429_ioctl);
-
 static void arinc429_sock_destruct(struct sock *sk)
 {
 	skb_queue_purge(&sk->sk_receive_queue);
