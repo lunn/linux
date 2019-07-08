@@ -54,6 +54,5 @@ extern void arinc429_rx_unregister(struct net_device *dev,
 				   void *data);
 
 extern int arinc429_send(struct sk_buff *skb, int loop);
-extern int arinc429_ioctl(struct socket *sock, unsigned int cmd, unsigned long arg);
 
 #endif /* __ARINC429_CORE_H__ */
