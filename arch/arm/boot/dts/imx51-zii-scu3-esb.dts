@@ -176,6 +176,67 @@
 	};
 };
 
+&ecspi2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_ecspi2>;
+	fsl,spi-num-chipselects = <2>;
+	cs-gpios = <&gpio3 24 GPIO_ACTIVE_LOW>,
+		   <&gpio3 28 GPIO_ACTIVE_LOW>;
+	status = "okay";
+
+	hi3593@0 {
+		compatible = "hi3593";
+		reg = <0>;
+		spi-max-frequency = <10000000>;	/* min sclk period is 100 ns */
+		pinctrl-0 = <&pinctrl_hi3593_1>;
+		pinctrl-names = "default";
+		arinc-frequency = <1000000>;
+
+		master_reset-gpio = <&gpio4 0 GPIO_ACTIVE_HIGH>;
+		rx1-chan {
+			label = "arinc429rx1";
+			int-gpio = <&gpio3 6 GPIO_ACTIVE_HIGH>;
+			flag-gpio = <&gpio3 7 GPIO_ACTIVE_HIGH>;
+		};
+		rx2-chan {
+			label = "arinc429rx2";
+			int-gpio = <&gpio3 4 GPIO_ACTIVE_HIGH>;
+			flag-gpio = <&gpio3 5 GPIO_ACTIVE_HIGH>;
+		};
+		tx-chan {
+			label = "arinc429tx1";
+			full-gpio = <&gpio3 3 GPIO_ACTIVE_HIGH>;
+			empty-gpio = <&gpio3 12 GPIO_ACTIVE_HIGH>;
+		};
+	};
+
+	hi3593@1 {
+		compatible = "hi3593";
+		reg = <1>;
+		spi-max-frequency = <10000000>;	/* min sclk period is 100 ns */
+		pinctrl-0 = <&pinctrl_hi3593_2>;
+		pinctrl-names = "default";
+		arinc-frequency = <1000000>;
+
+		master_reset-gpio = <&gpio2 23 GPIO_ACTIVE_HIGH>;
+		rx1-chan {
+			label = "arinc429rx3";
+			int-gpio = <&gpio3 31 GPIO_ACTIVE_HIGH>;
+			flag-gpio = <&gpio3 30 GPIO_ACTIVE_HIGH>;
+		};
+		rx2-chan {
+			label = "arinc429rx4";
+			int-gpio = <&gpio3 27 GPIO_ACTIVE_HIGH>;
+			flag-gpio = <&gpio3 26 GPIO_ACTIVE_HIGH>;
+		};
+		tx-chan {
+			label = "arinc429tx2";
+			full-gpio = <&gpio3 29 GPIO_ACTIVE_HIGH>;
+			empty-gpio = <&gpio3 8 GPIO_ACTIVE_HIGH>;
+		};
+	};
+};
+
 &esdhc1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_esdhc1>;
@@ -360,6 +421,34 @@
 };
 
 &iomuxc {
+	pinctrl_hi3593_1: pinctrl-hi3593-1 {
+		fsl,pins = <
+			MX51_PAD_GPIO_NAND__GPIO_NAND		0x100
+			MX51_PAD_NANDF_WE_B__GPIO3_3		0x100
+			MX51_PAD_NANDF_RE_B__GPIO3_4		0x100
+			MX51_PAD_NANDF_ALE__GPIO3_5		0x100
+			MX51_PAD_NANDF_CLE__GPIO3_6		0x100
+			MX51_PAD_NANDF_WP_B__GPIO3_7		0x100
+			MX51_PAD_NANDF_CS0__GPIO3_16		0x100
+			MX51_PAD_NANDF_CS1__GPIO3_17		0x100
+			MX51_PAD_NANDF_D8__GPIO4_0		0x100
+		>;
+	};
+
+	pinctrl_hi3593_2: pinctrl-hi3593-2 {
+		fsl,pins = <
+			MX51_PAD_NANDF_RB0__GPIO3_8		0x100
+			MX51_PAD_NANDF_CS7__GPIO3_23		0x100
+			MX51_PAD_NANDF_D6__GPIO4_2		0x100
+			MX51_PAD_NANDF_D7__GPIO4_1		0x100
+			MX51_PAD_NANDF_D9__GPIO3_31		0x100
+			MX51_PAD_NANDF_D10__GPIO3_30		0x100
+			MX51_PAD_NANDF_D11__GPIO3_29		0x100
+			MX51_PAD_NANDF_D13__GPIO3_27		0x100
+			MX51_PAD_NANDF_D14__GPIO3_26		0x100
+		>;
+	};
+
 	pinctrl_ecspi1: ecspi1grp {
 		fsl,pins = <
 			MX51_PAD_CSPI1_MISO__ECSPI1_MISO	0x185
@@ -367,6 +456,16 @@
 			MX51_PAD_CSPI1_SCLK__ECSPI1_SCLK	0x185
 			MX51_PAD_CSPI1_SS0__GPIO4_24		0x85
 			MX51_PAD_CSPI1_SS1__GPIO4_25		0x85
+		>;
+	};
+
+	pinctrl_ecspi2: ecspi2grp {
+		fsl,pins = <
+			MX51_PAD_NANDF_RB2__ECSPI2_SCLK		0x185
+			MX51_PAD_NANDF_RB3__ECSPI2_MISO		0x185
+			MX51_PAD_NANDF_D15__ECSPI2_MOSI		0x185
+			MX51_PAD_NANDF_RDY_INT__GPIO3_24	0x85
+			MX51_PAD_NANDF_D12__GPIO3_28		0x85
 		>;
 	};
 
