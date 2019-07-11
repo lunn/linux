@@ -79,6 +79,7 @@
 		compatible = "fsl,imx-parallel-display";
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_ipu_disp1>;
+		interface-pix-fmt = "rgb24";
 
 		#address-cells = <1>;
 		#size-cells = <0>;
