@@ -246,7 +246,7 @@ int i2c_recover_bus(struct i2c_adapter *adap)
 	if (!adap->bus_recovery_info)
 		return -EOPNOTSUPP;
 
-	dev_dbg(&adap->dev, "Trying i2c bus recovery\n");
+	dev_info(&adap->dev, "Trying i2c bus recovery\n");
 	return adap->bus_recovery_info->recover_bus(adap);
 }
 EXPORT_SYMBOL_GPL(i2c_recover_bus);
