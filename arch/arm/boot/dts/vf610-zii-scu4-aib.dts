@@ -579,8 +579,11 @@
 
 &i2c0 {
 	clock-frequency = <100000>;
-	pinctrl-names = "default";
+	pinctrl-names = "default", "gpio";
 	pinctrl-0 = <&pinctrl_i2c0>;
+	pinctrl-1 = <&pinctrl_i2c0_gpio>;
+	scl-gpios = <&gpio1 4 GPIO_ACTIVE_HIGH>;
+	sda-gpios = <&gpio1 5 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 
 	gpio5: io-expander@20 {
@@ -620,8 +623,11 @@
 
 &i2c1 {
 	clock-frequency = <100000>;
-	pinctrl-names = "default";
+	pinctrl-names = "default", "gpio";
 	pinctrl-0 = <&pinctrl_i2c1>;
+	pinctrl-1 = <&pinctrl_i2c1_gpio>;
+	scl-gpios = <&gpio1 6 GPIO_ACTIVE_HIGH>;
+	sda-gpios = <&gpio1 7 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 
 	adt7411@4a {
@@ -632,8 +638,11 @@
 
 &i2c2 {
 	clock-frequency = <100000>;
-	pinctrl-names = "default";
+	pinctrl-names = "default", "gpio";
 	pinctrl-0 = <&pinctrl_i2c2>;
+	pinctrl-1 = <&pinctrl_i2c2_gpio>;
+	scl-gpios = <&gpio0 12 GPIO_ACTIVE_HIGH>;
+	sda-gpios = <&gpio0 13 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 
 	gpio9: sx1503q@20 {
@@ -858,6 +867,13 @@
 		>;
 	};
 
+	pinctrl_i2c0_gpio: i2c0grp-gpio {
+		fsl,pins = <
+			VF610_PAD_PTB14__GPIO_36		0x31c2
+			VF610_PAD_PTB15__GPIO_37		0x31c2
+		>;
+	};
+
 	pinctrl_i2c1: i2c1grp {
 		fsl,pins = <
 			VF610_PAD_PTB16__I2C1_SCL		0x37ff
@@ -865,10 +881,31 @@
 		>;
 	};
 
+	pinctrl_i2c1_gpio: i2c1grp-gpio {
+		fsl,pins = <
+			VF610_PAD_PTB16__GPIO_38		0x31c2
+			VF610_PAD_PTB17__GPIO_39		0x31c2
+		>;
+	};
+
 	pinctrl_i2c2: i2c2grp {
 		fsl,pins = <
 			VF610_PAD_PTA22__I2C2_SCL		0x37ff
 			VF610_PAD_PTA23__I2C2_SDA		0x37ff
+		>;
+	};
+
+	pinctrl_i2c2_gpio: i2c2grp-gpio {
+		fsl,pins = <
+			VF610_PAD_PTA22__GPIO_12		0x31c2
+			VF610_PAD_PTA23__GPIO_13		0x31c2
+		>;
+	};
+
+	pinctrl_i2c3: i2c3grp {
+		fsl,pins = <
+			VF610_PAD_PTA30__I2C3_SCL		0x37ff
+			VF610_PAD_PTA31__I2C3_SDA		0x37ff
 		>;
 	};
 
