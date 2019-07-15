@@ -20,6 +20,7 @@
 #include <linux/of.h>		/* for struct device_node */
 #include <linux/swab.h>		/* for swab16 */
 #include <uapi/linux/i2c.h>
+#include <linux/debugfs.h>
 
 extern struct bus_type i2c_bus_type;
 extern struct device_type i2c_adapter_type;
@@ -711,6 +712,9 @@ struct i2c_adapter {
 	const struct i2c_adapter_quirks *quirks;
 
 	struct irq_domain *host_notify_domain;
+
+	struct dentry *debug_dir;
+	unsigned long i2c_bus_recovery_counter;
 };
 #define to_i2c_adapter(d) container_of(d, struct i2c_adapter, dev)
 

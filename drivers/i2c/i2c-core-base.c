@@ -240,6 +240,7 @@ int i2c_recover_bus(struct i2c_adapter *adap)
 		return -EOPNOTSUPP;
 
 	dev_info(&adap->dev, "Trying i2c bus recovery\n");
+	adap->i2c_bus_recovery_counter++;
 	return adap->bus_recovery_info->recover_bus(adap);
 }
 EXPORT_SYMBOL_GPL(i2c_recover_bus);
@@ -251,6 +252,13 @@ static void i2c_init_recovery(struct i2c_adapter *adap)
 
 	if (!bri)
 		return;
+
+	adap->debug_dir = debugfs_create_dir(dev_name(adap->dev.parent),
+					     NULL);
+	if (adap->debug_dir)
+		debugfs_create_ulong("i2c_bus_recovery_counter", 0444,
+				     adap->debug_dir,
+				     &adap->i2c_bus_recovery_counter);
 
 	if (!bri->recover_bus) {
 		err_str = "no recover_bus() found";
@@ -285,6 +293,7 @@ static void i2c_init_recovery(struct i2c_adapter *adap)
  err:
 	dev_err(&adap->dev, "Not using recovery: %s\n", err_str);
 	adap->bus_recovery_info = NULL;
+	debugfs_remove_recursive(adap->debug_dir);
 }
 
 static int i2c_smbus_host_notify_to_irq(const struct i2c_client *client)
@@ -1543,6 +1552,8 @@ void i2c_del_adapter(struct i2c_adapter *adap)
 		pr_debug("attempting to delete unregistered adapter [%s]\n", adap->name);
 		return;
 	}
+
+	debugfs_remove_recursive(adap->debug_dir);
 
 	i2c_acpi_remove_space_handler(adap);
 	/* Tell drivers about this removal */
