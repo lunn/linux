@@ -221,9 +221,7 @@ static int ipu_csc_scaler_try_fmt(struct file *file, void *priv,
 
 	if (f->type == V4L2_BUF_TYPE_VIDEO_CAPTURE) {
 		f->fmt.pix.colorspace = q_data->cur_fmt.colorspace;
-		f->fmt.pix.ycbcr_enc = q_data->cur_fmt.ycbcr_enc;
 		f->fmt.pix.xfer_func = q_data->cur_fmt.xfer_func;
-		f->fmt.pix.quantization = q_data->cur_fmt.quantization;
 	} else if (f->fmt.pix.colorspace == V4L2_COLORSPACE_DEFAULT) {
 		f->fmt.pix.colorspace = V4L2_COLORSPACE_SRGB;
 		f->fmt.pix.ycbcr_enc = V4L2_YCBCR_ENC_DEFAULT;
@@ -255,12 +253,7 @@ static int ipu_csc_scaler_s_fmt(struct file *file, void *priv,
 	if (ret < 0)
 		return ret;
 
-	q_data->cur_fmt.width = f->fmt.pix.width;
-	q_data->cur_fmt.height = f->fmt.pix.height;
-	q_data->cur_fmt.pixelformat = f->fmt.pix.pixelformat;
-	q_data->cur_fmt.field = f->fmt.pix.field;
-	q_data->cur_fmt.bytesperline = f->fmt.pix.bytesperline;
-	q_data->cur_fmt.sizeimage = f->fmt.pix.sizeimage;
+	q_data->cur_fmt = f->fmt.pix;
 
 	/* Reset cropping/composing rectangle */
 	q_data->rect.left = 0;
@@ -269,11 +262,6 @@ static int ipu_csc_scaler_s_fmt(struct file *file, void *priv,
 	q_data->rect.height = q_data->cur_fmt.height;
 
 	if (f->type == V4L2_BUF_TYPE_VIDEO_OUTPUT) {
-		/* Set colorimetry on the output queue */
-		q_data->cur_fmt.colorspace = f->fmt.pix.colorspace;
-		q_data->cur_fmt.ycbcr_enc = f->fmt.pix.ycbcr_enc;
-		q_data->cur_fmt.xfer_func = f->fmt.pix.xfer_func;
-		q_data->cur_fmt.quantization = f->fmt.pix.quantization;
 		/* Propagate colorimetry to the capture queue */
 		q_data = get_q_data(ctx, V4L2_BUF_TYPE_VIDEO_CAPTURE);
 		q_data->cur_fmt.colorspace = f->fmt.pix.colorspace;
@@ -281,11 +269,6 @@ static int ipu_csc_scaler_s_fmt(struct file *file, void *priv,
 		q_data->cur_fmt.xfer_func = f->fmt.pix.xfer_func;
 		q_data->cur_fmt.quantization = f->fmt.pix.quantization;
 	}
-
-	/*
-	 * TODO: Setting colorimetry on the capture queue is currently not
-	 * supported by the V4L2 API
-	 */
 
 	return 0;
 }
@@ -482,6 +465,22 @@ static void ipu_csc_scaler_buf_queue(struct vb2_buffer *vb)
 	v4l2_m2m_buf_queue(ctx->fh.m2m_ctx, to_vb2_v4l2_buffer(vb));
 }
 
+static bool is_rgb(__u32 pixelformat)
+{
+	switch (pixelformat) {
+	case V4L2_PIX_FMT_RGB565:
+	case V4L2_PIX_FMT_RGB24:
+	case V4L2_PIX_FMT_BGR24:
+	case V4L2_PIX_FMT_RGB32:
+	case V4L2_PIX_FMT_BGR32:
+	case V4L2_PIX_FMT_XRGB32:
+	case V4L2_PIX_FMT_XBGR32:
+		return true;
+	default:
+		return false;
+	}
+}
+
 static void ipu_image_from_q_data(struct ipu_image *im,
 				  struct ipu_csc_scaler_q_data *q_data)
 {
@@ -490,8 +489,12 @@ static void ipu_image_from_q_data(struct ipu_image *im,
 	im->pix = *fmt;
 	if (fmt->ycbcr_enc == V4L2_YCBCR_ENC_DEFAULT)
 		im->pix.ycbcr_enc = V4L2_MAP_YCBCR_ENC_DEFAULT(fmt->colorspace);
-	if (fmt->quantization == V4L2_QUANTIZATION_DEFAULT)
-		im->pix.ycbcr_enc = V4L2_MAP_YCBCR_ENC_DEFAULT(fmt->colorspace);
+	if (fmt->quantization == V4L2_QUANTIZATION_DEFAULT) {
+		im->pix.quantization =
+			V4L2_MAP_QUANTIZATION_DEFAULT(is_rgb(fmt->pixelformat),
+						      fmt->colorspace,
+						      fmt->ycbcr_enc);
+	}
 	im->rect = q_data->rect;
 }
 
