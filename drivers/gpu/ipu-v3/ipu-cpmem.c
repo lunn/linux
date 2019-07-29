@@ -176,12 +176,6 @@ static int v4l2_pix_fmt_to_drm_fourcc(u32 pixelformat)
 	case V4L2_PIX_FMT_RGB24:
 		/* R G B <=> [24:0] B:G:R */
 		return DRM_FORMAT_BGR888;
-	case V4L2_PIX_FMT_BGR32:
-		/* B G R A <=> [32:0] A:B:G:R */
-		return DRM_FORMAT_XRGB8888;
-	case V4L2_PIX_FMT_RGB32:
-		/* R G B A <=> [32:0] A:B:G:R */
-		return DRM_FORMAT_XBGR8888;
 	case V4L2_PIX_FMT_ABGR32:
 		/* B G R A <=> [32:0] A:R:G:B */
 		return DRM_FORMAT_ARGB8888;
@@ -839,8 +833,6 @@ int ipu_cpmem_set_image(struct ipuv3_channel *ch, struct ipu_image *image)
 		offset = image->rect.left * 2 +
 			image->rect.top * pix->bytesperline;
 		break;
-	case V4L2_PIX_FMT_RGB32:
-	case V4L2_PIX_FMT_BGR32:
 	case V4L2_PIX_FMT_ABGR32:
 	case V4L2_PIX_FMT_XBGR32:
 	case V4L2_PIX_FMT_BGRA32:
