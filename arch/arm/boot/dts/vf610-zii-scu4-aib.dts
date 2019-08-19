@@ -630,6 +630,11 @@
 	sda-gpios = <&gpio1 7 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 
+	watchdog@38 {
+		compatible = "zii,rave-wdt";
+		reg = <0x38>;
+	};
+
 	adt7411@4a {
 		compatible = "adi,adt7411";
 		reg = <0x4a>;
