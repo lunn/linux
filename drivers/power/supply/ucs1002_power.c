@@ -458,6 +458,13 @@ static irqreturn_t ucs1002_charger_irq(int irq, void *data)
 	if (present != info->present)
 		power_supply_changed(info->charger);
 
+	ret = regmap_read(info->regmap, UCS1002_REG_INTERRUPT_STATUS, &regval);
+	if (ret)
+		return IRQ_HANDLED;
+
+	if (regval & F_OVER_ILIM)
+		pr_warn("%s: Overcurrent event (%x)\n", __func__, regval);
+
 	return IRQ_HANDLED;
 }
 
