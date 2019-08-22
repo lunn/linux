@@ -18,6 +18,61 @@
 		reg = <0x80000000 0x20000000>;
 	};
 
+	gpio-acloss {
+		compatible = "gpio-of-helper";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_gpio_acloss>;
+		status = "okay";
+
+		ac_loss_detect {
+			gpio-name = "ac_loss_detect";
+			gpio = <&gpio3 23 GPIO_ACTIVE_HIGH>;
+			input;
+		};
+	};
+
+	gpio-discrete-outputs {
+		compatible = "gpio-of-helper";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_gpio_discrete_outputs>;
+		status = "okay";
+
+		discrete_out_1 {
+			gpio-name = "discrete_out_1";
+			gpio = <&gpio3 11 GPIO_ACTIVE_HIGH>;
+			output;
+			init-low;
+		};
+
+		discrete_out_2 {
+			gpio-name = "discrete_out_2";
+			gpio = <&gpio3 12 GPIO_ACTIVE_HIGH>;
+			output;
+			init-low;
+		};
+
+		discrete_out_3 {
+			gpio-name = "discrete_out_3";
+			gpio = <&gpio3 13 GPIO_ACTIVE_HIGH>;
+			output;
+			init-low;
+		};
+
+		discrete_out_4 {
+			gpio-name = "discrete_out_4";
+			gpio = <&gpio3 14 GPIO_ACTIVE_HIGH>;
+			output;
+			init-low;
+		};
+
+		discrete_out_5 {
+			gpio-name = "discrete_out_5";
+			gpio = <&gpio3 15 GPIO_ACTIVE_HIGH>;
+			output;
+			init-low;
+		};
+	};
+
 	gpio-leds {
 		compatible = "gpio-leds";
 		pinctrl-0 = <&pinctrl_leds_debug>;
@@ -27,6 +82,86 @@
 			label = "zii:green:debug1";
 			gpios = <&gpio3 0 GPIO_ACTIVE_HIGH>;
 			linux,default-trigger = "heartbeat";
+		};
+	};
+
+	gpio-rev-assembly {
+		compatible = "gpio-of-helper";
+		pinctrl-names = "default";
+		status = "okay";
+
+		copper_rev_0 {
+			gpio-name = "copper_rev_0";
+			gpio = <&gpio6 0 GPIO_ACTIVE_HIGH>;
+			input;
+		};
+
+		copper_rev_1 {
+			gpio-name = "copper_rev_1";
+			gpio = <&gpio6 1 GPIO_ACTIVE_HIGH>;
+			input;
+		};
+
+		copper_rev_2 {
+			gpio-name = "copper_rev_2";
+			gpio = <&gpio6 2 GPIO_ACTIVE_HIGH>;
+			input;
+		};
+
+		copper_rev_3 {
+			gpio-name = "copper_rev_3";
+			gpio = <&gpio6 3 GPIO_ACTIVE_HIGH>;
+			input;
+		};
+
+		copper_rev_4 {
+			gpio-name = "copper_rev_4";
+			gpio = <&gpio6 4 GPIO_ACTIVE_HIGH>;
+			input;
+		};
+
+		assembly_0 {
+			gpio-name = "assembly_0";
+			gpio = <&gpio6 5 GPIO_ACTIVE_HIGH>;
+			input;
+		};
+
+		assembly_1 {
+			gpio-name = "assembly_1";
+			gpio = <&gpio6 6 GPIO_ACTIVE_HIGH>;
+			input;
+		};
+
+		assembly_2 {
+			gpio-name = "assembly_2";
+			gpio = <&gpio6 7 GPIO_ACTIVE_HIGH>;
+			input;
+		};
+	};
+
+	gpio-sys-failover {
+		compatible = "gpio-of-helper";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_gpio_sys_failover>;
+		status = "okay";
+
+		primary_scu {
+			gpio-name = "primary_scu_b";
+			gpio = <&gpio2 6 GPIO_ACTIVE_HIGH>;
+			input;
+		};
+
+		scu_disable {
+			gpio-name = "scu_disable_b";
+			gpio = <&gpio2 5 GPIO_ACTIVE_HIGH>;
+			input;
+		};
+
+		scu_active_out {
+			gpio-name = "scu_active_out";
+			gpio = <&gpio3 22 GPIO_ACTIVE_HIGH>;
+			output;
+			init-low;
 		};
 	};
 
@@ -862,6 +997,30 @@
 			VF610_PAD_PTC15__ENET_RMII1_TXD1	0x30d2
 			VF610_PAD_PTC16__ENET_RMII1_TXD0	0x30d2
 			VF610_PAD_PTC17__ENET_RMII1_TXEN	0x30d2
+		>;
+	};
+
+	pinctrl_gpio_acloss: pinctl-gpio-acloss {
+		fsl,pins = <
+			VF610_PAD_PTE14__GPIO_119		0x2061
+		>;
+	};
+
+	pinctrl_gpio_discrete_outputs: pinctl-gpio-discrete-outputs {
+		fsl,pins = <
+			VF610_PAD_PTE2__GPIO_107		0x2063
+			VF610_PAD_PTE3__GPIO_108		0x2063
+			VF610_PAD_PTE4__GPIO_109		0x2063
+			VF610_PAD_PTE5__GPIO_110		0x2063
+			VF610_PAD_PTE6__GPIO_111		0x2063
+		>;
+	};
+
+	pinctrl_gpio_sys_failover: pinctl-gpio-sys-failover {
+		fsl,pins = <
+			VF610_PAD_PTD24__GPIO_70		0x2061
+			VF610_PAD_PTD25__GPIO_69		0x2061
+			VF610_PAD_PTE13__GPIO_118		0x2063
 		>;
 	};
 
