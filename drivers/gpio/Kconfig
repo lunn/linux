@@ -69,6 +69,19 @@ config GPIO_SYSFS
 	  ioctl() operations instead. The character device is always
 	  available.
 
+config GPIO_OF_HELPER
+	bool "GPIO OF helper device"
+	depends on SYSFS
+	depends on OF_GPIO
+	help
+	  Say Y here to add the GPIO OF "helper" driver.
+
+	  This driver allows you specify GPIO names based on OF entries
+	  and enables simple export of GPIO functionality to user-space.
+
+	  Features include value set/get, direction control,
+	  interrupt/value change poll support, event counting, and others.
+
 config GPIO_GENERIC
 	depends on HAS_IOMEM # Only for IOMEM drivers
 	tristate
