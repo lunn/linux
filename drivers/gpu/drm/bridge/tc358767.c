@@ -1222,39 +1222,43 @@ static void tc_bridge_pre_enable(struct drm_bridge *bridge)
 	drm_panel_prepare(tc->panel);
 }
 
-static void tc_bridge_enable(struct drm_bridge *bridge)
+static int __tc_bridge_enable(struct tc_data *tc)
 {
-	struct tc_data *tc = bridge_to_tc(bridge);
 	int ret;
 
 	ret = tc_get_display_props(tc);
 	if (ret < 0) {
 		dev_err(tc->dev, "failed to read display props: %d\n", ret);
-		return;
+		return ret;
 	}
 
 	ret = tc_main_link_enable(tc);
 	if (ret < 0) {
 		dev_err(tc->dev, "main link enable error: %d\n", ret);
-		return;
+		return ret;
 	}
 
 	ret = tc_stream_enable(tc);
 	if (ret < 0) {
 		dev_err(tc->dev, "main link stream start error: %d\n", ret);
 		tc_main_link_disable(tc);
-		return;
+		return ret;
 	}
 
-	drm_panel_enable(tc->panel);
+	return 0;
 }
 
-static void tc_bridge_disable(struct drm_bridge *bridge)
+static void tc_bridge_enable(struct drm_bridge *bridge)
 {
 	struct tc_data *tc = bridge_to_tc(bridge);
-	int ret;
 
-	drm_panel_disable(tc->panel);
+	if (!__tc_bridge_enable(tc))
+		drm_panel_enable(tc->panel);
+}
+
+static int __tc_bridge_disable(struct tc_data *tc)
+{
+	int ret;
 
 	ret = tc_stream_disable(tc);
 	if (ret < 0)
@@ -1263,6 +1267,16 @@ static void tc_bridge_disable(struct drm_bridge *bridge)
 	ret = tc_main_link_disable(tc);
 	if (ret < 0)
 		dev_err(tc->dev, "main link disable error: %d\n", ret);
+
+	return ret;
+}
+
+static void tc_bridge_disable(struct drm_bridge *bridge)
+{
+	struct tc_data *tc = bridge_to_tc(bridge);
+
+	drm_panel_disable(tc->panel);
+	__tc_bridge_disable(tc);
 }
 
 static void tc_bridge_post_disable(struct drm_bridge *bridge)
