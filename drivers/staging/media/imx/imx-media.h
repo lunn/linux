@@ -69,6 +69,8 @@ extern unsigned int imx_media_eof_timeout;
 
 struct imx_media_pixfmt {
 	u32     fourcc;
+	/* up to one supported media bus format and up to three unsupported
+	 * media bus formats for which the first one is used as a fallback */
 	u32     codes[4];
 	int     bpp;     /* total bpp */
 	/* cycles per pixel for generic (bayer) formats for the parallel bus */
