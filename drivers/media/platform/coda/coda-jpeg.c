@@ -1183,6 +1183,10 @@ static int coda9_jpeg_prepare_encode(struct coda_ctx *ctx)
 	q_data_src = get_q_data(ctx, V4L2_BUF_TYPE_VIDEO_OUTPUT);
 	q_data_dst = get_q_data(ctx, V4L2_BUF_TYPE_VIDEO_CAPTURE);
 
+	if (vb2_get_plane_payload(&src_buf->vb2_buf, 0) == 0)
+		vb2_set_plane_payload(&src_buf->vb2_buf, 0,
+				      vb2_plane_size(&src_buf->vb2_buf, 0));
+
 	src_buf->sequence = ctx->osequence;
 	dst_buf->sequence = ctx->osequence;
 	ctx->osequence++;
@@ -1413,6 +1417,10 @@ static int coda9_jpeg_prepare_decode(struct coda_ctx *ctx)
 	dst_buf = v4l2_m2m_next_dst_buf(ctx->fh.m2m_ctx);
 	q_data_dst = get_q_data(ctx, V4L2_BUF_TYPE_VIDEO_CAPTURE);
 	dst_fourcc = q_data_dst->fourcc;
+
+	if (vb2_get_plane_payload(&src_buf->vb2_buf, 0) == 0)
+		vb2_set_plane_payload(&src_buf->vb2_buf, 0,
+				      vb2_plane_size(&src_buf->vb2_buf, 0));
 
 	chroma_format = coda9_jpeg_chroma_format(q_data_dst->fourcc);
 	if (chroma_format < 0) {
