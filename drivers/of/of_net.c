@@ -15,12 +15,13 @@
 /**
  * of_get_phy_mode - Get phy mode for given device_node
  * @np:	Pointer to the given device_node
+ * @interface: Pointer to the result
  *
  * The function gets phy interface string from property 'phy-mode' or
- * 'phy-connection-type', and return its index in phy_modes table, or errno in
- * error case.
+ * 'phy-connection-type', and return its index in phy_modes table in
+ * interface and returns, or returns an errno in the error case.
  */
-int of_get_phy_mode(struct device_node *np)
+int of_get_phy_mode(struct device_node *np, phy_interface_t *interface)
 {
 	const char *pm;
 	int err, i;
@@ -32,8 +33,10 @@ int of_get_phy_mode(struct device_node *np)
 		return err;
 
 	for (i = 0; i < PHY_INTERFACE_MODE_MAX; i++)
-		if (!strcasecmp(pm, phy_modes(i)))
-			return i;
+		if (!strcasecmp(pm, phy_modes(i))) {
+			*interface = i;
+			return 0;
+		}
 
 	return -ENODEV;
 }

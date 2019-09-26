@@ -20,9 +20,10 @@
 static int emac_arc_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
+	phy_interface_t interface;
 	struct net_device *ndev;
 	struct arc_emac_priv *priv;
-	int interface, err;
+	int err;
 
 	if (!dev->of_node)
 		return -ENODEV;
@@ -37,8 +38,8 @@ static int emac_arc_probe(struct platform_device *pdev)
 	priv->drv_name = DRV_NAME;
 	priv->drv_version = DRV_VERSION;
 
-	interface = of_get_phy_mode(dev->of_node);
-	if (interface < 0)
+	err = of_get_phy_mode(dev->of_node, &interface);
+	if (err)
 		interface = PHY_INTERFACE_MODE_MII;
 
 	priv->clk = devm_clk_get(dev, "hclk");

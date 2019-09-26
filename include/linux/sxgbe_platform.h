@@ -38,7 +38,7 @@ struct sxgbe_plat_data {
 	char *phy_bus_name;
 	int bus_id;
 	int phy_addr;
-	int interface;
+	phy_interface_t interface;
 	struct sxgbe_mdio_bus_data *mdio_bus_data;
 	struct sxgbe_dma_cfg *dma_cfg;
 	int clk_csr;
