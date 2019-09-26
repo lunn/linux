@@ -1489,7 +1489,7 @@ static int pxa168_eth_probe(struct platform_device *pdev)
 			goto err_netdev;
 		}
 		of_property_read_u32(np, "reg", &pep->phy_addr);
-		pep->phy_intf = of_get_phy_mode(pdev->dev.of_node);
+		of_get_phy_mode(pdev->dev.of_node, &pep->phy_intf);
 		of_node_put(np);
 	}
 
