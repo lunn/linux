@@ -891,18 +891,23 @@ struct ipu_plane *ipu_plane_init(struct drm_device *dev, struct ipu_soc *ipu,
 				       &ipu_plane_funcs, ipu_plane_formats,
 				       ARRAY_SIZE(ipu_plane_formats),
 				       modifiers, type, NULL);
-	if (ret) {
-		DRM_ERROR("failed to initialize plane\n");
-		kfree(ipu_plane);
-		return ERR_PTR(ret);
-	}
+	if (ret)
+		goto err_free;
 
 	drm_plane_helper_add(&ipu_plane->base, &ipu_plane_helper_funcs);
 
 	if (dp == IPU_DP_FLOW_SYNC_BG || dp == IPU_DP_FLOW_SYNC_FG)
-		drm_plane_create_zpos_property(&ipu_plane->base, zpos, 0, 1);
+		ret = drm_plane_create_zpos_property(&ipu_plane->base, zpos, 0,
+						     1);
 	else
-		drm_plane_create_zpos_immutable_property(&ipu_plane->base, 0);
+		ret = drm_plane_create_zpos_immutable_property(&ipu_plane->base,
+							       0);
+	if (ret)
+		goto err_free;
 
 	return ipu_plane;
+err_free:
+	DRM_ERROR("failed to initialize plane\n");
+	kfree(ipu_plane);
+	return ERR_PTR(ret);
 }
