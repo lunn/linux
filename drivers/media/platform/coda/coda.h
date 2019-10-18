@@ -46,6 +46,16 @@ enum coda_product {
 	CODA_960 = 0xf020,
 };
 
+enum coda_h264_nal_unit_type {
+	NALU_TYPE_CODED_SLICE_NON_IDR = 1,
+	NALU_TYPE_CODED_SLICE_IDR = 5,
+	NALU_TYPE_SPS = 7,
+	NALU_TYPE_PPS = 8,
+	NALU_TYPE_END_OF_SEQ = 10,
+	NALU_TYPE_END_OF_STREAM = 11,
+	NALU_TYPE_FILLER_DATA = 12,
+};
+
 struct coda_video_device;
 
 struct coda_devtype {
@@ -379,6 +389,7 @@ int coda_h264_padding(int size, char *p);
 int coda_h264_profile(int profile_idc);
 int coda_h264_level(int level_idc);
 int coda_sps_parse_profile(struct coda_ctx *ctx, struct vb2_buffer *vb);
+u32 coda_h264_parse_headers(struct coda_ctx *ctx, struct vb2_buffer *vb);
 int coda_h264_sps_fixup(struct coda_ctx *ctx, int width, int height, char *buf,
 			int *size, int max_size);
 

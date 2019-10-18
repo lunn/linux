@@ -405,6 +405,37 @@ void coda_fill_bitstream(struct coda_ctx *ctx, struct list_head *buffer_list)
 			continue;
 		}
 
+		if (ctx->codec->src_fourcc == V4L2_PIX_FMT_H264) {
+			u32 nalu_types;
+			bool sps_pps;
+
+			nalu_types = coda_h264_parse_headers(ctx,
+							     &src_buf->vb2_buf);
+
+			/* Does the buffer contain both SPS and PPS headers? */
+			sps_pps = (nalu_types &
+				   (BIT(NALU_TYPE_SPS) | BIT(NALU_TYPE_PPS))) ==
+				  (BIT(NALU_TYPE_SPS) | BIT(NALU_TYPE_PPS));
+
+			if (ctx->qsequence == 0 && !sps_pps &&
+			    ctx->vpu_header_size[0] &&
+			    ctx->vpu_header_size[1]) {
+				int i, ret;
+
+				coda_dbg(1, ctx, "queueing previously recorded SPS + PPS headers\n");
+
+				for (i = 0; i < 2; i++) {
+					ret = coda_bitstream_queue(ctx, ctx->vpu_header[i],
+								   ctx->vpu_header_size[i]);
+					if (ret < 0) {
+						v4l2_err(&ctx->dev->v4l2_dev,
+							 "failed to queue previously recorded SPS + PPS headers\n");
+						return;
+					}
+				}
+			}
+		}
+
 		/* Buffer start position */
 		start = ctx->bitstream_fifo.kfifo.in;
 
@@ -1883,6 +1914,8 @@ static int coda_decoder_reqbufs(struct coda_ctx *ctx,
 			return ret;
 		}
 	} else {
+		ctx->vpu_header_size[0] = 0;
+		ctx->vpu_header_size[1] = 0;
 		coda_free_bitstream_buffer(ctx);
 		coda_free_context_buffers(ctx);
 	}
