@@ -46,6 +46,70 @@ int coda_sps_parse_profile(struct coda_ctx *ctx, struct vb2_buffer *vb)
 	return 0;
 }
 
+static void coda_h264_update_header(struct coda_ctx *ctx, int index,
+				    const u8 *buf, size_t len)
+{
+	size_t old_len = ctx->vpu_header_size[index];
+
+	if (len > sizeof(ctx->vpu_header[index])) {
+		coda_dbg(1, ctx, "ignoring %s parameter set > 64 bytes\n",
+			 index ? "picture" : "sequence");
+	} else if (old_len != len || memcmp(ctx->vpu_header[index], buf, len)) {
+		memcpy(ctx->vpu_header[index], buf, len);
+		ctx->vpu_header_size[index] = len;
+	}
+}
+
+/**
+ * coda_h264_parse_headers - collect prepended SPS/PPS headers
+ *
+ * This should be quick to run on all queued buffers. It is expected that most
+ * buffers directly start with a coded slice header, or with an access unit
+ * delimiter followed by a coded slice header. In both cases, this function
+ * will only look at a single cache line.
+ *
+ * Returns a bitfield of detected NAL types.
+ */
+u32 coda_h264_parse_headers(struct coda_ctx *ctx, struct vb2_buffer *vb)
+{
+	const u8 *buf = vb2_plane_vaddr(vb, 0);
+	const u8 *end = buf + vb2_get_plane_payload(vb, 0);
+	const u8 *nal, *next_nal;
+	u32 nalu_types = 0;
+
+	for (nal = coda_find_nal_header(buf, end); nal; nal = next_nal) {
+		u8 nal_unit_type = *nal++ & 0x1f;
+
+		nalu_types |= BIT(nal_unit_type);
+
+		/* stop at coded slice and end of sequence/stream NAL units */
+		if (nal_unit_type == NALU_TYPE_CODED_SLICE_NON_IDR ||
+		    nal_unit_type == NALU_TYPE_CODED_SLICE_IDR ||
+		    nal_unit_type == NALU_TYPE_END_OF_SEQ ||
+		    nal_unit_type == NALU_TYPE_END_OF_STREAM)
+			break;
+
+		next_nal = coda_find_nal_header(nal, end);
+
+		/* store SPS and PPS NAL units */
+		if (nal_unit_type == NALU_TYPE_SPS ||
+		    nal_unit_type == NALU_TYPE_PPS) {
+			int index = nal_unit_type - NALU_TYPE_SPS;
+			size_t len;
+
+			if (index == 0) {
+				ctx->params.h264_profile_idc = nal[0];
+				ctx->params.h264_level_idc = nal[2];
+			}
+			/* include start code prefix and NAL header byte */
+			len = next_nal ? (next_nal - nal + 1) : (end - nal + 5);
+			coda_h264_update_header(ctx, index, nal - 5, len);
+		}
+	}
+
+	return nalu_types;
+}
+
 int coda_h264_filler_nal(int size, char *p)
 {
 	if (size < 6)
