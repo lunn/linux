@@ -332,11 +332,6 @@ static int caam_remove(struct platform_device *pdev)
 	/* Remove platform devices under the crypto node */
 	of_platform_depopulate(ctrldev);
 
-#ifdef CONFIG_CAAM_QI
-	if (ctrlpriv->qi_init)
-		caam_qi_shutdown(ctrldev);
-#endif
-
 	return 0;
 }
 
@@ -767,7 +762,7 @@ static int caam_probe(struct platform_device *pdev)
 	ret = of_platform_populate(nprop, caam_match, NULL, dev);
 	if (ret) {
 		dev_err(dev, "JR platform devices creation error\n");
-		goto shutdown_qi;
+		return ret;
 	}
 
 	ring = 0;
@@ -927,13 +922,6 @@ static int caam_probe(struct platform_device *pdev)
 
 caam_remove:
 	caam_remove(pdev);
-	return ret;
-
-shutdown_qi:
-#ifdef CONFIG_CAAM_QI
-	if (ctrlpriv->qi_init)
-		caam_qi_shutdown(dev);
-#endif
 	return ret;
 }
 
