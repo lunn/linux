@@ -101,6 +101,7 @@ struct coda_dev {
 	struct mutex		coda_mutex;
 	struct workqueue_struct	*workqueue;
 	struct v4l2_m2m_dev	*m2m_dev;
+	u32			bit_int_reason;
 	struct ida		ida;
 	struct dentry		*debugfs_root;
 
@@ -413,6 +414,7 @@ extern const struct coda_context_ops coda9_jpeg_encode_ops;
 extern const struct coda_context_ops coda9_jpeg_decode_ops;
 
 irqreturn_t coda_irq_handler(int irq, void *data);
+irqreturn_t coda_threaded_irq_handler(int irq, void *data);
 irqreturn_t coda9_jpeg_irq_handler(int irq, void *data);
 
 static inline void coda_stats_run(struct v4l2_stats *stats)

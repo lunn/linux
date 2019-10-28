@@ -2747,77 +2747,87 @@ irqreturn_t coda_irq_handler(int irq, void *data)
 	status = coda_read(dev, CODA_REG_BIT_INT_STATUS);
 	reason = coda_read(dev, CODA_REG_BIT_INT_REASON);
 	coda_write(dev, 0, CODA_REG_BIT_INT_REASON);
-	coda_write(dev, CODA_REG_BIT_INT_CLEAR_SET,
-		      CODA_REG_BIT_INT_CLEAR);
+	coda_write(dev, CODA_REG_BIT_INT_CLEAR_SET, CODA_REG_BIT_INT_CLEAR);
 
 	if (status != 1)
 		pr_debug("coda: interrupt status 0x%x\n", status);
 
-	switch (reason) {
-	case CODA_INT_BIT_INIT:
-	case CODA_INT_BIT_SEQ_INIT:
-	case CODA_INT_BIT_SEQ_END:
-	case CODA_INT_BIT_PIC_RUN:
-	case CODA_INT_BIT_SET_FRAME_BUF:
-		break;
-	case CODA_INT_BIT_BUF_EMPTY:
-		pr_debug("coda: interrupt reason 0x%x (buf empty)\n", reason);
-
+	if (reason & CODA_INT_BIT_PIC_RUN) {
 		ctx = v4l2_m2m_get_curr_priv(dev->m2m_dev);
-		if (ctx) {
-			struct __kfifo *kfifo = &ctx->bitstream_fifo.kfifo;
-
-			pr_debug("coda: before: rd = 0x%x, wr = 0x%x\n",
-				 kfifo->out & kfifo->mask,
-				 kfifo->in & kfifo->mask);
-			coda_kfifo_sync_from_device(ctx);
-			pr_debug("coda: after: rd = 0x%x, wr = 0x%x\n",
-				 kfifo->out & kfifo->mask,
-				 kfifo->in & kfifo->mask);
-
-			if (ctx->codec->src_fourcc == V4L2_PIX_FMT_H264) {
-				mutex_lock(&ctx->bitstream_mutex);
-				/* Pad the bitstream */
-				coda_h264_bitstream_pad(ctx, 768);
-
-				pr_debug("coda: padded: rd = 0x%x, wr = 0x%x\n",
-					 kfifo->out & kfifo->mask,
-					 kfifo->in & kfifo->mask);
-
-				/* Sync read pointer to device */
-				coda_kfifo_sync_to_device_write(ctx);
-				mutex_unlock(&ctx->bitstream_mutex);
-			}
+		if (ctx == NULL) {
+			v4l2_err(&dev->v4l2_dev,
+				 "Instance released before the end of transaction\n");
+			return IRQ_HANDLED;
 		}
-		break;
-	default:
-		pr_debug("coda: interrupt reason 0x%x\n", reason);
-		break;
+
+		trace_coda_bit_done(ctx);
+		coda_stats_done(dev->bit_stats);
+
+		if (ctx->aborting) {
+			coda_dbg(1, ctx, "task has been aborted\n");
+		}
+
+		if (coda_isbusy(ctx->dev)) {
+			coda_dbg(1, ctx, "coda is still busy!!!!\n");
+			return IRQ_NONE;
+		}
+
+		complete(&ctx->completion);
 	}
 
-	if (!(reason & CODA_INT_BIT_PIC_RUN))
+	reason &= ~CODA_INT_BIT_PIC_RUN;
+	if (reason) {
+		dev->bit_int_reason = reason;
+		return IRQ_WAKE_THREAD;
+	}
+
+	return IRQ_HANDLED;
+}
+
+irqreturn_t coda_threaded_irq_handler(int irq, void *data)
+{
+	struct coda_dev *dev = data;
+	struct coda_ctx *ctx;
+	struct __kfifo *kfifo;
+
+	if (dev->bit_int_reason != CODA_INT_BIT_BUF_EMPTY) {
+		pr_debug("coda: interrupt reason 0x%x\n", dev->bit_int_reason);
 		return IRQ_HANDLED;
+	}
+
+	pr_debug("coda: interrupt reason 0x%x (buf empty)\n",
+		 dev->bit_int_reason);
 
 	ctx = v4l2_m2m_get_curr_priv(dev->m2m_dev);
 	if (ctx == NULL) {
 		v4l2_err(&dev->v4l2_dev,
-			 "Instance released before the end of transaction\n");
+			 "Buffer underrun on released instance\n");
 		return IRQ_HANDLED;
 	}
 
-	trace_coda_bit_done(ctx);
-	coda_stats_done(dev->bit_stats);
+	kfifo = &ctx->bitstream_fifo.kfifo;
 
-	if (ctx->aborting) {
-		coda_dbg(1, ctx, "task has been aborted\n");
+	pr_debug("coda: before: rd = 0x%x, wr = 0x%x\n",
+		 kfifo->out & kfifo->mask,
+		 kfifo->in & kfifo->mask);
+	coda_kfifo_sync_from_device(ctx);
+	pr_debug("coda: after: rd = 0x%x, wr = 0x%x\n",
+		 kfifo->out & kfifo->mask,
+		 kfifo->in & kfifo->mask);
+
+	if (ctx->codec->src_fourcc == V4L2_PIX_FMT_H264) {
+		mutex_lock(&ctx->bitstream_mutex);
+		/* Pad the bitstream */
+		coda_h264_bitstream_pad(ctx, 768);
+
+		pr_debug("coda: padded: rd = 0x%x, wr = 0x%x\n",
+			 kfifo->out & kfifo->mask,
+			 kfifo->in & kfifo->mask);
+
+		/* Sync read pointer to device */
+		coda_kfifo_sync_to_device_write(ctx);
+		mutex_unlock(&ctx->bitstream_mutex);
 	}
-
-	if (coda_isbusy(ctx->dev)) {
-		coda_dbg(1, ctx, "coda is still busy!!!!\n");
-		return IRQ_NONE;
-	}
-
-	complete(&ctx->completion);
 
 	return IRQ_HANDLED;
 }
