@@ -75,6 +75,12 @@ struct caam_drv_private {
 
 	struct iommu_domain *domain;
 
+	struct device *smdev;
+	dma_addr_t __iomem *sm_base;	/* Secure memory storage base */
+	phys_addr_t sm_phy;		/* Secure memory storage physical */
+	u32 sm_size;
+	bool has_seco;
+
 	/*
 	 * Detected geometry block. Filled in from device tree if powerpc,
 	 * or from register-based version detection code
