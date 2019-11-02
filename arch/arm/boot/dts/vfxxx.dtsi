@@ -469,6 +469,11 @@
 				reg = <0x4006e000 0x1000>;
 				interrupts = <96 IRQ_TYPE_LEVEL_HIGH>;
 			};
+
+			caam_sm: caam-sm@4007c000 {
+				compatible = "fsl,imx6q-caam-sm";
+				reg = <0x4007C000 0x4000>;
+			};
 		};
 
 		aips1: aips-bus@40080000 {
