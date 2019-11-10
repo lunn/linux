@@ -268,12 +268,55 @@
 
 					switch2phy0: phy@0 {
 						reg = <0>;
+
+						leds {
+							#address-cells = <1>;
+							#size-cells = <0>;
+
+							phy0led0: led@0 {
+								reg = <0>;
+								label = "lan6:Left:White";
+							};
+
+							phy0led1: led@1 {
+								reg = <1>;
+								label = "lan6:Right:White";
+							};
+						};
 					};
 					switch2phy1: phy@1 {
 						reg = <1>;
+						leds {
+							#address-cells = <1>;
+							#size-cells = <0>;
+
+							phy1led0: led@0 {
+								reg = <0>;
+								label = "lan7:Left:White";
+							};
+
+							phy1led1: led@1 {
+								reg = <1>;
+								label = "lan7:Right:White";
+							};
+						};
 					};
 					switch2phy2: phy@2 {
 						reg = <2>;
+						leds {
+							#address-cells = <1>;
+							#size-cells = <0>;
+
+							phy2led0: led@0 {
+								reg = <0>;
+								label = "lan8:Left:White";
+							};
+
+							phy2led1: led@1 {
+								reg = <1>;
+								label = "lan8:Right:White";
+							};
+						};
 					};
 				};
 			};
