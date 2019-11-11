@@ -463,6 +463,20 @@ struct phy_led {
 
 #define to_phy_led(d) container_of(d, struct phy_led, led_cdev)
 
+
+/* struct phy_led_trigger: Describe one LED trigger
+ *
+ * name: Name of the trigger, as seen in /sys/class/led/X/trigger
+ * index: which of the PHYs this trigger is valid for
+ * value: Used by the driver to activate the trigger
+ */
+struct phy_led_trigger
+{
+	const char *name;
+	int index;
+	unsigned int value;
+};
+
 /* struct phy_driver: Driver structure for a particular PHY type
  *
  * driver_data: static driver data
@@ -655,6 +669,8 @@ struct phy_driver {
 
 	int (*led_brightness_set)(struct phy_device *dev,
 				  u32 index, enum led_brightness value);
+	int led_num_triggers;
+	const struct phy_led_trigger *led_triggers;
 };
 
 #define to_phy_driver(d) container_of(to_mdio_common_driver(d),		\
