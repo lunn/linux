@@ -2281,6 +2281,74 @@ static int m88e6390_probe(struct phy_device *phydev)
 	return m88e6390_hwmon_probe(phydev);
 }
 
+static const struct phy_led_trigger m88e1318_phy_led_triggers[] = {
+	{
+		.name = "link",
+		.index = 0,
+		.value = 0,
+	},
+	{
+		.name = "link-blink-activity",
+		.index = 0,
+		.value = 1,
+	},
+	{
+		.name = "blink-speed",
+		.index = 0,
+		.value = 2,
+	},
+	{
+		.name = "1Gbps",
+		.index = 0,
+		.value = 7,
+	},
+	{
+		.name = "copper-link",
+		.index = 1,
+		.value = 0,
+	},
+	{
+		.name = "link-blink-activity",
+		.index = 1,
+		.value = 1,
+	},
+	{
+		.name = "link-blink-receive",
+		.index = 1,
+		.value = 2,
+	},
+	{
+		.name = "100Mbps/1Gbps",
+		.index = 1,
+		.value = 6,
+	},
+	{
+		.name = "100Mbps",
+		.index = 1,
+		.value = 7,
+	},
+	{
+		.name = "link",
+		.index = 2,
+		.value = 0,
+	},
+	{
+		.name = "link-blink-activity",
+		.index = 2,
+		.value = 1,
+	},
+	{
+		.name = "10Mbps/1Gbps",
+		.index = 2,
+		.value = 6,
+	},
+	{
+		.name = "10Mbps",
+		.index = 2,
+		.value = 7,
+	},
+};
+
 static struct phy_driver marvell_drivers[] = {
 	{
 		.phy_id = MARVELL_PHY_ID_88E1101,
@@ -2406,6 +2474,8 @@ static struct phy_driver marvell_drivers[] = {
 		.get_strings = marvell_get_strings,
 		.get_stats = marvell_get_stats,
 		.led_brightness_set = m88e1318_led_brightness_set,
+		.led_num_triggers = ARRAY_SIZE(m88e1318_phy_led_triggers),
+		.led_triggers = m88e1318_phy_led_triggers,
 	},
 	{
 		.phy_id = MARVELL_PHY_ID_88E1145,
@@ -2511,6 +2581,8 @@ static struct phy_driver marvell_drivers[] = {
 		.set_tunable = m88e1011_set_tunable,
 		.link_change_notify = m88e1011_link_change_notify,
 		.led_brightness_set = m88e1318_led_brightness_set,
+		.led_num_triggers = ARRAY_SIZE(m88e1318_phy_led_triggers),
+		.led_triggers = m88e1318_phy_led_triggers,
 	},
 	{
 		.phy_id = MARVELL_PHY_ID_88E1540,
@@ -2535,6 +2607,8 @@ static struct phy_driver marvell_drivers[] = {
 		.set_tunable = m88e1540_set_tunable,
 		.link_change_notify = m88e1011_link_change_notify,
 		.led_brightness_set = m88e1318_led_brightness_set,
+		.led_num_triggers = ARRAY_SIZE(m88e1318_phy_led_triggers),
+		.led_triggers = m88e1318_phy_led_triggers,
 	},
 	{
 		.phy_id = MARVELL_PHY_ID_88E1545,
@@ -2559,6 +2633,8 @@ static struct phy_driver marvell_drivers[] = {
 		.set_tunable = m88e1540_set_tunable,
 		.link_change_notify = m88e1011_link_change_notify,
 		.led_brightness_set = m88e1318_led_brightness_set,
+		.led_num_triggers = ARRAY_SIZE(m88e1318_phy_led_triggers),
+		.led_triggers = m88e1318_phy_led_triggers,
 	},
 	{
 		.phy_id = MARVELL_PHY_ID_88E3016,
@@ -2603,6 +2679,8 @@ static struct phy_driver marvell_drivers[] = {
 		.set_tunable = m88e1540_set_tunable,
 		.link_change_notify = m88e1011_link_change_notify,
 		.led_brightness_set = m88e1318_led_brightness_set,
+		.led_num_triggers = ARRAY_SIZE(m88e1318_phy_led_triggers),
+		.led_triggers = m88e1318_phy_led_triggers,
 	},
 };
 
