@@ -1424,6 +1424,8 @@ static int coda_decoder_cmd(struct file *file, void *fh,
 		stream_end = false;
 		wakeup = false;
 
+		mutex_lock(&ctx->wakeup_mutex);
+
 		buf = v4l2_m2m_last_src_buf(ctx->fh.m2m_ctx);
 		if (buf) {
 			coda_dbg(1, ctx, "marking last pending buffer\n");
@@ -1472,6 +1474,8 @@ static int coda_decoder_cmd(struct file *file, void *fh,
 			/* If there is no buffer in flight, wake up */
 			coda_wake_up_capture_queue(ctx);
 		}
+
+		mutex_unlock(&ctx->wakeup_mutex);
 
 		if (ctx->state != CODA_STATE_DECODING) {
 			coda_dbg(1, ctx, "dec_cmd_stop: invalid state: %s\n",
