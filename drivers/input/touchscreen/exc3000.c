@@ -58,6 +58,11 @@ static void exc3000_timer(struct timer_list *t)
 	input_sync(data->input);
 }
 
+static inline void exc3000_schedule_timer(struct exc3000_data *data)
+{
+	mod_timer(&data->timer, jiffies + msecs_to_jiffies(EXC3000_TIMEOUT_MS));
+}
+
 static int exc3000_read_frame(struct i2c_client *client, u8 *buf)
 {
 	int ret;
@@ -76,54 +81,35 @@ static int exc3000_read_frame(struct i2c_client *client, u8 *buf)
 	if (ret != EXC3000_LEN_FRAME)
 		return -EIO;
 
-	if (get_unaligned_le16(buf) != EXC3000_LEN_FRAME ||
-			buf[2] != EXC3000_MT_EVENT)
+	if (get_unaligned_le16(buf) != EXC3000_LEN_FRAME)
 		return -EINVAL;
 
 	return 0;
 }
 
-static int exc3000_read_data(struct i2c_client *client,
-			     u8 *buf, int *n_slots)
+static int exc3000_handle_mt_event(struct exc3000_data *data)
 {
-	int error;
+	struct input_dev *input = data->input;
+	int ret, total_slots;
+	u8 *buf = data->buf;
 
-	error = exc3000_read_frame(client, buf);
-	if (error)
-		return error;
-
-	*n_slots = buf[3];
-	if (!*n_slots || *n_slots > EXC3000_NUM_SLOTS)
-		return -EINVAL;
-
-	if (*n_slots > EXC3000_SLOTS_PER_FRAME) {
-		/* Read 2nd frame to get the rest of the contacts. */
-		error = exc3000_read_frame(client, buf + EXC3000_LEN_FRAME);
-		if (error)
-			return error;
-
-		/* 2nd chunk must have number of contacts set to 0. */
-		if (buf[EXC3000_LEN_FRAME + 3] != 0)
-			return -EINVAL;
+	total_slots = buf[3];
+	if (!total_slots || total_slots > EXC3000_NUM_SLOTS) {
+		ret = -EINVAL;
+		goto out_fail;
 	}
 
-	return 0;
-}
+	if (total_slots > EXC3000_SLOTS_PER_FRAME) {
+		/* Read 2nd frame to get the rest of the contacts. */
+		ret = exc3000_read_frame(data->client, buf + EXC3000_LEN_FRAME);
+		if (ret)
+			goto out_fail;
 
-static irqreturn_t exc3000_interrupt(int irq, void *dev_id)
-{
-	struct exc3000_data *data = dev_id;
-	struct input_dev *input = data->input;
-	u8 *buf = data->buf;
-	int slots, total_slots;
-	int error;
-
-	error = exc3000_read_data(data->client, buf, &total_slots);
-	if (error) {
-		/* Schedule a timer to release "stuck" contacts */
-		mod_timer(&data->timer,
-			  jiffies + msecs_to_jiffies(EXC3000_TIMEOUT_MS));
-		goto out;
+		/* 2nd chunk must have number of contacts set to 0. */
+		if (buf[EXC3000_LEN_FRAME + 3] != 0) {
+			ret = -EINVAL;
+			goto out_fail;
+		}
 	}
 
 	/*
@@ -132,7 +118,7 @@ static irqreturn_t exc3000_interrupt(int irq, void *dev_id)
 	del_timer_sync(&data->timer);
 
 	while (total_slots > 0) {
-		slots = min(total_slots, EXC3000_SLOTS_PER_FRAME);
+		int slots = min(total_slots, EXC3000_SLOTS_PER_FRAME);
 		exc3000_report_slots(input, &data->prop, buf + 4, slots);
 		total_slots -= slots;
 		buf += EXC3000_LEN_FRAME;
@@ -140,6 +126,36 @@ static irqreturn_t exc3000_interrupt(int irq, void *dev_id)
 
 	input_mt_sync_frame(input);
 	input_sync(input);
+
+	return 0;
+
+out_fail:
+	/* Schedule a timer to release "stuck" contacts */
+	exc3000_schedule_timer(data);
+
+	return ret;
+}
+
+static irqreturn_t exc3000_interrupt(int irq, void *dev_id)
+{
+	struct exc3000_data *data = dev_id;
+	u8 *buf = data->buf;
+	int ret;
+
+	ret = exc3000_read_frame(data->client, buf);
+	if (ret) {
+		/* Schedule a timer to release "stuck" contacts */
+		exc3000_schedule_timer(data);
+		goto out;
+	}
+
+	switch (buf[2]) {
+		case EXC3000_MT_EVENT:
+			exc3000_handle_mt_event(data);
+			break;
+		default:
+			break;
+	}
 
 out:
 	return IRQ_HANDLED;
