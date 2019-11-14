@@ -259,6 +259,47 @@ static int exc3000_populate_device_info(struct exc3000_data *data)
 	return 0;
 }
 
+static ssize_t exc3000_sysfs_type_show(struct device *dev,
+				       struct device_attribute *dattr,
+				       char *buf)
+{
+	struct exc3000_data *data = dev_get_drvdata(dev);
+
+	return scnprintf(buf, PAGE_SIZE, "%s\n", data->type);
+}
+static DEVICE_ATTR(type, 0444, exc3000_sysfs_type_show, NULL);
+
+static ssize_t exc3000_sysfs_model_show(struct device *dev,
+					struct device_attribute *dattr,
+					char *buf)
+{
+	struct exc3000_data *data = dev_get_drvdata(dev);
+
+	return scnprintf(buf, PAGE_SIZE, "%s\n", data->model);
+}
+static DEVICE_ATTR(model, 0444, exc3000_sysfs_model_show, NULL);
+
+static ssize_t exc3000_sysfs_fw_rev_show(struct device *dev,
+					 struct device_attribute *dattr,
+					 char *buf)
+{
+	struct exc3000_data *data = dev_get_drvdata(dev);
+
+	return scnprintf(buf, PAGE_SIZE, "%s\n", data->fw_rev);
+}
+static DEVICE_ATTR(fw_rev, 0444, exc3000_sysfs_fw_rev_show, NULL);
+
+static struct attribute *exc3000_attrs[] = {
+	&dev_attr_type.attr,
+	&dev_attr_model.attr,
+	&dev_attr_fw_rev.attr,
+	NULL
+};
+
+static const struct attribute_group exc3000_attr_group = {
+	.attrs = exc3000_attrs,
+};
+
 static int exc3000_probe(struct i2c_client *client,
 			 const struct i2c_device_id *id)
 {
@@ -282,6 +323,11 @@ static int exc3000_probe(struct i2c_client *client,
 		return error;
 
 	error = exc3000_populate_device_info(data);
+	if (error)
+		return error;
+
+	dev_set_drvdata(&client->dev, data);
+	error = sysfs_create_group(&client->dev.kobj, &exc3000_attr_group);
 	if (error)
 		return error;
 
@@ -310,6 +356,13 @@ static int exc3000_probe(struct i2c_client *client,
 	return 0;
 }
 
+int exc3000_remove(struct i2c_client *client)
+{
+	sysfs_remove_group(&client->dev.kobj, &exc3000_attr_group);
+
+	return 0;
+}
+
 static const struct i2c_device_id exc3000_id[] = {
 	{ "exc3000", 0 },
 	{ }
@@ -331,6 +384,7 @@ static struct i2c_driver exc3000_driver = {
 	},
 	.id_table	= exc3000_id,
 	.probe		= exc3000_probe,
+	.remove		= exc3000_remove,
 };
 
 module_i2c_driver(exc3000_driver);
