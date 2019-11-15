@@ -1314,6 +1314,9 @@ static int aic31xx_codec_probe(struct snd_soc_component *component)
 		return ret;
 
 	/* set output common-mode voltage */
+	dev_info(component->dev,
+		 "adjusting output common-mode voltage to 0x%x\n",
+		 aic31xx->ocmv);
 	snd_soc_component_update_bits(component, AIC31XX_HPDRIVER,
 				      AIC31XX_HPD_OCMV_MASK,
 				      aic31xx->ocmv << AIC31XX_HPD_OCMV_SHIFT);
