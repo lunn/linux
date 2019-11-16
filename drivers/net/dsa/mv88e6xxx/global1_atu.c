@@ -353,6 +353,7 @@ static irqreturn_t mv88e6xxx_g1_atu_prob_irq_thread_fn(int irq, void *dev_id)
 {
 	struct mv88e6xxx_chip *chip = dev_id;
 	struct mv88e6xxx_atu_entry entry;
+	const char *ifnam;
 	int spid;
 	int err;
 	u16 val;
@@ -377,6 +378,14 @@ static irqreturn_t mv88e6xxx_g1_atu_prob_irq_thread_fn(int irq, void *dev_id)
 		goto out;
 
 	spid = entry.state;
+	if (dsa_is_user_port(chip->ds, spid))
+		ifnam = netdev_name(dsa_to_port(chip->ds, spid)->slave);
+	else if (dsa_is_dsa_port(chip->ds, spid))
+		ifnam = "DSA port";
+	else if (dsa_is_cpu_port(chip->ds, spid))
+		ifnam = "CPU port";
+	else
+		ifnam = "Unknown";
 
 	if (val & MV88E6XXX_G1_ATU_OP_AGE_OUT_VIOLATION) {
 		dev_err_ratelimited(chip->dev,
@@ -386,22 +395,22 @@ static irqreturn_t mv88e6xxx_g1_atu_prob_irq_thread_fn(int irq, void *dev_id)
 
 	if (val & MV88E6XXX_G1_ATU_OP_MEMBER_VIOLATION) {
 		dev_err_ratelimited(chip->dev,
-				    "ATU member violation for %pM portvec %x spid %d\n",
-				    entry.mac, entry.portvec, spid);
+				    "ATU member violation for %pM portvec %x spid %d %s\n",
+				    entry.mac, entry.portvec, spid, ifnam);
 		chip->ports[spid].atu_member_violation++;
 	}
 
 	if (val & MV88E6XXX_G1_ATU_OP_MISS_VIOLATION) {
 		dev_err_ratelimited(chip->dev,
-				    "ATU miss violation for %pM portvec %x spid %d\n",
-				    entry.mac, entry.portvec, spid);
+				    "ATU miss violation for %pM portvec %x spid %d %s\n",
+				    entry.mac, entry.portvec, spid, ifnam);
 		chip->ports[spid].atu_miss_violation++;
 	}
 
 	if (val & MV88E6XXX_G1_ATU_OP_FULL_VIOLATION) {
 		dev_err_ratelimited(chip->dev,
-				    "ATU full violation for %pM portvec %x spid %d\n",
-				    entry.mac, entry.portvec, spid);
+				    "ATU full violation for %pM portvec %x spid %d %s\n",
+				    entry.mac, entry.portvec, spid, ifnam);
 		chip->ports[spid].atu_full_violation++;
 	}
 	mv88e6xxx_reg_unlock(chip);
