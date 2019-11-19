@@ -78,6 +78,7 @@ static inline int br_get_ticks(const unsigned char *src)
 /* called under bridge lock */
 void br_send_config_bpdu(struct net_bridge_port *p, struct br_config_bpdu *bpdu)
 {
+	struct br_stp_stats *stats;
 	unsigned char buf[35];
 
 	if (p->br->stp_enabled != BR_KERNEL_STP)
@@ -118,11 +119,17 @@ void br_send_config_bpdu(struct net_bridge_port *p, struct br_config_bpdu *bpdu)
 	br_set_ticks(buf+33, bpdu->forward_delay);
 
 	br_send_bpdu(p, buf, 35);
+
+	stats = this_cpu_ptr(p->stp_stats);
+	u64_stats_update_begin(&stats->syncp);
+	stats->xstats.tx_bpdu++;
+	u64_stats_update_end(&stats->syncp);
 }
 
 /* called under bridge lock */
 void br_send_tcn_bpdu(struct net_bridge_port *p)
 {
+	struct br_stp_stats *stats;
 	unsigned char buf[4];
 
 	if (p->br->stp_enabled != BR_KERNEL_STP)
@@ -133,6 +140,11 @@ void br_send_tcn_bpdu(struct net_bridge_port *p)
 	buf[2] = 0;
 	buf[3] = BPDU_TYPE_TCN;
 	br_send_bpdu(p, buf, 4);
+
+	stats = this_cpu_ptr(p->stp_stats);
+	u64_stats_update_begin(&stats->syncp);
+	stats->xstats.tx_tcn++;
+	u64_stats_update_end(&stats->syncp);
 }
 
 /*

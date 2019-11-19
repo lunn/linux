@@ -1597,6 +1597,15 @@ static int br_fill_linkxstats(struct sk_buff *skb,
 		}
 	}
 
+	if (p) {
+		struct bridge_stp_xstats xstats;
+
+		br_stp_get_xstats(p, &xstats);
+
+		if (nla_put(skb, BRIDGE_XSTATS_STP, sizeof(xstats), &xstats))
+			goto nla_put_failure;
+	}
+
 #ifdef CONFIG_BRIDGE_IGMP_SNOOPING
 	if (++vl_idx >= *prividx) {
 		nla = nla_reserve_64bit(skb, BRIDGE_XSTATS_MCAST,

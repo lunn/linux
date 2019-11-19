@@ -95,6 +95,11 @@ struct br_vlan_stats {
 	struct u64_stats_sync syncp;
 };
 
+struct br_stp_stats {
+	struct bridge_stp_xstats xstats;
+	struct u64_stats_sync syncp;
+};
+
 struct br_tunnel_info {
 	__be64			tunnel_id;
 	struct metadata_dst	*tunnel_dst;
@@ -278,6 +283,8 @@ struct net_bridge_port {
 #endif
 	u16				group_fwd_mask;
 	u16				backup_redirected_cnt;
+
+	struct br_stp_stats		__percpu *stp_stats;
 };
 
 #define kobj_to_brport(obj)	container_of(obj, struct net_bridge_port, kobj)
@@ -1136,6 +1143,8 @@ void br_stp_change_bridge_id(struct net_bridge *br, const unsigned char *a);
 void br_stp_set_bridge_priority(struct net_bridge *br, u16 newprio);
 int br_stp_set_port_priority(struct net_bridge_port *p, unsigned long newprio);
 int br_stp_set_path_cost(struct net_bridge_port *p, unsigned long path_cost);
+void br_stp_get_xstats(const struct net_bridge_port *p,
+		       struct bridge_stp_xstats *xstats);
 ssize_t br_show_bridge_id(char *buf, const struct bridge_id *id);
 
 /* br_stp_bpdu.c */
