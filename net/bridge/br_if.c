@@ -250,6 +250,7 @@ static void release_nbp(struct kobject *kobj)
 {
 	struct net_bridge_port *p
 		= container_of(kobj, struct net_bridge_port, kobj);
+	free_percpu(p->stp_stats);
 	kfree(p);
 }
 
@@ -419,6 +420,12 @@ static struct net_bridge_port *new_nbp(struct net_bridge *br,
 	if (p == NULL)
 		return ERR_PTR(-ENOMEM);
 
+	p->stp_stats = netdev_alloc_pcpu_stats(struct br_stp_stats);
+	if (!p->stp_stats) {
+		kfree(p);
+		return ERR_PTR(-ENOMEM);
+	}
+
 	p->br = br;
 	dev_hold(dev);
 	p->dev = dev;
@@ -432,6 +439,7 @@ static struct net_bridge_port *new_nbp(struct net_bridge *br,
 	err = br_multicast_add_port(p);
 	if (err) {
 		dev_put(dev);
+		free_percpu(p->stp_stats);
 		kfree(p);
 		p = ERR_PTR(err);
 	}

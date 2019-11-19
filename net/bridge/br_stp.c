@@ -45,6 +45,18 @@ void br_set_state(struct net_bridge_port *p, unsigned int state)
 		br_info(p->br, "port %u(%s) entered %s state\n",
 				(unsigned int) p->port_no, p->dev->name,
 				br_port_state_names[p->state]);
+
+	if (p->br->stp_enabled == BR_KERNEL_STP) {
+		struct br_stp_stats *stats;
+
+		stats = this_cpu_ptr(p->stp_stats);
+		u64_stats_update_begin(&stats->syncp);
+		if (p->state == BR_STATE_BLOCKING)
+			stats->xstats.transition_blk++;
+		else if (p->state == BR_STATE_FORWARDING)
+			stats->xstats.transition_fwd++;
+		u64_stats_update_end(&stats->syncp);
+	}
 }
 
 /* called under bridge lock */
@@ -481,8 +493,14 @@ static void br_topology_change_acknowledge(struct net_bridge_port *p)
 void br_received_config_bpdu(struct net_bridge_port *p,
 			     const struct br_config_bpdu *bpdu)
 {
+	struct br_stp_stats *stats;
 	struct net_bridge *br;
 	int was_root;
+
+	stats = this_cpu_ptr(p->stp_stats);
+	u64_stats_update_begin(&stats->syncp);
+	stats->xstats.rx_bpdu++;
+	u64_stats_update_end(&stats->syncp);
 
 	br = p->br;
 	was_root = br_is_root_bridge(br);
@@ -517,6 +535,13 @@ void br_received_config_bpdu(struct net_bridge_port *p,
 /* called under bridge lock */
 void br_received_tcn_bpdu(struct net_bridge_port *p)
 {
+	struct br_stp_stats *stats;
+
+	stats = this_cpu_ptr(p->stp_stats);
+	u64_stats_update_begin(&stats->syncp);
+	stats->xstats.rx_tcn++;
+	u64_stats_update_end(&stats->syncp);
+
 	if (br_is_designated_port(p)) {
 		br_info(p->br, "port %u(%s) received tcn bpdu\n",
 			(unsigned int) p->port_no, p->dev->name);

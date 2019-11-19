@@ -333,6 +333,33 @@ int br_stp_set_path_cost(struct net_bridge_port *p, unsigned long path_cost)
 	return 0;
 }
 
+void br_stp_get_xstats(const struct net_bridge_port *p,
+		      struct bridge_stp_xstats *xstats)
+{
+	int i;
+
+	memset(xstats, 0, sizeof(*xstats));
+
+	for_each_possible_cpu(i) {
+		struct bridge_stp_xstats cpu_xstats;
+		struct br_stp_stats *stats;
+		unsigned int start;
+
+		stats = per_cpu_ptr(p->stp_stats, i);
+		do {
+			start = u64_stats_fetch_begin_irq(&stats->syncp);
+			memcpy(&cpu_xstats, &stats->xstats, sizeof(cpu_xstats));
+		} while (u64_stats_fetch_retry_irq(&stats->syncp, start));
+
+		xstats->transition_blk += cpu_xstats.transition_blk;
+		xstats->transition_fwd += cpu_xstats.transition_fwd;
+		xstats->rx_bpdu += cpu_xstats.rx_bpdu;
+		xstats->tx_bpdu += cpu_xstats.tx_bpdu;
+		xstats->rx_tcn += cpu_xstats.rx_tcn;
+		xstats->tx_tcn += cpu_xstats.tx_tcn;
+	}
+}
+
 ssize_t br_show_bridge_id(char *buf, const struct bridge_id *id)
 {
 	return sprintf(buf, "%.2x%.2x.%.2x%.2x%.2x%.2x%.2x%.2x\n",
