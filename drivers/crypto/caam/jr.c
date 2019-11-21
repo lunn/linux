@@ -38,6 +38,7 @@ static void register_algs(struct device *dev)
 	caam_algapi_hash_init(dev);
 	caam_pkc_init(dev);
 	caam_qi_algapi_init(dev);
+	caam_drng_register(dev);
 
 algs_unlock:
 	mutex_unlock(&algs_lock);

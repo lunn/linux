@@ -185,6 +185,19 @@ static inline int caam_trng_register(struct device *dev)
 
 #endif /* CONFIG_CRYPTO_DEV_FSL_CAAM_RNG_API */
 
+#ifdef CONFIG_CRYPTO_DEV_FSL_CAAM_DRNG_API
+
+int caam_drng_register(struct device *dev);
+
+#else
+
+static inline int caam_drng_register(struct device *dev)
+{
+	return 0;
+}
+
+#endif /* CONFIG_CRYPTO_DEV_FSL_CAAM_DRNG_API */
+
 #ifdef CONFIG_CAAM_QI
 
 int caam_qi_algapi_init(struct device *dev);

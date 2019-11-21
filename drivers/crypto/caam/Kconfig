@@ -146,6 +146,14 @@ config CRYPTO_DEV_FSL_CAAM_PKC_API
           Supported cryptographic primitives: encryption, decryption,
           signature and verification.
 
+config CRYPTO_DEV_FSL_CAAM_DRNG_API
+	bool "Register caam device for hwrng API"
+	default y
+	select CRYPTO_RNG
+	help
+	  Selecting this will register the SEC4 DRNG to
+	  the crypto RNG API.
+
 endif # CRYPTO_DEV_FSL_CAAM_JR
 
 endif # CRYPTO_DEV_FSL_CAAM
