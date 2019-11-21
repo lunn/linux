@@ -31,6 +31,14 @@ config CRYPTO_DEV_FSL_CAAM_DEBUG
 	  Selecting this will enable printing of various debug
 	  information in the CAAM driver.
 
+config CRYPTO_DEV_FSL_CAAM_RNG_API
+	bool "Register caam device for hwrng API"
+	default y
+	select HW_RANDOM
+	help
+	  Selecting this will register the hardware TRNG to
+	  the hw_random API for suppying the kernel entropy pool.
+
 menuconfig CRYPTO_DEV_FSL_CAAM_JR
 	tristate "Freescale CAAM Job Ring driver backend"
 	default y
@@ -137,15 +145,6 @@ config CRYPTO_DEV_FSL_CAAM_PKC_API
           Selecting this will allow SEC Public key support for RSA.
           Supported cryptographic primitives: encryption, decryption,
           signature and verification.
-
-config CRYPTO_DEV_FSL_CAAM_RNG_API
-	bool "Register caam device for hwrng API"
-	default y
-	select CRYPTO_RNG
-	select HW_RANDOM
-	help
-	  Selecting this will register the SEC4 hardware rng to
-	  the hw_random API for suppying the kernel entropy pool.
 
 endif # CRYPTO_DEV_FSL_CAAM_JR
 

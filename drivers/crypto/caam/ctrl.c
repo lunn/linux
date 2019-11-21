@@ -907,6 +907,12 @@ static int caam_probe(struct platform_device *pdev)
 			    &ctrlpriv->ctl_tdsk_wrap);
 #endif
 
+	ret = caam_trng_register(dev);
+	if (ret) {
+		dev_err(dev, "Failed to register HWRNG interface\n");
+		return ret;
+	}
+
 	ret = devm_of_platform_populate(dev);
 	if (ret)
 		dev_err(dev, "JR platform devices creation error\n");

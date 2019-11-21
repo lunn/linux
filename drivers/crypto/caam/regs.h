@@ -488,6 +488,7 @@ struct rngtst {
 /* RNG4 TRNG test registers */
 struct rng4tst {
 #define RTMCTL_ACC  BIT(5)  /* TRNG access mode */
+#define RTMCTL_ENT_VAL BIT(10)
 #define RTMCTL_PRGM BIT(16) /* 1 -> program mode, 0 -> run mode */
 #define RTMCTL_SAMP_MODE_VON_NEUMANN_ES_SC	0 /* use von Neumann data in
 						     both entropy shifter and
@@ -521,7 +522,9 @@ struct rng4tst {
 		u32 rtfrqmax;	/* PRGM=1: freq. count max. limit register */
 		u32 rtfrqcnt;	/* PRGM=0: freq. count register */
 	};
-	u32 rsvd1[40];
+	u32 rsvd1[8];
+	u32 rtent[16];		/* RTENT0 - RTENT15 */
+	u32 rsvd2[16];		/* RTPKRCNTn */
 #define RDSTA_SKVT 0x80000000
 #define RDSTA_SKVN 0x40000000
 #define RDSTA_PR0 BIT(4)
@@ -530,7 +533,7 @@ struct rng4tst {
 #define RDSTA_IF1 0x00000002
 #define RDSTA_IFMASK (RDSTA_PR1 | RDSTA_PR0 | RDSTA_IF1 | RDSTA_IF0)
 	u32 rdsta;
-	u32 rsvd2[15];
+	u32 rsvd3[15];
 };
 
 /*
