@@ -202,7 +202,8 @@ static inline int rng_create_sh_desc(struct caam_rng_ctx *ctx)
 	init_sh_desc(desc, HDR_SHARE_SERIAL);
 
 	/* Generate random bytes */
-	append_operation(desc, OP_ALG_ALGSEL_RNG | OP_TYPE_CLASS1_ALG);
+	append_operation(desc, OP_ALG_ALGSEL_RNG | OP_TYPE_CLASS1_ALG |
+			 OP_ALG_PR_ON);
 
 	/* Store bytes */
 	append_seq_fifo_store(desc, RN_BUF_SIZE, FIFOST_TYPE_RNGSTORE);
