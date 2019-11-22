@@ -42,6 +42,7 @@
 #include "ptp.h"
 #include "serdes.h"
 #include "smi.h"
+#include "stsn.h"
 #if IS_ENABLED(CONFIG_NET_DSA_MV88E6XXX_ZII)
 #include "sysfs.h"
 #endif
@@ -2505,6 +2506,8 @@ static int mv88e6xxx_serdes_power(struct mv88e6xxx_chip *chip, int port,
 		err = mv88e6xxx_serdes_power_down(chip, port, lane);
 	}
 
+	zii_stsn_serdes_power(chip, port, on);
+
 	return err;
 }
 
@@ -3040,8 +3043,15 @@ out:
 
 static void mv88e6xxx_teardown(struct dsa_switch *ds)
 {
+	struct mv88e6xxx_chip *chip = ds->priv;
+
 	mv88e6xxx_teardown_devlink_params(ds);
 	dsa_devlink_resources_unregister(ds);
+
+	dsa_devlink_resources_unregister(ds);
+	mv88e6xxx_teardown_devlink_params(ds);
+
+	zii_stsn_teardown(chip);
 }
 
 static int mv88e6xxx_setup(struct dsa_switch *ds)
@@ -3053,6 +3063,10 @@ static int mv88e6xxx_setup(struct dsa_switch *ds)
 
 	chip->ds = ds;
 	ds->slave_mii_bus = mv88e6xxx_default_mdio_bus(chip);
+
+	err = zii_stsn_setup(chip);
+	if (err)
+		return err;
 
 	mv88e6xxx_reg_lock(chip);
 
