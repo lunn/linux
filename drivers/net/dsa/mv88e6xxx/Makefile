@@ -17,3 +17,4 @@ mv88e6xxx-$(CONFIG_NET_DSA_MV88E6XXX_PTP) += ptp.o
 mv88e6xxx-objs += serdes.o
 mv88e6xxx-objs += smi.o
 mv88e6xxx-$(CONFIG_NET_DSA_MV88E6XXX_ZII) += sysfs.o
+mv88e6xxx-$(CONFIG_NET_DSA_MV88E6XXX_ZII) += stsn.o

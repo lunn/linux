@@ -12,6 +12,7 @@
 
 #include "chip.h"
 #include "global1.h"
+#include "stsn.h"
 
 /* Offset 0x01: ATU FID Register */
 
@@ -394,6 +395,7 @@ static irqreturn_t mv88e6xxx_g1_atu_prob_irq_thread_fn(int irq, void *dev_id)
 	}
 
 	if (val & MV88E6XXX_G1_ATU_OP_MEMBER_VIOLATION) {
+		zii_stsn_violation(chip, spid);
 		dev_err_ratelimited(chip->dev,
 				    "ATU member violation for %pM portvec %x spid %d %s\n",
 				    entry.mac, entry.portvec, spid, ifnam);
