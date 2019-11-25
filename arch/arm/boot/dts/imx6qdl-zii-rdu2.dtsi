@@ -15,6 +15,10 @@
 	aliases {
 		mdio-gpio0 = &mdio1;
 		rtc0 = &ds1341;
+		ethernet0 = &fec;
+		ethernet1 = &i210;
+		ethernet-switch0 = &switch;
+		touchscreen0 = &rmi_touch;
 	};
 
 	mdio1: mdio {
@@ -720,7 +724,7 @@
 		reset-gpios = <&gpio1 0 GPIO_ACTIVE_LOW>;
 	};
 
-	touchscreen@20 {
+	rmi_touch: touchscreen@20 {
 		compatible = "syna,rmi4-i2c";
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_ts>;
@@ -753,7 +757,7 @@
 		};
 	};
 
-	touchscreen@2a {
+	egalax_touch: touchscreen@2a {
 		compatible = "eeti,exc3000";
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_ts>;
