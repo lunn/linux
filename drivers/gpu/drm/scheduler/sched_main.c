@@ -501,8 +501,6 @@ void drm_sched_resubmit_jobs(struct drm_gpu_scheduler *sched)
 		} else {
 			s_job->s_fence->parent = fence;
 		}
-
-
 	}
 }
 EXPORT_SYMBOL(drm_sched_resubmit_jobs);
