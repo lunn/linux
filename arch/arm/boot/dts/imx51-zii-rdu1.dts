@@ -471,6 +471,7 @@
 		compatible = "ti,tpa6130a2";
 		reg = <0x60>;
 		Vdd-supply = <&reg_3p3v>;
+		sound-name-prefix = "TPA6130A2";
 	};
 
 	ds1341: rtc@68 {
