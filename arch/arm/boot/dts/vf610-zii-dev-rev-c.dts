@@ -37,6 +37,7 @@
 				interrupts = <27 IRQ_TYPE_LEVEL_LOW>;
 				interrupt-controller;
 				#interrupt-cells = <2>;
+				reset-gpios = <&gpio6 1 GPIO_ACTIVE_LOW>;
 
 				ports {
 					#address-cells = <1>;
@@ -132,6 +133,7 @@
 				interrupts = <26 IRQ_TYPE_LEVEL_LOW>;
 				interrupt-controller;
 				#interrupt-cells = <2>;
+				reset-gpios = <&gpio6 4 GPIO_ACTIVE_LOW>;
 
 				ports {
 					#address-cells = <1>;
