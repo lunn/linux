@@ -301,6 +301,7 @@ struct mv88e6xxx_chip {
 	char irq_name[32];
 	int device_irq;
 	int watchdog_irq;
+	char watchdog_irq_name[32];
 
 	int atu_prob_irq;
 	int vtu_prob_irq;
