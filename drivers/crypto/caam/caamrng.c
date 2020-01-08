@@ -23,7 +23,7 @@
 #include "error.h"
 
 /* length of descriptors */
-#define CAAM_RNG_MAX_FIFO_STORE_SIZE	U16_MAX
+#define CAAM_RNG_MAX_FIFO_STORE_SIZE	16
 
 #define CAAM_RNG_FIFO_LEN		SZ_32K /* Must be a multiple of 2 */
 
@@ -134,7 +134,7 @@ static void caam_rng_fill_async(struct caam_rng_ctx *ctx)
 
 	sg_init_table(sg, ARRAY_SIZE(sg));
 	nents = kfifo_dma_in_prepare(&ctx->fifo, sg, ARRAY_SIZE(sg),
-				     CAAM_RNG_FIFO_LEN);
+				     CAAM_RNG_MAX_FIFO_STORE_SIZE);
 	if (!nents)
 		return;
 
@@ -241,6 +241,7 @@ int caam_rng_init(struct device *ctrldev)
 	ctx->rng.init    = caam_init;
 	ctx->rng.cleanup = caam_cleanup;
 	ctx->rng.read    = caam_read;
+	ctx->rng.quality = 999;
 
 	dev_info(ctrldev, "registering rng-caam\n");
 
