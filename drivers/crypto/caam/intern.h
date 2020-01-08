@@ -161,17 +161,12 @@ static inline void caam_pkc_exit(void)
 #ifdef CONFIG_CRYPTO_DEV_FSL_CAAM_RNG_API
 
 int caam_rng_init(struct device *dev);
-void caam_rng_exit(void);
 
 #else
 
 static inline int caam_rng_init(struct device *dev)
 {
 	return 0;
-}
-
-static inline void caam_rng_exit(void)
-{
 }
 
 #endif /* CONFIG_CRYPTO_DEV_FSL_CAAM_RNG_API */
