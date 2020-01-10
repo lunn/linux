@@ -199,6 +199,10 @@ static void mv88e6352_serdes_irq_link(struct mv88e6xxx_chip *chip, int port)
 
 	up = status & BMSR_LSTATUS;
 
+	err = mv88e6xxx_port_setup_mac(chip, port, up, SPEED_1000, DUPLEX_FULL,
+				       PAUSE_OFF,
+				       MV88E6XXX_PORT_STS_CMODE_1000BASEX);
+
 	dsa_port_phylink_mac_change(ds, port, up);
 }
 
