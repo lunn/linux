@@ -605,12 +605,7 @@ static int caam_probe(struct platform_device *pdev)
 	imx_soc_match = soc_device_match(caam_imx_soc_table);
 	caam_imx = (bool)imx_soc_match;
 
-	if (imx_soc_match) {
-		if (!imx_soc_match->data) {
-			dev_err(dev, "No clock data provided for i.MX SoC");
-			return -EINVAL;
-		}
-
+	if (imx_soc_match && imx_soc_match->data) {
 		ret = init_clocks(dev, imx_soc_match->data);
 		if (ret)
 			return ret;
