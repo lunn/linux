@@ -148,6 +148,18 @@ struct device * __init imx_soc_device_init(void)
 	case MXC_CPU_IMX7ULP:
 		soc_id = "i.MX7ULP";
 		break;
+	case MXC_CPU_VF500:
+		soc_id = "VF500";
+		break;
+	case MXC_CPU_VF510:
+		soc_id = "VF510";
+		break;
+	case MXC_CPU_VF600:
+		soc_id = "VF600";
+		break;
+	case MXC_CPU_VF610:
+		soc_id = "VF610";
+		break;
 	default:
 		soc_id = "Unknown";
 	}
