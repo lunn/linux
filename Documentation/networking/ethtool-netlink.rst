@@ -197,6 +197,7 @@ Userspace to kernel:
   ``ETHTOOL_MSG_RINGS_SET``             set ring sizes
   ``ETHTOOL_MSG_CHANNELS_GET``          get channel counts
   ``ETHTOOL_MSG_CHANNELS_SET``          set channel counts
+  ``ETHTOOL_MSG_CABLE_TEST_ACT``        action start cable test
   ===================================== ================================
 
 Kernel to userspace:
@@ -221,6 +222,7 @@ Kernel to userspace:
   ``ETHTOOL_MSG_RINGS_NTF``             ring sizes
   ``ETHTOOL_MSG_CHANNELS_GET_REPLY``    channel counts
   ``ETHTOOL_MSG_CHANNELS_NTF``          channel counts
+  ``ETHTOOL_MSG_CABLE_TEST_ACT_REPLY``  Cable test action result
   ===================================== =================================
 
 ``GET`` requests are sent by userspace applications to retrieve device
@@ -743,6 +745,17 @@ Request contents:
 Kernel checks that requested channel counts do not exceed limits reported by
 driver. Driver may impose additional constraints and may not suspport all
 attributes.
+
+CABLE_TEST
+==========
+
+Start a cable test.
+
+Request contents:
+
+  ====================================  ======  ==========================
+  ``ETHTOOL_A_CABLE_TEST_HEADER``       nested  request header
+  ====================================  ======  ==========================
 
 
 Request translation

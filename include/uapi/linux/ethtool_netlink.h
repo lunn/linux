@@ -32,6 +32,7 @@ enum {
 	ETHTOOL_MSG_RINGS_SET,
 	ETHTOOL_MSG_CHANNELS_GET,
 	ETHTOOL_MSG_CHANNELS_SET,
+	ETHTOOL_MSG_CABLE_TEST_ACT,
 
 	/* add new constants above here */
 	__ETHTOOL_MSG_USER_CNT,
@@ -60,6 +61,7 @@ enum {
 	ETHTOOL_MSG_RINGS_NTF,
 	ETHTOOL_MSG_CHANNELS_GET_REPLY,
 	ETHTOOL_MSG_CHANNELS_NTF,
+	ETHTOOL_MSG_CABLE_TEST_ACT_REPLY,
 
 	/* add new constants above here */
 	__ETHTOOL_MSG_KERNEL_CNT,
@@ -308,6 +310,17 @@ enum {
 	/* add new constants above here */
 	__ETHTOOL_A_CHANNELS_CNT,
 	ETHTOOL_A_CHANNELS_MAX = (__ETHTOOL_A_CHANNELS_CNT - 1)
+};
+
+/* CABLE TEST */
+
+enum {
+	ETHTOOL_A_CABLE_TEST_UNSPEC,
+	ETHTOOL_A_CABLE_TEST_HEADER,		/* nest - _A_HEADER_* */
+
+	/* add new constants above here */
+	__ETHTOOL_A_CABLE_TEST_CNT,
+	ETHTOOL_A_CABLE_TEST_MAX = __ETHTOOL_A_CABLE_TEST_CNT - 1
 };
 
 /* generic netlink info */
