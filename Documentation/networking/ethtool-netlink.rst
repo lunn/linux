@@ -757,6 +757,40 @@ Request contents:
   ``ETHTOOL_A_CABLE_TEST_HEADER``       nested  request header
   ====================================  ======  ==========================
 
+Notify contents:
+
+An Ethernet cable typically contains 1, 2 or 4 pairs. The length of
+the pair can only be measured when there is a fault in the pair and
+hence a reflection. Information about the fault may not be available,
+depends on the specific hardware. Hence the contents of the notify
+message is mostly optional, and can be repeated an arbitrary number of
+times, once per cable pair, in an arbitrary order.
+
+The example shows a T2 cable, i.e. two pairs. One pair is O.K, and
+hence has no length information. The second pair has a fault and does
+have length information.
+
+ +-------------------------------------------+--------+-----------------------+
+ | ``ETHTOOL_A_CABLE_TEST_HEADER``           | nested | reply header          |
+ +-------------------------------------------+--------+-----------------------+
+ | ``ETHTOOL_A_CABLE_TEST_NTF_RESULT``       | nested | cable test result     |
+ +-+-----------------------------------------+--------+-----------------------+
+ | | ``ETHTOOL_A_CABLE_RESULTS_PAIR``        | u8     | pair number           |
+ +-+-----------------------------------------+--------+-----------------------+
+ | | ``ETHTOOL_A_CABLE_RESULTS_CODE``        | u8     | result code           |
+ +-+-----------------------------------------+--------+-----------------------+
+ | ``ETHTOOL_A_CABLE_TEST_NTF_RESULT``       | nested | cable test results    |
+ +-+-----------------------------------------+--------+-----------------------+
+ | | ``ETHTOOL_A_CABLE_RESULTS_PAIR``        | u8     | pair number           |
+ +-+-----------------------------------------+--------+-----------------------+
+ | | ``ETHTOOL_A_CABLE_RESULTS_CODE``        | u8     | result code           |
+ +-+-----------------------------------------+--------+-----------------------+
+ | ``ETHTOOL_A_CABLE_TEST_NTF_FAULT_LENGTH`` | nested | cable length          |
+ +-+-----------------------------------------+--------+-----------------------+
+ | | ``ETHTOOL_A_CABLE_FAULT_LENGTH_PAIR``   | u8     | pair number           |
+ +-+-----------------------------------------+--------+-----------------------+
+ | | ``ETHTOOL_A_CABLE_FAULT_LENGTH_CM``     | u8     | length in cm          |
+ +-+-----------------------------------------+--------+-----------------------+
 
 Request translation
 ===================
