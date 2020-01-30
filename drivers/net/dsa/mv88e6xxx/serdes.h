@@ -51,6 +51,7 @@
 #define MV88E6390_SGMII_CONTROL_RESET		BIT(15)
 #define MV88E6390_SGMII_CONTROL_LOOPBACK	BIT(14)
 #define MV88E6390_SGMII_CONTROL_PDOWN		BIT(11)
+#define MV88E6390_SGMII_CONTROL_AN_RESTART	BIT(9)
 #define MV88E6390_SGMII_STATUS		0x2001
 #define MV88E6390_SGMII_STATUS_AN_DONE		BIT(5)
 #define MV88E6390_SGMII_STATUS_REMOTE_FAULT	BIT(4)
@@ -98,6 +99,7 @@ irqreturn_t mv88e6352_serdes_irq_status(struct mv88e6xxx_chip *chip, int port,
 					u8 lane);
 irqreturn_t mv88e6390_serdes_irq_status(struct mv88e6xxx_chip *chip, int port,
 					u8 lane);
+int mv88e6390_serdes_an_restart(struct mv88e6xxx_chip *chip, int port);
 int mv88e6352_serdes_get_sset_count(struct mv88e6xxx_chip *chip, int port);
 int mv88e6352_serdes_get_strings(struct mv88e6xxx_chip *chip,
 				 int port, uint8_t *data);
