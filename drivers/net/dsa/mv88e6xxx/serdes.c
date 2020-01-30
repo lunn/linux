@@ -456,6 +456,45 @@ static uint64_t mv88e6390_serdes_get_stat(struct mv88e6xxx_chip *chip, int lane,
 	return reg[0] | ((u64)reg[1] << 16) | ((u64)reg[2] << 32);
 }
 
+static int mv88e6390_serdes_an_restart_sgmii(struct mv88e6xxx_chip *chip,
+					     int lane)
+{
+	u16 ctrl;
+	int err;
+
+	err = mv88e6390_serdes_read(chip, lane, MDIO_MMD_PHYXS,
+				    MV88E6390_SGMII_CONTROL, &ctrl);
+	if (err)
+		return err;
+	ctrl |= MV88E6390_SGMII_CONTROL_AN_RESTART;
+
+	return mv88e6390_serdes_write(chip, lane, MDIO_MMD_PHYXS,
+				      MV88E6390_SGMII_CONTROL, ctrl);
+}
+
+int mv88e6390_serdes_an_restart(struct mv88e6xxx_chip *chip, int port)
+{
+	u8 cmode = chip->ports[port].cmode;
+	int err = 0;
+	int lane;
+
+	lane = mv88e6xxx_serdes_get_lane(chip, port);
+
+	if (lane == 0)
+		return 0;
+
+	switch (cmode) {
+	case MV88E6XXX_PORT_STS_CMODE_SGMII:
+	case MV88E6XXX_PORT_STS_CMODE_1000BASEX:
+	case MV88E6XXX_PORT_STS_CMODE_2500BASEX:
+		err = mv88e6390_serdes_an_restart_sgmii(chip, lane);
+		break;
+	}
+
+	return err;
+}
+
+
 int mv88e6390_serdes_get_stats(struct mv88e6xxx_chip *chip, int port,
 			       uint64_t *data)
 {
