@@ -667,6 +667,21 @@ static void mv88e6xxx_mac_link_up(struct dsa_switch *ds, int port,
 		mv88e6xxx_mac_link_force(ds, port, LINK_FORCED_UP);
 }
 
+static void mv88e6xxx_mac_an_restart(struct dsa_switch *ds, int port)
+{
+	struct mv88e6xxx_chip *chip = ds->priv;
+	int err;
+
+	mv88e6xxx_reg_lock(chip);
+	if (chip->info->ops->serdes_an_restart) {
+		err = chip->info->ops->serdes_an_restart(chip, port);
+		if (err)
+			dev_err(chip->dev, "p%d: failed to an restart\n",
+				port);
+	}
+	mv88e6xxx_reg_unlock(chip);
+}
+
 static int mv88e6xxx_stats_snapshot(struct mv88e6xxx_chip *chip, int port)
 {
 	if (!chip->info->ops->stats_snapshot)
@@ -5520,6 +5535,7 @@ static const struct dsa_switch_ops mv88e6xxx_switch_ops = {
 	.phylink_mac_config	= mv88e6xxx_mac_config,
 	.phylink_mac_link_down	= mv88e6xxx_mac_link_down,
 	.phylink_mac_link_up	= mv88e6xxx_mac_link_up,
+	.phylink_mac_an_restart = mv88e6xxx_mac_an_restart,
 	.get_strings		= mv88e6xxx_get_strings,
 	.get_ethtool_stats	= mv88e6xxx_get_ethtool_stats,
 	.get_sset_count		= mv88e6xxx_get_sset_count,
