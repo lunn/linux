@@ -517,6 +517,9 @@ struct mv88e6xxx_ops {
 	irqreturn_t (*serdes_irq_status)(struct mv88e6xxx_chip *chip, int port,
 					 u8 lane);
 
+	/* Restart auto-negotiation of the SERDES interface */
+	int (*serdes_an_restart)(struct mv88e6xxx_chip *chip, int port);
+
 	/* Statistics from the SERDES interface */
 	int (*serdes_get_sset_count)(struct mv88e6xxx_chip *chip, int port);
 	int (*serdes_get_strings)(struct mv88e6xxx_chip *chip,  int port,
