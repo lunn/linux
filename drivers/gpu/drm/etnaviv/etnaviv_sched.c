@@ -111,8 +111,7 @@ static void etnaviv_sched_timedout_job(struct drm_sched_job *sched_job)
 	/* block scheduler */
 	drm_sched_stop(&gpu->sched, sched_job);
 
-	if(sched_job)
-		drm_sched_increase_karma(sched_job);
+	drm_sched_increase_karma(sched_job);
 
 	/* get the GPU back into the init state */
 	etnaviv_core_dump(submit);

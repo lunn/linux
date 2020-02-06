@@ -260,8 +260,7 @@ static void lima_sched_handle_error_task(struct lima_sched_pipe *pipe,
 {
 	drm_sched_stop(&pipe->base, &task->base);
 
-	if (task)
-		drm_sched_increase_karma(&task->base);
+	drm_sched_increase_karma(&task->base);
 
 	pipe->task_error(pipe);
 
