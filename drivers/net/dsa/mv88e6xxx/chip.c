@@ -2580,7 +2580,7 @@ static int mv88e6xxx_setup_port(struct mv88e6xxx_chip *chip, int port)
 	 * disable Header mode, enable IGMP/MLD snooping, disable VLAN
 	 * tunneling, determine priority by looking at 802.1p and IP
 	 * priority fields (IP prio has precedence), and set STP state
-	 * to Forwarding.
+	 * to Forwarding for DSA and CPU ports, Disabled for user ports.
 	 *
 	 * If this is the CPU link, use DSA or EDSA tagging depending
 	 * on which tagging mode was configured.
@@ -2591,8 +2591,11 @@ static int mv88e6xxx_setup_port(struct mv88e6xxx_chip *chip, int port)
 	 * forwarding of unknown unicasts and multicasts.
 	 */
 	reg = MV88E6XXX_PORT_CTL0_IGMP_MLD_SNOOP |
-		MV88E6185_PORT_CTL0_USE_TAG | MV88E6185_PORT_CTL0_USE_IP |
-		MV88E6XXX_PORT_CTL0_STATE_FORWARDING;
+		MV88E6185_PORT_CTL0_USE_TAG | MV88E6185_PORT_CTL0_USE_IP;
+	if (dsa_is_user_port(chip->ds, port))
+		reg |= MV88E6XXX_PORT_CTL0_STATE_DISABLED;
+	if (dsa_is_cpu_port(ds, port) || dsa_is_dsa_port(ds, port))
+		reg |= MV88E6XXX_PORT_CTL0_STATE_FORWARDING;
 	err = mv88e6xxx_port_write(chip, port, MV88E6XXX_PORT_CTL0, reg);
 	if (err)
 		return err;
