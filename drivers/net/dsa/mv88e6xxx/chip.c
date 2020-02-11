@@ -1074,7 +1074,14 @@ static void mv88e6xxx_get_ethtool_stats(struct dsa_switch *ds, int port,
 
 static int mv88e6xxx_get_regs_len(struct dsa_switch *ds, int port)
 {
-	return 32 * sizeof(u16);
+	struct mv88e6xxx_chip *chip = ds->priv;
+	int len;
+
+	len = 32 * sizeof(u16);
+	if (chip->info->ops->serdes_get_regs_len)
+		len += chip->info->ops->serdes_get_regs_len(chip, port);
+
+	return len;
 }
 
 static void mv88e6xxx_get_regs(struct dsa_switch *ds, int port,
@@ -1098,6 +1105,9 @@ static void mv88e6xxx_get_regs(struct dsa_switch *ds, int port,
 		if (!err)
 			p[i] = reg;
 	}
+
+	if (chip->info->ops->serdes_get_regs)
+		chip->info->ops->serdes_get_regs(chip, port, &p[i]);
 
 	mv88e6xxx_reg_unlock(chip);
 }
