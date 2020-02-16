@@ -233,7 +233,7 @@ struct mv88e6xxx_port {
 	u64 atu_full_violation;
 	u64 vtu_member_violation;
 	u64 vtu_miss_violation;
-	u8 cmode;
+	u8 cmode_requested;
 	bool mirror_ingress;
 	bool mirror_egress;
 	unsigned int serdes_irq;

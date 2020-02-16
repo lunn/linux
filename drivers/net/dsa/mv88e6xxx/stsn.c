@@ -88,7 +88,7 @@ static void zii_stsn_phy_tx_disable(struct mv88e6xxx_chip *chip, int port)
 void zii_stsn_violation(struct mv88e6xxx_chip *chip, int port)
 {
 	struct zii_stsn_priv *stsn = chip->stsn;
-	u8 cmode = chip->ports[port].cmode;
+	u8 cmode = chip->ports[port].cmode_requested;
 	u8 lane;
 
 	if (!dsa_is_user_port(chip->ds, port))

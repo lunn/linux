@@ -72,7 +72,7 @@ int mv88e6352_serdes_power(struct mv88e6xxx_chip *chip, int port, u8 lane,
 
 u8 mv88e6352_serdes_get_lane(struct mv88e6xxx_chip *chip, int port)
 {
-	u8 cmode = chip->ports[port].cmode;
+	u8 cmode = chip->ports[port].cmode_requested;
 	u8 lane = 0;
 
 	if ((cmode == MV88E6XXX_PORT_STS_CMODE_100BASEX) ||
@@ -266,7 +266,7 @@ void mv88e6352_serdes_get_regs(struct mv88e6xxx_chip *chip, int port, void *_p)
 
 u8 mv88e6341_serdes_get_lane(struct mv88e6xxx_chip *chip, int port)
 {
-	u8 cmode = chip->ports[port].cmode;
+	u8 cmode = chip->ports[port].cmode_requested;
 	u8 lane = 0;
 
 	switch (port) {
@@ -283,7 +283,7 @@ u8 mv88e6341_serdes_get_lane(struct mv88e6xxx_chip *chip, int port)
 
 u8 mv88e6390_serdes_get_lane(struct mv88e6xxx_chip *chip, int port)
 {
-	u8 cmode = chip->ports[port].cmode;
+	u8 cmode = chip->ports[port].cmode_requested;
 	u8 lane = 0;
 
 	switch (port) {
@@ -306,8 +306,8 @@ u8 mv88e6390_serdes_get_lane(struct mv88e6xxx_chip *chip, int port)
 
 u8 mv88e6390x_serdes_get_lane(struct mv88e6xxx_chip *chip, int port)
 {
-	u8 cmode_port10 = chip->ports[10].cmode;
-	u8 cmode_port9 = chip->ports[9].cmode;
+	u8 cmode_port10 = chip->ports[10].cmode_requested;
+	u8 cmode_port9 = chip->ports[9].cmode_requested;
 	u8 lane = 0;
 
 	switch (port) {
@@ -497,7 +497,7 @@ static int mv88e6390_serdes_an_restart_sgmii(struct mv88e6xxx_chip *chip,
 
 int mv88e6390_serdes_an_restart(struct mv88e6xxx_chip *chip, int port)
 {
-	u8 cmode = chip->ports[port].cmode;
+	u8 cmode = chip->ports[port].cmode_requested;
 	int err = 0;
 	int lane;
 
@@ -556,7 +556,7 @@ static int mv88e6390_serdes_enable_checker(struct mv88e6xxx_chip *chip, u8 lane)
 int mv88e6390_serdes_power(struct mv88e6xxx_chip *chip, int port, u8 lane,
 			   bool up)
 {
-	u8 cmode = chip->ports[port].cmode;
+	u8 cmode = chip->ports[port].cmode_requested;
 	int err = 0;
 
 	switch (cmode) {
@@ -580,7 +580,7 @@ int mv88e6390_serdes_power(struct mv88e6xxx_chip *chip, int port, u8 lane,
 static void mv88e6390_serdes_irq_link_sgmii(struct mv88e6xxx_chip *chip,
 					    int port, u8 lane)
 {
-	u8 cmode = chip->ports[port].cmode;
+	u8 cmode = chip->ports[port].cmode_requested;
 	struct dsa_switch *ds = chip->ds;
 	int duplex = DUPLEX_UNKNOWN;
 	int speed = SPEED_UNKNOWN;
@@ -660,7 +660,7 @@ static int mv88e6390_serdes_irq_enable_sgmii(struct mv88e6xxx_chip *chip,
 int mv88e6390_serdes_irq_enable(struct mv88e6xxx_chip *chip, int port, u8 lane,
 				bool enable)
 {
-	u8 cmode = chip->ports[port].cmode;
+	u8 cmode = chip->ports[port].cmode_requested;
 
 	switch (cmode) {
 	case MV88E6XXX_PORT_STS_CMODE_SGMII:
@@ -686,7 +686,7 @@ static int mv88e6390_serdes_irq_status_sgmii(struct mv88e6xxx_chip *chip,
 irqreturn_t mv88e6390_serdes_irq_status(struct mv88e6xxx_chip *chip, int port,
 					u8 lane)
 {
-	u8 cmode = chip->ports[port].cmode;
+	u8 cmode = chip->ports[port].cmode_requested;
 	irqreturn_t ret = IRQ_NONE;
 	u16 status;
 	int err;

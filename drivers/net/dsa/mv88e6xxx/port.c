@@ -428,7 +428,7 @@ static int mv88e6xxx_port_set_cmode(struct mv88e6xxx_chip *chip, int port,
 	}
 
 	/* cmode doesn't change, nothing to do for us */
-	if (cmode == chip->ports[port].cmode)
+	if (cmode == chip->ports[port].cmode_requested)
 		return 0;
 
 	lane = mv88e6xxx_serdes_get_lane(chip, port);
@@ -444,7 +444,7 @@ static int mv88e6xxx_port_set_cmode(struct mv88e6xxx_chip *chip, int port,
 			return err;
 	}
 
-	chip->ports[port].cmode = 0;
+	chip->ports[port].cmode_requested = 0;
 
 	if (cmode) {
 		err = mv88e6xxx_port_read(chip, port, MV88E6XXX_PORT_STS, &reg);
@@ -458,7 +458,7 @@ static int mv88e6xxx_port_set_cmode(struct mv88e6xxx_chip *chip, int port,
 		if (err)
 			return err;
 
-		chip->ports[port].cmode = cmode;
+		chip->ports[port].cmode_requested = cmode;
 
 		lane = mv88e6xxx_serdes_get_lane(chip, port);
 		if (!lane)
@@ -658,7 +658,7 @@ int mv88e6352_port_link_state(struct mv88e6xxx_chip *chip, int port,
 	int err;
 	u16 reg;
 
-	switch (chip->ports[port].cmode) {
+	switch (chip->ports[port].cmode_requested) {
 	case MV88E6XXX_PORT_STS_CMODE_RGMII:
 		err = mv88e6xxx_port_read(chip, port, MV88E6XXX_PORT_MAC_CTL,
 					  &reg);
@@ -731,7 +731,7 @@ int mv88e6185_port_link_state(struct mv88e6xxx_chip *chip, int port,
 			      struct phylink_link_state *state)
 {
 	if (state->interface == PHY_INTERFACE_MODE_1000BASEX) {
-		u8 cmode = chip->ports[port].cmode;
+		u8 cmode = chip->ports[port].cmode_requested;
 
 		/* When a port is in "Cross-chip serdes" mode, it uses
 		 * 1000Base-X full duplex mode, but there is no automatic
