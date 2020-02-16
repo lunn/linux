@@ -481,8 +481,23 @@ static int mv88e6xxx_port_set_cmode(struct mv88e6xxx_chip *chip, int port,
 int mv88e6390x_port_set_cmode(struct mv88e6xxx_chip *chip, int port,
 			      phy_interface_t mode)
 {
-	if (port != 9 && port != 10)
+	switch (port) {
+	case 2 ... 7:
+		if (mode != PHY_INTERFACE_MODE_1000BASEX)
+			return -EOPNOTSUPP;
+		break;
+	case 9 ... 10:
+		if (mode != PHY_INTERFACE_MODE_1000BASEX &&
+		    mode != PHY_INTERFACE_MODE_SGMII &&
+		    mode != PHY_INTERFACE_MODE_2500BASEX &&
+		    mode != PHY_INTERFACE_MODE_XGMII &&
+		    mode != PHY_INTERFACE_MODE_XAUI &&
+		    mode != PHY_INTERFACE_MODE_RXAUI)
+			return -EOPNOTSUPP;
+		break;
+	default:
 		return -EOPNOTSUPP;
+	}
 
 	return mv88e6xxx_port_set_cmode(chip, port, mode);
 }
