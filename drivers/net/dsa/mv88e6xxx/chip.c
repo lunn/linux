@@ -3101,7 +3101,7 @@ static int mv88e6xxx_setup(struct dsa_switch *ds)
 			if (err)
 				goto unlock;
 
-			chip->ports[i].cmode = cmode;
+			chip->ports[i].cmode_requested = cmode;
 		}
 	}
 
