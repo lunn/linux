@@ -333,7 +333,7 @@
 					port@2 {
 						reg = <2>;
 						label = "eth_fc_1000_2";
-						phy-mode = "sgmii";
+						phy-mode = "1000base-x";
 						managed = "in-band-status";
 						sfp = <&sff1>;
 					};
@@ -341,7 +341,7 @@
 					port@3 {
 						reg = <3>;
 						label = "eth_fc_1000_3";
-						phy-mode = "sgmii";
+						phy-mode = "1000base-x";
 						managed = "in-band-status";
 						sfp = <&sff2>;
 					};
@@ -349,7 +349,7 @@
 					port@4 {
 						reg = <4>;
 						label = "eth_fc_1000_4";
-						phy-mode = "sgmii";
+						phy-mode = "1000base-x";
 						managed = "in-band-status";
 						sfp = <&sff3>;
 					};
@@ -357,7 +357,7 @@
 					port@5 {
 						reg = <5>;
 						label = "eth_fc_1000_5";
-						phy-mode = "sgmii";
+						phy-mode = "1000base-x";
 						managed = "in-band-status";
 						sfp = <&sff4>;
 					};
@@ -365,7 +365,7 @@
 					port@6 {
 						reg = <6>;
 						label = "eth_fc_1000_6";
-						phy-mode = "sgmii";
+						phy-mode = "1000base-x";
 						managed = "in-band-status";
 						sfp = <&sff5>;
 					};
@@ -373,7 +373,7 @@
 					port@7 {
 						reg = <7>;
 						label = "eth_fc_1000_7";
-						phy-mode = "sgmii";
+						phy-mode = "1000base-x";
 						managed = "in-band-status";
 						sfp = <&sff6>;
 					};
@@ -381,7 +381,7 @@
 					port@9 {
 						reg = <9>;
 						label = "eth_fc_1000_1";
-						phy-mode = "sgmii";
+						phy-mode = "1000base-x";
 						managed = "in-band-status";
 						sfp = <&sff0>;
 					};
@@ -420,7 +420,7 @@
 					port@2 {
 						reg = <2>;
 						label = "eth_fc_1000_8";
-						phy-mode = "sgmii";
+						phy-mode = "1000base-x";
 						managed = "in-band-status";
 						sfp = <&sff7>;
 					};
@@ -428,7 +428,7 @@
 					port@3 {
 						reg = <3>;
 						label = "eth_fc_1000_9";
-						phy-mode = "sgmii";
+						phy-mode = "1000base-x";
 						managed = "in-band-status";
 						sfp = <&sff8>;
 					};
@@ -436,7 +436,7 @@
 					port@4 {
 						reg = <4>;
 						label = "eth_fc_1000_10";
-						phy-mode = "sgmii";
+						phy-mode = "1000base-x";
 						managed = "in-band-status";
 						sfp = <&sff9>;
 					};
