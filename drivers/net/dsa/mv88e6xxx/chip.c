@@ -1077,7 +1077,7 @@ static int mv88e6xxx_get_regs_len(struct dsa_switch *ds, int port)
 	struct mv88e6xxx_chip *chip = ds->priv;
 	int len;
 
-	len = 32 * sizeof(u16);
+	len = 3 * (32 * sizeof(u16));
 	if (chip->info->ops->serdes_get_regs_len)
 		len += chip->info->ops->serdes_get_regs_len(chip, port);
 
@@ -1106,8 +1106,20 @@ static void mv88e6xxx_get_regs(struct dsa_switch *ds, int port,
 			p[i] = reg;
 	}
 
+	for (i = 0; i < 32; i++) {
+		err = mv88e6xxx_g1_read(chip, i, &reg);
+		if (!err)
+			p[32 + i] = reg;
+	}
+
+	for (i = 0; i < 32; i++) {
+		err = mv88e6xxx_g2_read(chip, i, &reg);
+		if (!err)
+			p[64 + i] = reg;
+	}
+
 	if (chip->info->ops->serdes_get_regs)
-		chip->info->ops->serdes_get_regs(chip, port, &p[i]);
+		chip->info->ops->serdes_get_regs(chip, port, &p[96 + i]);
 
 	mv88e6xxx_reg_unlock(chip);
 }
