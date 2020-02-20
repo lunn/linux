@@ -684,8 +684,8 @@ static int br_set_port_state(struct net_bridge_port *p, u8 state)
 		return -EINVAL;
 
 	/* if kernel STP is running, don't allow changes */
-	if (p->br->stp_enabled == BR_KERNEL_STP)
-		return -EBUSY;
+	// if (p->br->stp_enabled == BR_KERNEL_STP)
+	//	return -EBUSY;
 
 	/* if device is not up, change is not allowed
 	 * if link is not present, only allowable state is disabled
