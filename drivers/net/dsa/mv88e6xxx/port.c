@@ -487,7 +487,8 @@ int mv88e6390x_port_set_cmode(struct mv88e6xxx_chip *chip, int port,
 			return -EOPNOTSUPP;
 		break;
 	case 9 ... 10:
-		if (mode != PHY_INTERFACE_MODE_1000BASEX &&
+		if (mode != PHY_INTERFACE_MODE_NA &&
+		    mode != PHY_INTERFACE_MODE_1000BASEX &&
 		    mode != PHY_INTERFACE_MODE_SGMII &&
 		    mode != PHY_INTERFACE_MODE_2500BASEX &&
 		    mode != PHY_INTERFACE_MODE_XGMII &&
