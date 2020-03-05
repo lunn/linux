@@ -741,6 +741,7 @@ unsigned int mv88e6390_serdes_irq_mapping(struct mv88e6xxx_chip *chip, int port)
 
 static const u16 mv88e6390_serdes_regs[] = {
 	/* SERDES common registers */
+	0xf002,
 	0xf00a, 0xf00b, 0xf00c,
 	0xf010, 0xf011, 0xf012, 0xf013,
 	0xf016, 0xf017, 0xf018,
