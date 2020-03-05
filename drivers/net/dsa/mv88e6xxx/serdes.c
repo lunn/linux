@@ -399,6 +399,26 @@ static int mv88e6390_serdes_power_10g(struct mv88e6xxx_chip *chip, u8 lane,
 	return err;
 }
 
+/* There is an errata for when a SERDES port is configured to
+ * 1000BaseX/SGMII.  Auto negotiation may not work correctly. To work
+ * around this, write 0x20 to the read only register containing the
+ * auto-negotiation advertisement register, and then reset the PHY. */
+static int mv88e6390_serdes_sgmii_errata(struct mv88e6xxx_chip *chip, u8 lane)
+{
+	int err;
+
+	err = mv88e6390_serdes_write(chip, lane, MDIO_MMD_PHYXS,
+				     MV88E6390_SGMII_ANEG_ADV,
+				     MV88E6390_SGMII_ANEG_ADV_LPI_CLK_STOP);
+	if (err)
+		return err;
+
+	err = mv88e6390_serdes_write(chip, lane, MDIO_MMD_PHYXS,
+				     MV88E6390_SGMII_CONTROL,
+				     MV88E6390_SGMII_CONTROL_RESET);
+	return err;
+}
+
 /* Set power up/down for SGMII and 1000Base-X */
 static int mv88e6390_serdes_power_sgmii(struct mv88e6xxx_chip *chip, u8 lane,
 					bool up)
@@ -418,9 +438,15 @@ static int mv88e6390_serdes_power_sgmii(struct mv88e6xxx_chip *chip, u8 lane,
 	else
 		new_val = val | MV88E6390_SGMII_CONTROL_PDOWN;
 
-	if (val != new_val)
+	if (val != new_val) {
 		err = mv88e6390_serdes_write(chip, lane, MDIO_MMD_PHYXS,
 					     MV88E6390_SGMII_CONTROL, new_val);
+		if (err)
+			return err;
+	}
+
+	if (up)
+		err = mv88e6390_serdes_sgmii_errata(chip, lane);
 
 	return err;
 }
