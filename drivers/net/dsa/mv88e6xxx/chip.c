@@ -1083,6 +1083,87 @@ static int mv88e6xxx_get_regs_len(struct dsa_switch *ds, int port)
 	return len;
 }
 
+static void mv88e6xxx_dump_port_queue_control(struct mv88e6xxx_chip *chip,
+					      int port)
+{
+	u16 reg;
+	int i;
+
+	dev_info(chip->dev, "%s: port %d\n", __func__, port);
+
+	for (i = 0; i < 0x7f; i++) {
+		mv88e6xxx_port_write(chip, port, MV88E6XXX_PORT_Q_CTRL, i << 8);
+		mv88e6xxx_port_read(chip, port, MV88E6XXX_PORT_Q_CTRL, &reg);
+		dev_info(chip->dev, "%s: reg %02x, value %02x\n",
+			 __func__, i,
+			 reg & MV88E6XXX_PORT_Q_CTRL_DATA_MASK);
+	}
+}
+
+static void mv88e6xxx_dump_port_ieee_prio_map(struct mv88e6xxx_chip *chip,
+					      int port)
+{
+	int table, pointer;
+	u16 reg;
+
+	dev_info(chip->dev, "%s: port %d\n", __func__, port);
+
+	for (table = 0; table < 0x8; table++) {
+		for (pointer = 0; pointer < 0x8; pointer++) {
+			mv88e6xxx_port_write(chip, port,
+				     MV88E6390_PORT_IEEE_PRIO_MAP_TABLE,
+				     pointer << 9  | table << 12);
+			mv88e6xxx_port_read(chip, port,
+					    MV88E6390_PORT_IEEE_PRIO_MAP_TABLE,
+					    &reg);
+			dev_info(chip->dev,
+				 "%s: table %02x ptr %02x, value %02x\n",
+				 __func__, table, pointer,
+				 reg & MV88E6390_PORT_IEEE_PRIO_MAP_TABLE_DATA_MASK);
+		}
+	}
+}
+
+static void mv88e6xxx_dump_port_ip_prio_map(struct mv88e6xxx_chip *chip,
+					    int port)
+{
+	u16 reg;
+	int i;
+
+	dev_info(chip->dev, "%s: port %d\n", __func__, port);
+
+	for (i = 0; i < 0x3f; i++) {
+		mv88e6xxx_port_write(chip, port,
+				     MV88E6390_PORT_IP_PRIO_MAP_TABLE,
+				     i << 9);
+		mv88e6xxx_port_read(chip, port,
+				    MV88E6390_PORT_IP_PRIO_MAP_TABLE, &reg);
+		dev_info(chip->dev, "%s: reg %02x, value %02x\n",
+			 __func__, i,
+			 reg & MV88E6390_PORT_IP_PRIO_MAP_TABLE_DATA_MASK);
+	}
+}
+
+static void mv88e6xxx_dump_port_flow_control(struct mv88e6xxx_chip *chip,
+					     int port)
+{
+	u16 reg;
+	int i;
+
+	dev_info(chip->dev, "%s: port %d\n", __func__, port);
+
+	for (i = 0; i < 0x1f; i++) {
+		mv88e6xxx_port_write(chip, port,
+				     MV88E6390_PORT_FLOW_CTL,
+				     i << 8);
+		mv88e6xxx_port_read(chip, port,
+				    MV88E6390_PORT_FLOW_CTL, &reg);
+		dev_info(chip->dev, "%s: reg %02x, value %02x\n",
+			 __func__, i,
+			 reg & MV88E6390_PORT_FLOW_CTL_DATA_MASK);
+	}
+}
+
 static void mv88e6xxx_get_regs(struct dsa_switch *ds, int port,
 			       struct ethtool_regs *regs, void *_p)
 {
@@ -1097,6 +1178,11 @@ static void mv88e6xxx_get_regs(struct dsa_switch *ds, int port,
 	memset(p, 0xff, 32 * sizeof(u16));
 
 	mv88e6xxx_reg_lock(chip);
+
+	mv88e6xxx_dump_port_queue_control(chip, port);
+	mv88e6xxx_dump_port_ieee_prio_map(chip, port);
+	mv88e6xxx_dump_port_ip_prio_map(chip, port);
+	mv88e6xxx_dump_port_flow_control(chip, port);
 
 	for (i = 0; i < 32; i++) {
 
