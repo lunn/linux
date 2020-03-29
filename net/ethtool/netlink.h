@@ -344,6 +344,7 @@ extern const struct ethnl_request_ops ethnl_privflags_request_ops;
 extern const struct ethnl_request_ops ethnl_rings_request_ops;
 extern const struct ethnl_request_ops ethnl_channels_request_ops;
 extern const struct ethnl_request_ops ethnl_cable_test_act_ops;
+extern const struct ethnl_request_ops ethnl_cable_test_tdr_act_ops;
 
 int ethnl_set_linkinfo(struct sk_buff *skb, struct genl_info *info);
 int ethnl_set_linkmodes(struct sk_buff *skb, struct genl_info *info);
@@ -354,5 +355,6 @@ int ethnl_set_privflags(struct sk_buff *skb, struct genl_info *info);
 int ethnl_set_rings(struct sk_buff *skb, struct genl_info *info);
 int ethnl_set_channels(struct sk_buff *skb, struct genl_info *info);
 int ethnl_act_cable_test(struct sk_buff *skb, struct genl_info *info);
+int ethnl_act_cable_test_tdr(struct sk_buff *skb, struct genl_info *info);
 
 #endif /* _NET_ETHTOOL_NETLINK_H */
