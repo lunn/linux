@@ -539,7 +539,8 @@ out:
 EXPORT_SYMBOL(phy_start_cable_test);
 
 int phy_start_cable_test_tdr(struct phy_device *phydev,
-			     struct netlink_ext_ack *extack)
+			     struct netlink_ext_ack *extack,
+			     int first, int last, int step, int pair)
 {
 	struct net_device *dev = phydev->attached_dev;
 	int err = -ENOMEM;
@@ -569,7 +570,8 @@ int phy_start_cable_test_tdr(struct phy_device *phydev,
 	phy_link_down(phydev, true);
 
 	netif_testing_on(dev);
-	err = phydev->drv->cable_test_tdr_start(phydev);
+	err = phydev->drv->cable_test_tdr_start(phydev, first, last, step,
+						pair);
 	if (err) {
 		netif_testing_off(dev);
 		phy_link_up(phydev);

@@ -199,6 +199,7 @@
 #define MII_VCT5_CTRL_PEEK_HYST_DEFAULT			3
 
 #define MII_VCT5_SAMPLE_POINT_DISTANCE		0x18
+#define MII_VCT5_SAMPLE_POINT_DISTANCE_MAX	511
 #define MII_VCT5_TX_PULSE_CTRL			0x1c
 #define MII_VCT5_TX_PULSE_CTRL_DONT_WAIT_LINK_DOWN	BIT(12)
 #define MII_VCT5_TX_PULSE_CTRL_PULSE_WIDTH_128nS	(0 << 10)
@@ -271,6 +272,10 @@ struct marvell_priv {
 	char *hwmon_name;
 	struct device *hwmon_dev;
 	bool cable_test_tdr;
+	int first;
+	int last;
+	int step;
+	int pair;
 };
 
 static int marvell_read_page(struct phy_device *phydev)
@@ -1782,11 +1787,12 @@ static int marvell_vct5_amplitude(struct phy_device *phydev, int pair)
 }
 
 static int marvell_vct5_amplitude_distance(struct phy_device *phydev,
-					   int distance)
+					   int distance, int pair)
 {
-	int mV_pair0, mV_pair1, mV_pair2, mV_pair3;
 	u16 reg;
 	int err;
+	int mV;
+	int i;
 
 	err = phy_write_paged(phydev, MII_MARVELL_VCT5_PAGE,
 			      MII_VCT5_SAMPLE_POINT_DISTANCE,
@@ -1808,21 +1814,20 @@ static int marvell_vct5_amplitude_distance(struct phy_device *phydev,
 	if (err)
 		return err;
 
-	mV_pair0 = marvell_vct5_amplitude(phydev, 0);
-	mV_pair1 = marvell_vct5_amplitude(phydev, 1);
-	mV_pair2 = marvell_vct5_amplitude(phydev, 2);
-	mV_pair3 = marvell_vct5_amplitude(phydev, 3);
+	for (i = 0; i < 4; i++) {
+		if (pair != PHY_PAIR_ALL && i != pair)
+			continue;
 
-	ethnl_cable_test_amplitude(phydev, ETHTOOL_A_CABLE_PAIR_0, mV_pair0);
-	ethnl_cable_test_amplitude(phydev, ETHTOOL_A_CABLE_PAIR_1, mV_pair1);
-	ethnl_cable_test_amplitude(phydev, ETHTOOL_A_CABLE_PAIR_2, mV_pair2);
-	ethnl_cable_test_amplitude(phydev, ETHTOOL_A_CABLE_PAIR_3, mV_pair3);
+		mV = marvell_vct5_amplitude(phydev, i);
+		ethnl_cable_test_amplitude(phydev, i, mV);
+	}
 
 	return 0;
 }
 
 static int marvell_vct5_amplitude_graph(struct phy_device *phydev)
 {
+	struct marvell_priv *priv = phydev->priv;
 	int distance;
 	int err;
 	u16 reg;
@@ -1837,8 +1842,11 @@ static int marvell_vct5_amplitude_graph(struct phy_device *phydev)
 	if (err)
 		return err;
 
-	for (distance = 0; distance <= 100; distance++) {
-		err = marvell_vct5_amplitude_distance(phydev, distance);
+	for (distance = priv->first;
+	     distance <= priv->last;
+	     distance += priv->step) {
+		err = marvell_vct5_amplitude_distance(phydev, distance,
+						      priv->pair);
 		if (err)
 			return err;
 	}
@@ -1912,10 +1920,18 @@ static int marvell_vct7_cable_test_start(struct phy_device *phydev)
 			       MII_VCT7_CTRL_CENTIMETERS);
 }
 
-static int marvell_vct5_cable_test_tdr_start(struct phy_device *phydev)
+static int marvell_vct5_cable_test_tdr_start(struct phy_device *phydev,
+					     int first, int last, int step,
+					     int pair)
 {
 	struct marvell_priv *priv = phydev->priv;
 	int ret;
+
+	if (first > MII_VCT5_SAMPLE_POINT_DISTANCE_MAX)
+		return -EINVAL;
+
+	if (last > MII_VCT5_SAMPLE_POINT_DISTANCE_MAX)
+		return -EINVAL;
 
 	/* Disable  VCT7 */
 	ret = phy_write_paged(phydev, MII_MARVELL_VCT7_PAGE,
@@ -1928,11 +1944,16 @@ static int marvell_vct5_cable_test_tdr_start(struct phy_device *phydev)
 		return ret;
 
 	priv->cable_test_tdr = true;
+	priv->first = first;
+	priv->last = last;
+	priv->step = step;
+	priv->pair = pair;
+
 	ret = ethnl_cable_test_pulse(phydev, 1000);
 	if (ret)
 		return ret;
 
-	return ethnl_cable_test_step(phydev, 0, 100, 1);
+	return ethnl_cable_test_step(phydev, first, last, step);
 }
 
 static int marvell_vct7_distance_to_length(int distance, bool meter)

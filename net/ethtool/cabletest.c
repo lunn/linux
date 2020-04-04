@@ -6,6 +6,12 @@
 #include "common.h"
 #include "bitset.h"
 
+/* 802.3 standard allows 100 meters for BaseT cables. However longer
+ * cables might work, depending on the quality of the cables and the
+ * PHY. So allow testing for up to 150 meters.
+ */
+#define MAX_CABLE_LENGTH 150
+
 struct cable_test_req_info {
 	struct ethnl_req_info		base;
 };
@@ -182,6 +188,10 @@ EXPORT_SYMBOL_GPL(ethnl_cable_test_fault_length);
 
 struct cable_test_tdr_req_info {
 	struct ethnl_req_info		base;
+	int 				first;
+	int 				last;
+	int 				step;
+	int				pair;
 };
 
 struct cable_test_tdr_reply_data {
@@ -195,6 +205,10 @@ static const struct nla_policy
 cable_test_tdr_act_policy[ETHTOOL_A_CABLE_TEST_TDR_MAX + 1] = {
 	[ETHTOOL_A_CABLE_TEST_TDR_UNSPEC]		= { .type = NLA_REJECT },
 	[ETHTOOL_A_CABLE_TEST_TDR_HEADER]		= { .type = NLA_NESTED },
+	[ETHTOOL_A_CABLE_TEST_TDR_FIRST]		= { .type = NLA_U16 },
+	[ETHTOOL_A_CABLE_TEST_TDR_LAST]			= { .type = NLA_U16 },
+	[ETHTOOL_A_CABLE_TEST_TDR_STEP]			= { .type = NLA_U16 },
+	[ETHTOOL_A_CABLE_TEST_TDR_PAIR]			= { .type = NLA_U8 },
 };
 
 const struct ethnl_request_ops ethnl_cable_test_tdr_act_ops = {
@@ -209,16 +223,10 @@ const struct ethnl_request_ops ethnl_cable_test_tdr_act_ops = {
 
 /* CABLE_TEST_TDR_ACT */
 
-static const struct nla_policy
-cable_test_tdr_set_policy[ETHTOOL_A_CABLE_TEST_TDR_MAX + 1] = {
-	[ETHTOOL_A_CABLE_TEST_TDR_UNSPEC]	= { .type = NLA_REJECT },
-	[ETHTOOL_A_CABLE_TEST_TDR_HEADER]	= { .type = NLA_NESTED },
-};
-
 int ethnl_act_cable_test_tdr(struct sk_buff *skb, struct genl_info *info)
 {
 	struct nlattr *tb[ETHTOOL_A_CABLE_TEST_TDR_MAX + 1];
-	struct ethnl_req_info req_info = {};
+	struct cable_test_tdr_req_info req_info = {};
 	struct net_device *dev;
 	int ret;
 
@@ -228,17 +236,60 @@ int ethnl_act_cable_test_tdr(struct sk_buff *skb, struct genl_info *info)
 	if (ret < 0)
 		return ret;
 
-	ret = ethnl_parse_header_dev_get(&req_info,
+	ret = ethnl_parse_header_dev_get(&req_info.base,
 					 tb[ETHTOOL_A_CABLE_TEST_TDR_HEADER],
 					 genl_info_net(info), info->extack,
 					 true);
 	if (ret < 0)
 		return ret;
 
-	dev = req_info.dev;
+	dev = req_info.base.dev;
 	if (!dev->phydev) {
 		ret = -EOPNOTSUPP;
 		goto out_dev_put;
+	}
+
+	if (tb[ETHTOOL_A_CABLE_TEST_TDR_FIRST])
+		req_info.first = nla_get_u16(
+			tb[ETHTOOL_A_CABLE_TEST_TDR_FIRST]);
+	if (tb[ETHTOOL_A_CABLE_TEST_TDR_LAST])
+		req_info.last = nla_get_u16(
+			tb[ETHTOOL_A_CABLE_TEST_TDR_LAST]);
+	else
+		req_info.last = MAX_CABLE_LENGTH;
+
+	if (tb[ETHTOOL_A_CABLE_TEST_TDR_STEP])
+		req_info.step = nla_get_u16(
+			tb[ETHTOOL_A_CABLE_TEST_TDR_STEP]);
+	else
+		req_info.step = 1;
+
+	if (tb[ETHTOOL_A_CABLE_TEST_TDR_PAIR]) {
+		req_info.pair = nla_get_u8(
+			tb[ETHTOOL_A_CABLE_TEST_TDR_PAIR]);
+		if (req_info.pair < ETHTOOL_A_CABLE_PAIR_0 ||
+		    req_info.pair > ETHTOOL_A_CABLE_PAIR_3) {
+			NL_SET_ERR_MSG(info->extack,
+				       "invalid pair parameter");
+			return -EINVAL;
+		}
+	} else {
+		req_info.pair = PHY_PAIR_ALL;
+	}
+
+	if (req_info.first > MAX_CABLE_LENGTH) {
+		NL_SET_ERR_MSG(info->extack, "invalid first parameter");
+                return -EINVAL;
+	}
+
+	if (req_info.last > MAX_CABLE_LENGTH) {
+		NL_SET_ERR_MSG(info->extack, "invalid last parameter");
+                return -EINVAL;
+	}
+
+	if (req_info.first > req_info.last) {
+		NL_SET_ERR_MSG(info->extack, "invalid first/last parameter");
+                return -EINVAL;
 	}
 
 	rtnl_lock();
@@ -246,7 +297,9 @@ int ethnl_act_cable_test_tdr(struct sk_buff *skb, struct genl_info *info)
 	if (ret < 0)
 		goto out_rtnl;
 
-	ret = phy_start_cable_test_tdr(dev->phydev, info->extack);
+	ret = phy_start_cable_test_tdr(dev->phydev, info->extack,
+				       req_info.first, req_info.last,
+				       req_info.step, req_info.pair);
 
 	ethnl_ops_complete(dev);
 out_rtnl:
