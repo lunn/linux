@@ -5,7 +5,11 @@
 #include "netlink.h"
 #include "common.h"
 
-/* CABLE_TEST_ACT */
+/* 802.3 standard allows 100 meters for BaseT cables. However longer
+ * cables might work, depending on the quality of the cables and the
+ * PHY. So allow testing for up to 150 meters.
+ */
+#define MAX_CABLE_LENGTH_CM (150 * 100)
 
 static const struct nla_policy
 cable_test_act_policy[ETHTOOL_A_CABLE_TEST_MAX + 1] = {
@@ -203,18 +207,30 @@ err:
 }
 EXPORT_SYMBOL_GPL(ethnl_cable_test_fault_length);
 
+struct cable_test_tdr_req_info {
+	struct ethnl_req_info		base;
+};
+
 static const struct nla_policy
 cable_test_tdr_act_policy[ETHTOOL_A_CABLE_TEST_TDR_MAX + 1] = {
 	[ETHTOOL_A_CABLE_TEST_TDR_UNSPEC]	= { .type = NLA_REJECT },
 	[ETHTOOL_A_CABLE_TEST_TDR_HEADER]	= { .type = NLA_NESTED },
+	[ETHTOOL_A_CABLE_TEST_TDR_FIRST]	= { .type = NLA_U32 },
+	[ETHTOOL_A_CABLE_TEST_TDR_LAST]		= { .type = NLA_U32 },
+	[ETHTOOL_A_CABLE_TEST_TDR_STEP]		= { .type = NLA_U32 },
+	[ETHTOOL_A_CABLE_TEST_TDR_PAIR]		= { .type = NLA_U8 },
 };
+
+/* CABLE_TEST_TDR_ACT */
 
 int ethnl_act_cable_test_tdr(struct sk_buff *skb, struct genl_info *info)
 {
 	struct nlattr *tb[ETHTOOL_A_CABLE_TEST_TDR_MAX + 1];
 	struct ethnl_req_info req_info = {};
 	struct net_device *dev;
+	u32 first, last, step;
 	int ret;
+	u8 pair;
 
 	ret = nlmsg_parse(info->nlhdr, GENL_HDRLEN, tb,
 			  ETHTOOL_A_CABLE_TEST_TDR_MAX,
@@ -235,12 +251,59 @@ int ethnl_act_cable_test_tdr(struct sk_buff *skb, struct genl_info *info)
 		goto out_dev_put;
 	}
 
+	if (tb[ETHTOOL_A_CABLE_TEST_TDR_FIRST])
+		first = nla_get_u32(tb[ETHTOOL_A_CABLE_TEST_TDR_FIRST]);
+	else
+		first = 100;
+	if (tb[ETHTOOL_A_CABLE_TEST_TDR_LAST])
+		last = nla_get_u32(tb[ETHTOOL_A_CABLE_TEST_TDR_LAST]);
+	else
+		last = MAX_CABLE_LENGTH_CM;
+
+	if (tb[ETHTOOL_A_CABLE_TEST_TDR_STEP])
+		step = nla_get_u32(tb[ETHTOOL_A_CABLE_TEST_TDR_STEP]);
+	else
+		step = 100;
+
+	if (tb[ETHTOOL_A_CABLE_TEST_TDR_PAIR]) {
+		pair = nla_get_u8(tb[ETHTOOL_A_CABLE_TEST_TDR_PAIR]);
+		if (pair < ETHTOOL_A_CABLE_PAIR_A ||
+		    pair > ETHTOOL_A_CABLE_PAIR_D) {
+			NL_SET_ERR_MSG(info->extack,
+				       "invalid pair parameter");
+			return -EINVAL;
+		}
+	} else {
+		pair = PHY_PAIR_ALL;
+	}
+
+	if (first > MAX_CABLE_LENGTH_CM) {
+		NL_SET_ERR_MSG(info->extack, "invalid first parameter");
+		return -EINVAL;
+	}
+
+	if (last > MAX_CABLE_LENGTH_CM) {
+		NL_SET_ERR_MSG(info->extack, "invalid last parameter");
+		return -EINVAL;
+	}
+
+	if (first > last) {
+		NL_SET_ERR_MSG(info->extack, "invalid first/last parameter");
+		return -EINVAL;
+	}
+
+	if (!step) {
+		NL_SET_ERR_MSG(info->extack, "invalid step parameter");
+		return -EINVAL;
+	}
+
 	rtnl_lock();
 	ret = ethnl_ops_begin(dev);
 	if (ret < 0)
 		goto out_rtnl;
 
-	ret = phy_start_cable_test_tdr(dev->phydev, info->extack);
+	ret = phy_start_cable_test_tdr(dev->phydev, info->extack,
+				       first, last, step, pair);
 
 	ethnl_ops_complete(dev);
 
