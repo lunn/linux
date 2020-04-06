@@ -32,11 +32,18 @@
 #include <linux/marvell_phy.h>
 #include <linux/bitfield.h>
 #include <linux/of.h>
+#include <linux/debugfs.h>
 
 #include <linux/io.h>
 #include <asm/irq.h>
 #include <linux/uaccess.h>
 #include <uapi/linux/ethtool_netlink.h>
+
+struct dentry *dbgfs;
+u8 pulse_width = 3;
+u8 pulse_amplitude = 0;
+u8 tdr_samples = 6;
+u8 tx_channel = 0;
 
 #define MII_MARVELL_PHY_PAGE		22
 #define MII_MARVELL_COPPER_PAGE		0x00
@@ -182,6 +189,7 @@
 #define MII_VCT5_CTRL_TX1_CHANNEL			(5 << 11)
 #define MII_VCT5_CTRL_TX2_CHANNEL			(6 << 11)
 #define MII_VCT5_CTRL_TX3_CHANNEL			(7 << 11)
+#define MII_VCT5_CTRL_TX_CHANNEL_SHIFT			11
 #define MII_VCT5_CTRL_SAMPLES_2				(0 << 8)
 #define MII_VCT5_CTRL_SAMPLES_4				(1 << 8)
 #define MII_VCT5_CTRL_SAMPLES_8				(2 << 8)
@@ -1797,8 +1805,8 @@ static int marvell_vct5_amplitude_distance(struct phy_device *phydev,
 		return err;
 
 	reg = MII_VCT5_CTRL_ENABLE |
-		MII_VCT5_CTRL_TX_SAME_CHANNEL |
-		MII_VCT5_CTRL_SAMPLES_DEFAULT |
+		(tx_channel << MII_VCT5_CTRL_TX_CHANNEL_SHIFT) |
+		(tdr_samples << MII_VCT5_CTRL_SAMPLES_SHIFT) |
 		MII_VCT5_CTRL_SAMPLE_POINT |
 		MII_VCT5_CTRL_PEEK_HYST_DEFAULT;
 	err = __phy_write(phydev, MII_VCT5_CTRL, reg);
@@ -1828,10 +1836,33 @@ static int marvell_vct5_amplitude_graph(struct phy_device *phydev)
 	int err;
 	u16 reg;
 
+	if (pulse_width > 3) {
+		phydev_err(phydev, "pulse_width out of range, 0-3\n");
+		return -EINVAL;
+	}
+
+	if (pulse_amplitude > 3) {
+		phydev_err(phydev, "pulse_amplitude out of range, 0-3\n");
+		return -EINVAL;
+	}
+
+	if (tdr_samples > 7) {
+		phydev_err(phydev, "tdr_samples of range, 0-7\n");
+		return -EINVAL;
+	}
+
+	if (tx_channel > 7 || tx_channel == 1 || tx_channel == 2 ||
+	    tx_channel == 3) {
+		phydev_err(phydev, "tx_channel should be , 1, 4, 5, 6, 7\n");
+		return -EINVAL;
+	}
+
 	reg = MII_VCT5_TX_PULSE_CTRL_GT_140m_46_86mV |
 		MII_VCT5_TX_PULSE_CTRL_DONT_WAIT_LINK_DOWN |
 		MII_VCT5_TX_PULSE_CTRL_MAX_AMP |
-		MII_VCT5_TX_PULSE_CTRL_PULSE_WIDTH_32nS;
+		(pulse_width << MII_VCT5_TX_PULSE_CTRL_PULSE_WIDTH_SHIFT) |
+		(pulse_amplitude <<
+		 MII_VCT5_TX_PULSE_CTRL_PULSE_AMPLITUDE_SHIFT);
 
 	err = phy_write_paged(phydev, MII_MARVELL_VCT5_PAGE,
 			      MII_VCT5_TX_PULSE_CTRL, reg);
@@ -2548,6 +2579,14 @@ static int marvell_probe(struct phy_device *phydev)
 
 	phydev->priv = priv;
 
+	if (!dbgfs) {
+		dbgfs = debugfs_create_dir("marvell-phy", NULL);
+		debugfs_create_u8("pulse-width", 0644, dbgfs, &pulse_width);
+		debugfs_create_u8("pulse-amplitude", 0644, dbgfs,
+				  &pulse_amplitude);
+		debugfs_create_u8("tdr-samples", 0644, dbgfs, &tdr_samples);
+		debugfs_create_u8("tx_channel", 0644, dbgfs, &tx_channel);
+	}
 	return 0;
 }
 
