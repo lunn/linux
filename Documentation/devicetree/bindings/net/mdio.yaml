@@ -39,6 +39,10 @@ properties:
       and must therefore be appropriately determined based on all PHY
       requirements (maximum value of all per-PHY RESET pulse widths).
 
+  clock-frequency:
+    description:
+      Desired MDIO bus clock frequency in Hz.
+
 patternProperties:
   "^ethernet-phy@[0-9a-f]+$":
     type: object
