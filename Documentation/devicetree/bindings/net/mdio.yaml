@@ -43,6 +43,10 @@ properties:
     description:
       Desired MDIO bus clock frequency in Hz.
 
+  suppress-preamble:
+        description: The 32 bit preamble should be suppressed.
+        type: boolean
+
 patternProperties:
   "^ethernet-phy@[0-9a-f]+$":
     type: object
