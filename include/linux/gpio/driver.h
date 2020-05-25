@@ -315,6 +315,7 @@ struct gpio_irq_chip {
  * @be_bits: if the generic GPIO has big endian bit order (bit 31 is representing
  *	line 0, bit 30 is line 1 ... bit 0 is line 31) this is set to true by the
  *	generic GPIO core. It is for internal housekeeping only.
+ * @accessor: Read/Write accessor to use
  * @reg_dat: data (in) register for generic GPIO
  * @reg_set: output set register (out=high) for generic GPIO
  * @reg_clr: output clear register (out=low) for generic GPIO
@@ -391,6 +392,7 @@ struct gpio_chip {
 #if IS_ENABLED(CONFIG_GPIO_GENERIC)
 	unsigned long (*read_reg)(void __iomem *reg);
 	void (*write_reg)(void __iomem *reg, unsigned long data);
+	int accessor;
 	bool be_bits;
 	void __iomem *reg_dat;
 	void __iomem *reg_set;
