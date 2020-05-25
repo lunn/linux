@@ -163,7 +163,7 @@ EXPORT_SYMBOL_GPL(gpiochip_get_desc);
  */
 int desc_to_gpio(const struct gpio_desc *desc)
 {
-	return desc->gdev->base + (desc - &desc->gdev->descs[0]);
+	return desc->gpio;
 }
 EXPORT_SYMBOL_GPL(desc_to_gpio);
 
@@ -1725,6 +1725,8 @@ int gpiochip_add_data_with_key(struct gpio_chip *gc, void *data,
 
 	for (i = 0; i < gc->ngpio; i++) {
 		struct gpio_desc *desc = &gdev->descs[i];
+
+		desc->gpio = desc->gdev->base + (desc - &desc->gdev->descs[0]);
 
 		if (gc->get_direction && gpiochip_line_is_valid(gc, i)) {
 			assign_bit(FLAG_IS_OUT,
