@@ -689,8 +689,6 @@ static int cvm_oct_probe(struct platform_device *pdev)
 	mtu_overhead += VLAN_HLEN;
 #endif
 
-	octeon_mdiobus_force_mod_depencency();
-
 	pip = pdev->dev.of_node;
 	if (!pip) {
 		pr_err("Error: No 'pip' in /aliases\n");
