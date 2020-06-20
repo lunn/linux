@@ -5,12 +5,6 @@
 
 source "drivers/net/phy/mdio/Kconfig"
 
-config MDIO_XPCS
-	tristate "Synopsys DesignWare XPCS controller"
-	help
-	  This module provides helper functions for Synopsys DesignWare XPCS
-	  controllers.
-
 config PHYLINK
 	tristate
 	depends on NETDEVICES
@@ -91,6 +85,8 @@ config XILINX_GMII2RGMII
 	  Ethernet physical media devices and the Gigabit Ethernet controller.
 
 endif # PHYLIB
+
+source "drivers/net/phy/pcs/Kconfig"
 
 config MICREL_KS8995MA
 	tristate "Micrel KS8995MA 5-ports 10/100 managed Ethernet switch"

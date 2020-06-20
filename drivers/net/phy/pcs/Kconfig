@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# PCS driver configuration
+#
+# Please keep this file sorted by sting which apears in menuconfig.
+
+menuconfig PCS_DEVICE
+	tristate "PCS device drivers"
+	help
+	  PCS devices and driver infrastructure code.
+
+if PCS_DEVICE
+
+config PCS_XPCS
+	tristate "Synopsys DesignWare XPCS controller"
+	help
+	  This module provides helper functions for Synopsys DesignWare XPCS
+	  controllers.
+
+endif

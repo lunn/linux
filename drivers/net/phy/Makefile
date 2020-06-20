@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0
 # Makefile for Linux PHY drivers and MDIO bus drivers
 
-obj-y				+= phy/ mdio/
+obj-y				+= phy/ mdio/ pcs/
 
 libphy-y			:= phy.o phy-c45.o phy-core.o phy_device.o \
 				   linkmode.o
@@ -26,8 +26,6 @@ libphy-$(CONFIG_LED_TRIGGER_PHY)	+= phy_led_triggers.o
 obj-$(CONFIG_PHYLINK)		+= phylink.o
 obj-$(CONFIG_PHYLIB)		+= libphy.o
 obj-$(CONFIG_FIXED_PHY)		+= fixed_phy.o
-
-obj-$(CONFIG_MDIO_XPCS)		+= mdio-xpcs.o
 
 obj-$(CONFIG_NETWORK_PHY_TIMESTAMPING) += mii_timestamper.o
 

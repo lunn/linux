@@ -8,7 +8,7 @@
 
 #include <linux/delay.h>
 #include <linux/mdio.h>
-#include <linux/mdio-xpcs.h>
+#include <linux/pcs-xpcs.h>
 #include <linux/phylink.h>
 #include <linux/workqueue.h>
 
