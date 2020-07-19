@@ -5,6 +5,7 @@
 #include "devlink.h"
 #include "global1.h"
 #include "global2.h"
+#include "port.h"
 
 static int mv88e6xxx_atu_get_hash(struct mv88e6xxx_chip *chip, u8 *hash)
 {
@@ -33,6 +34,8 @@ int mv88e6xxx_devlink_param_get(struct dsa_switch *ds, u32 id,
 	struct mv88e6xxx_chip *chip = ds->priv;
 	int err;
 
+	dev_info(ds->dev, "%s: enter\n", __func__);
+
 	mv88e6xxx_reg_lock(chip);
 
 	switch (id) {
@@ -54,6 +57,8 @@ int mv88e6xxx_devlink_param_set(struct dsa_switch *ds, u32 id,
 {
 	struct mv88e6xxx_chip *chip = ds->priv;
 	int err;
+
+	dev_info(ds->dev, "%s: enter\n", __func__);
 
 	mv88e6xxx_reg_lock(chip);
 
@@ -258,5 +263,414 @@ int mv88e6xxx_setup_devlink_resources(struct dsa_switch *ds)
 out:
 	dsa_devlink_resources_unregister(ds);
 	return err;
+}
+
+static int mv88e6xxx_region_port_snapshot(struct devlink *dl,
+					  struct netlink_ext_ack *extack,
+					  u8 **data,
+					  int port)
+{
+	struct dsa_switch *ds = dsa_devlink_to_ds(dl);
+	struct mv88e6xxx_chip *chip = ds->priv;
+	u16 *registers;
+	int i, err;
+
+	registers = kmalloc_array(32, sizeof(u16), GFP_KERNEL);
+	if (!registers)
+		return -ENOMEM;
+
+	mv88e6xxx_reg_lock(chip);
+	for (i = 0; i < 32; i++) {
+		err = mv88e6xxx_port_read(chip, port, i, &registers[i]);
+		if (err) {
+			kfree(registers);
+			goto out;
+		}
+	}
+	*data = (u8 *)registers;
+out:
+	mv88e6xxx_reg_unlock(chip);
+
+	return err;
+}
+
+#define PORT_SNAPSHOT(_X_)						\
+static int mv88e6xxx_region_port_ ## _X_ ## _snapshot(		\
+	struct devlink *dl,						\
+	struct netlink_ext_ack *extack,					\
+	u8 **data)							\
+{									\
+									\
+	 return mv88e6xxx_region_port_snapshot(dl, extack, data, _X_);	\
+									\
+}
+
+PORT_SNAPSHOT(0);
+PORT_SNAPSHOT(1);
+PORT_SNAPSHOT(2);
+PORT_SNAPSHOT(3);
+PORT_SNAPSHOT(4);
+PORT_SNAPSHOT(5);
+PORT_SNAPSHOT(6);
+PORT_SNAPSHOT(7);
+PORT_SNAPSHOT(8);
+PORT_SNAPSHOT(9);
+PORT_SNAPSHOT(10);
+PORT_SNAPSHOT(11);
+
+#define PORT_REGION_OPS(_X_)						\
+static struct devlink_region_ops mv88e6xxx_region_port_ ## _X_ ## _ops = { \
+	.name = "port" #_X_,						\
+	.snapshot = mv88e6xxx_region_port_ ## _X_ ## _snapshot,		\
+	.destructor = kfree,						\
+}
+
+PORT_REGION_OPS(0);
+PORT_REGION_OPS(1);
+PORT_REGION_OPS(2);
+PORT_REGION_OPS(3);
+PORT_REGION_OPS(4);
+PORT_REGION_OPS(5);
+PORT_REGION_OPS(6);
+PORT_REGION_OPS(7);
+PORT_REGION_OPS(8);
+PORT_REGION_OPS(9);
+PORT_REGION_OPS(10);
+PORT_REGION_OPS(11);
+
+static const struct devlink_region_ops * mv88e6xxx_region_port_ops[] = {
+	&mv88e6xxx_region_port_0_ops,
+	&mv88e6xxx_region_port_1_ops,
+	&mv88e6xxx_region_port_2_ops,
+	&mv88e6xxx_region_port_3_ops,
+	&mv88e6xxx_region_port_4_ops,
+	&mv88e6xxx_region_port_5_ops,
+	&mv88e6xxx_region_port_6_ops,
+	&mv88e6xxx_region_port_7_ops,
+	&mv88e6xxx_region_port_8_ops,
+	&mv88e6xxx_region_port_9_ops,
+	&mv88e6xxx_region_port_10_ops,
+	&mv88e6xxx_region_port_11_ops,
+};
+
+static int mv88e6xxx_region_global1_snapshot(struct devlink *dl,
+					     struct netlink_ext_ack *extack,
+					     u8 **data)
+{
+	struct dsa_switch *ds = dsa_devlink_to_ds(dl);
+	struct mv88e6xxx_chip *chip = ds->priv;
+	u16 *registers;
+	int i, err;
+
+	registers = kmalloc_array(32, sizeof(u16), GFP_KERNEL);
+	if (!registers)
+		return -ENOMEM;
+
+	mv88e6xxx_reg_lock(chip);
+	for (i = 0; i < 32; i++) {
+		err = mv88e6xxx_g1_read(chip, i, &registers[i]);
+		if (err) {
+			kfree(registers);
+			goto out;
+		}
+	}
+	*data = (u8 *)registers;
+out:
+	mv88e6xxx_reg_unlock(chip);
+
+	return err;
+}
+
+static int mv88e6xxx_region_global2_snapshot(struct devlink *dl,
+					     struct netlink_ext_ack *extack,
+					     u8 **data)
+{
+	struct dsa_switch *ds = dsa_devlink_to_ds(dl);
+	struct mv88e6xxx_chip *chip = ds->priv;
+	u16 *registers;
+	int i, err;
+
+	registers = kmalloc_array(32, sizeof(u16), GFP_KERNEL);
+	if (!registers)
+		return -ENOMEM;
+
+	mv88e6xxx_reg_lock(chip);
+	for (i = 0; i < 32; i++) {
+		err = mv88e6xxx_g2_read(chip, i, &registers[i]);
+		if (err) {
+			kfree(registers);
+			goto out;
+		}
+	}
+	*data = (u8 *)registers;
+out:
+	mv88e6xxx_reg_unlock(chip);
+
+	return err;
+}
+
+/* The ATU entry varies between chipset generations. Define a generic
+ * format which covers all the current and hopefully future
+ * generations
+*/
+
+struct mv88e6xxx_devlink_atu_entry {
+	/* The FID is scattered over multiple registers. */
+	u16 fid;
+	u16 atu_op;
+	u16 atu_data;
+	u16 atu_01;
+	u16 atu_23;
+	u16 atu_45;
+};
+
+static int mv88e6xxx_region_atu_snapshot_fid(
+	struct mv88e6xxx_chip *chip, int fid,
+	struct mv88e6xxx_devlink_atu_entry *table, int *count)
+{
+	u16 atu_op, atu_data, atu_01, atu_23, atu_45;
+	struct mv88e6xxx_atu_entry addr;
+	int err;
+
+	addr.state = 0;
+	eth_broadcast_addr(addr.mac);
+
+	do {
+		err = mv88e6xxx_g1_atu_getnext(chip, fid, &addr);
+		if (err)
+			return err;
+
+		if (!addr.state)
+			break;
+
+		err = mv88e6xxx_g1_read(chip, MV88E6XXX_G1_ATU_OP, &atu_op);
+		if (err)
+			return err;
+
+		err = mv88e6xxx_g1_read(chip, MV88E6XXX_G1_ATU_DATA, &atu_data);
+		if (err)
+			return err;
+
+		err = mv88e6xxx_g1_read(chip, MV88E6XXX_G1_ATU_MAC01, &atu_01);
+		if (err)
+			return err;
+
+		err = mv88e6xxx_g1_read(chip, MV88E6XXX_G1_ATU_MAC23, &atu_23);
+		if (err)
+			return err;
+
+		err = mv88e6xxx_g1_read(chip, MV88E6XXX_G1_ATU_MAC45, &atu_45);
+		if (err)
+			return err;
+
+		table[*count].fid = fid;
+		table[*count].atu_op = atu_op;
+		table[*count].atu_data = atu_data;
+		table[*count].atu_01 = atu_01;
+		table[*count].atu_23 = atu_23;
+		table[*count].atu_45 = atu_45;
+		(*count)++;
+	} while (!is_broadcast_ether_addr(addr.mac));
+
+	return 0;
+}
+
+static int mv88e6xxx_region_atu_snapshot(struct devlink *dl,
+					 struct netlink_ext_ack *extack,
+					 u8 **data)
+{
+	struct dsa_switch *ds = dsa_devlink_to_ds(dl);
+	DECLARE_BITMAP(fid_bitmap, MV88E6XXX_N_FID);
+	struct mv88e6xxx_devlink_atu_entry *table;
+	struct mv88e6xxx_chip *chip = ds->priv;
+	int fid = -1, count, err;
+
+	table = kmalloc_array(mv88e6xxx_num_databases(chip),
+			      sizeof(struct mv88e6xxx_devlink_atu_entry),
+			      GFP_KERNEL);
+	if (!table)
+		return -ENOMEM;
+
+	memset(table, 0, mv88e6xxx_num_databases(chip) *
+	       sizeof(struct mv88e6xxx_devlink_atu_entry));
+
+	count = 0;
+
+	mv88e6xxx_reg_lock(chip);
+
+	err = mv88e6xxx_fid_map(chip, fid_bitmap);
+	if (err)
+		goto out;
+
+	while (1) {
+		fid = find_next_bit(fid_bitmap, MV88E6XXX_N_FID, fid + 1);
+		if (fid == MV88E6XXX_N_FID)
+			break;
+
+		err =  mv88e6xxx_region_atu_snapshot_fid(chip, fid, table,
+							 &count);
+		if (err) {
+			kfree(table);
+			goto out;
+		}
+	}
+	*data = (u8 *)table;
+out:
+	mv88e6xxx_reg_unlock(chip);
+
+	return err;
+}
+
+
+static struct devlink_region_ops mv88e6xxx_region_global1_ops = {
+	.name = "global1",
+	.snapshot = mv88e6xxx_region_global1_snapshot,
+	.destructor = kfree,
+};
+
+static struct devlink_region_ops mv88e6xxx_region_global2_ops = {
+	.name = "global2",
+	.snapshot = mv88e6xxx_region_global2_snapshot,
+	.destructor = kfree,
+};
+
+static struct devlink_region_ops mv88e6xxx_region_atu_ops = {
+	.name = "atu",
+	.snapshot = mv88e6xxx_region_atu_snapshot,
+	.destructor = kfree,
+};
+
+struct mv88e6xxx_region {
+	struct devlink_region_ops *ops;
+	u64 size;
+};
+
+static struct mv88e6xxx_region mv88e6xxx_regions[] = {
+	[MV88E6XXX_REGION_GLOBAL1] =
+	{ .ops = &mv88e6xxx_region_global1_ops,
+	  .size = 32 * sizeof(u16) },
+	[MV88E6XXX_REGION_GLOBAL2] =
+	{ .ops = &mv88e6xxx_region_global2_ops,
+	  .size = 32 * sizeof(u16) },
+	[MV88E6XXX_REGION_ATU] =
+	{ .ops = &mv88e6xxx_region_atu_ops
+	  /* calculated at runtime */
+	},
+};
+
+static void
+mv88e6xxx_teardown_devlink_regions_port(struct mv88e6xxx_chip *chip, int port)
+{
+	dsa_devlink_region_destroy(chip->ports[port].region);
+}
+
+static void
+mv88e6xxx_teardown_devlink_regions_ports(struct mv88e6xxx_chip *chip)
+{
+	int port;
+
+	for (port = 0; port < mv88e6xxx_num_ports(chip); port++)
+		mv88e6xxx_teardown_devlink_regions_port(chip, port);
+}
+
+static void
+mv88e6xxx_teardown_devlink_regions_global(struct mv88e6xxx_chip *chip)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(mv88e6xxx_regions); i++)
+		dsa_devlink_region_destroy(chip->regions[i]);
+}
+
+void mv88e6xxx_teardown_devlink_regions(struct dsa_switch *ds)
+{
+	struct mv88e6xxx_chip *chip = ds->priv;
+
+	mv88e6xxx_teardown_devlink_regions_ports(chip);
+	mv88e6xxx_teardown_devlink_regions_global(chip);
+}
+
+static int mv88e6xxx_setup_devlink_regions_port(struct dsa_switch *ds,
+						struct mv88e6xxx_chip *chip,
+						int port)
+{
+	struct devlink_region *region;
+
+	region = dsa_devlink_region_create(ds,
+					   mv88e6xxx_region_port_ops[port], 1,
+					   32 * sizeof(u16));
+	if (IS_ERR(region))
+		return PTR_ERR(region);
+
+	chip->ports[port].region = region;
+	return 0;
+}
+
+static int mv88e6xxx_setup_devlink_regions_ports(struct dsa_switch *ds,
+						 struct mv88e6xxx_chip *chip)
+{
+	int port, port_err;
+	int err;
+
+	for (port = 0; port < mv88e6xxx_num_ports(chip); port++) {
+		err = mv88e6xxx_setup_devlink_regions_port(ds, chip, port);
+		if (err)
+			goto out;
+	}
+	return 0;
+
+out:
+	for (port_err = 0; port_err < port; port_err++)
+		mv88e6xxx_teardown_devlink_regions_port(chip, port_err);
+
+	return err;
+}
+
+static int mv88e6xxx_setup_devlink_regions_global(struct dsa_switch *ds,
+						  struct mv88e6xxx_chip *chip)
+{
+	struct devlink_region_ops *ops;
+	struct devlink_region *region;
+	u64 size;
+	int i, j;
+
+	for (i = 0; i < ARRAY_SIZE(mv88e6xxx_regions); i++) {
+		ops = mv88e6xxx_regions[i].ops;
+		size = mv88e6xxx_regions[i].size;
+
+		if (i == MV88E6XXX_REGION_ATU)
+			size = mv88e6xxx_num_databases(chip) *
+				sizeof(struct mv88e6xxx_devlink_atu_entry);
+
+		region = dsa_devlink_region_create(ds, ops, 1, size);
+		if (IS_ERR(region))
+			goto out;
+		chip->regions[i] = region;
+	}
+	return 0;
+
+out:
+	for (j = 0; j < i; j++)
+		dsa_devlink_region_destroy(chip->regions[j]);
+
+	return PTR_ERR(region);
+}
+
+int mv88e6xxx_setup_devlink_regions(struct dsa_switch *ds)
+{
+	struct mv88e6xxx_chip *chip = ds->priv;
+	int err;
+
+	err = mv88e6xxx_setup_devlink_regions_ports(ds, chip);
+	if (err)
+		return err;
+
+	err = mv88e6xxx_setup_devlink_regions_global(ds, chip);
+	if (err) {
+		mv88e6xxx_teardown_devlink_regions_ports(chip);
+		return err;
+	}
+
+	return 0;
 }
 
