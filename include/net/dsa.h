@@ -629,6 +629,8 @@ struct dsa_switch_ops {
 	int	(*port_max_mtu)(struct dsa_switch *ds, int port);
 };
 
+struct dsa_switch *dsa_devlink_to_ds(struct devlink *dl);
+
 #define DSA_DEVLINK_PARAM_DRIVER(_id, _name, _type, _cmodes)		\
 	DEVLINK_PARAM_DRIVER(_id, _name, _type, _cmodes,		\
 			     dsa_devlink_param_get, dsa_devlink_param_set, NULL)
