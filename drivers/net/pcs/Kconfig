@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# PCS Layer Configuration
+#
+
+menuconfig PCS_DEVICE
+	tristate "PCS device drivers"
+	help
+	  PCS drivers, sitting between the MAC and the PHY
+
+if PCS_DEVICE
+
+config PCS_XPCS
+	tristate "Synopsys DesignWare XPCS controller"
+	select MDIO_BUS
+	help
+	  This module provides helper functions for Synopsys DesignWare XPCS
+	  controllers.
+
+endif
