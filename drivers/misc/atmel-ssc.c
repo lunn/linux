@@ -111,7 +111,6 @@ static const struct platform_device_id atmel_ssc_devtypes[] = {
 	}
 };
 
-#ifdef CONFIG_OF
 static const struct of_device_id atmel_ssc_dt_ids[] = {
 	{
 		.compatible = "atmel,at91rm9200-ssc",
@@ -127,7 +126,6 @@ static const struct of_device_id atmel_ssc_dt_ids[] = {
 	}
 };
 MODULE_DEVICE_TABLE(of, atmel_ssc_dt_ids);
-#endif
 
 static inline const struct atmel_ssc_platform_data *
 	atmel_ssc_get_driver_data(struct platform_device *pdev)
