@@ -415,6 +415,36 @@ out:
 	return err;
 }
 
+static int mv88e6xxx_region_port_snapshot(struct devlink_port *devlink_port,
+					  const struct devlink_port_region_ops *ops,
+					  struct netlink_ext_ack *extack,
+					  u8 **data)
+{
+	struct dsa_switch *ds = dsa_devlink_port_to_ds(devlink_port);
+	int port = dsa_devlink_port_to_port(devlink_port);
+	struct mv88e6xxx_chip *chip = ds->priv;
+	u16 *registers;
+	int i, err;
+
+	registers = kmalloc_array(32, sizeof(u16), GFP_KERNEL);
+	if (!registers)
+		return -ENOMEM;
+
+	mv88e6xxx_reg_lock(chip);
+	for (i = 0; i < 32; i++) {
+		err = mv88e6xxx_port_read(chip, port, i, &registers[i]);
+		if (err) {
+			kfree(registers);
+			goto out;
+		}
+	}
+	*data = (u8 *)registers;
+out:
+	mv88e6xxx_reg_unlock(chip);
+
+	return err;
+}
+
 static struct mv88e6xxx_region_priv mv88e6xxx_region_global1_priv = {
 	.id = MV88E6XXX_REGION_GLOBAL1,
 };
@@ -440,6 +470,12 @@ static struct devlink_region_ops mv88e6xxx_region_global2_ops = {
 static struct devlink_region_ops mv88e6xxx_region_atu_ops = {
 	.name = "atu",
 	.snapshot = mv88e6xxx_region_atu_snapshot,
+	.destructor = kfree,
+};
+
+static const struct devlink_port_region_ops mv88e6xxx_region_port_ops = {
+	.name = "port",
+	.snapshot = mv88e6xxx_region_port_snapshot,
 	.destructor = kfree,
 };
 
@@ -476,6 +512,31 @@ void mv88e6xxx_teardown_devlink_regions(struct dsa_switch *ds)
 	struct mv88e6xxx_chip *chip = ds->priv;
 
 	mv88e6xxx_teardown_devlink_regions_global(chip);
+}
+
+int mv88e6xxx_setup_devlink_regions_port(struct dsa_switch *ds,
+					 struct mv88e6xxx_chip *chip,
+					 int port)
+{
+	struct devlink_region *region;
+
+	region = dsa_devlink_port_region_create(ds,
+						port,
+						&mv88e6xxx_region_port_ops, 1,
+						32 * sizeof(u16));
+	if (IS_ERR(region))
+		return PTR_ERR(region);
+
+	chip->ports[port].region = region;
+
+	return 0;
+}
+
+void mv88e6xxx_teardown_devlink_regions_port(struct mv88e6xxx_chip *chip,
+					     int port)
+{
+	if (chip->ports[port].region)
+		dsa_devlink_region_destroy(chip->ports[port].region);
 }
 
 static int mv88e6xxx_setup_devlink_regions_global(struct dsa_switch *ds,
