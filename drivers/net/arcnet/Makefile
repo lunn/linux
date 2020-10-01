@@ -2,6 +2,9 @@
 # Makefile for linux/drivers/net/arcnet
 #
 
+# Enable W=1
+subdir-ccflags-y := $(KBUILD_CFLAGS_W1)
+
 obj-$(CONFIG_ARCNET) += arcnet.o
 obj-$(CONFIG_ARCNET_1201) += rfc1201.o
 obj-$(CONFIG_ARCNET_1051) += rfc1051.o
