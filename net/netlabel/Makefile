@@ -3,6 +3,9 @@
 # Makefile for the NetLabel subsystem.
 #
 
+# Enable W=1
+ccflags-y := $(KBUILD_CFLAGS_W1)
+
 # base objects
 obj-y	:= netlabel_user.o netlabel_kapi.o
 obj-y	+= netlabel_domainhash.o netlabel_addrlist.o
