@@ -1,4 +1,8 @@
 # SPDX-License-Identifier: GPL-2.0
+
+# Enable W=1
+ccflags-y := $(KBUILD_CFLAGS_W1)
+
 obj-$(CONFIG_NET_9P) := 9pnet.o
 obj-$(CONFIG_NET_9P_XEN) += 9pnet_xen.o
 obj-$(CONFIG_NET_9P_VIRTIO) += 9pnet_virtio.o
