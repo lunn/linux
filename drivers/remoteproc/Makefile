@@ -3,6 +3,9 @@
 # Generic framework for controlling remote processors
 #
 
+# Enable W=1
+subdir-ccflags-y := $(KBUILD_CFLAGS_W1)
+
 obj-$(CONFIG_REMOTEPROC)		+= remoteproc.o
 remoteproc-y				:= remoteproc_core.o
 remoteproc-y				+= remoteproc_coredump.o
