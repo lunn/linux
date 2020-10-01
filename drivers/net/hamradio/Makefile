@@ -11,6 +11,9 @@
 #		Christoph Hellwig <hch@infradead.org>
 #
 
+# Enable W=1
+subdir-ccflags-y := $(KBUILD_CFLAGS_W1)
+
 obj-$(CONFIG_DMASCC)		+= dmascc.o
 obj-$(CONFIG_SCC)		+= scc.o
 obj-$(CONFIG_MKISS)		+= mkiss.o
