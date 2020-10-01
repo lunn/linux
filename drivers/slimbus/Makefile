@@ -2,6 +2,10 @@
 #
 # Makefile for kernel SLIMbus framework.
 #
+
+# Enable W=1
+subdir-ccflags-y := $(KBUILD_CFLAGS_W1)
+
 obj-$(CONFIG_SLIMBUS)			+= slimbus.o
 slimbus-y				:= core.o messaging.o sched.o stream.o
 
