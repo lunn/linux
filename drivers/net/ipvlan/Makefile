@@ -3,6 +3,9 @@
 # Makefile for the Ethernet Ipvlan driver
 #
 
+# Enable W=1
+subdir-ccflags-y := $(KBUILD_CFLAGS_W1)
+
 obj-$(CONFIG_IPVLAN) += ipvlan.o
 obj-$(CONFIG_IPVTAP) += ipvtap.o
 
