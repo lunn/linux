@@ -3,6 +3,9 @@
 # Makefile for the Linux PPP network device drivers.
 #
 
+# Enable W=1
+subdir-ccflags-y := $(KBUILD_CFLAGS_W1)
+
 obj-$(CONFIG_PPP) += ppp_generic.o
 obj-$(CONFIG_PPP_ASYNC) += ppp_async.o
 obj-$(CONFIG_PPP_BSDCOMP) += bsd_comp.o
