@@ -3,6 +3,9 @@
 # Makefile for the kernel Parallel port device drivers.
 #
 
+# Enable W=1
+subdir-ccflags-y := $(KBUILD_CFLAGS_W1)
+
 parport-objs	:= share.o ieee1284.o ieee1284_ops.o procfs.o
 
 ifeq ($(CONFIG_PARPORT_1284),y)
