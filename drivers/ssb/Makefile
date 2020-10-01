@@ -1,5 +1,9 @@
 # SPDX-License-Identifier: GPL-2.0
 # core
+
+# Enable W=1
+subdir-ccflags-y := $(KBUILD_CFLAGS_W1)
+
 ssb-y					+= main.o scan.o
 ssb-$(CONFIG_SSB_EMBEDDED)		+= embedded.o
 ssb-$(CONFIG_SSB_SPROM)			+= sprom.o
