@@ -3,4 +3,7 @@
 # Makefile for the PLIP network device drivers.
 #
 
+# Enable W=1
+subdir-ccflags-y := $(KBUILD_CFLAGS_W1)
+
 obj-$(CONFIG_PLIP) += plip.o
