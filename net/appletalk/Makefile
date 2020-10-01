@@ -3,6 +3,9 @@
 # Makefile for the Linux AppleTalk layer.
 #
 
+# Enable W=1
+subdir-ccflags-y := $(KBUILD_CFLAGS_W1)
+
 obj-$(CONFIG_ATALK) += appletalk.o
 
 appletalk-y			:= aarp.o ddp.o dev.o
