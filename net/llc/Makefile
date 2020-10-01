@@ -12,6 +12,9 @@
 # See the GNU General Public License for more details.
 ###########################################################################
 
+# Enable W=1
+subdir-ccflags-y := $(KBUILD_CFLAGS_W1)
+
 obj-$(CONFIG_LLC) += llc.o
 
 llc-y := llc_core.o llc_input.o llc_output.o
