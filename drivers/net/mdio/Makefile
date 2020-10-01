@@ -1,6 +1,9 @@
 # SPDX-License-Identifier: GPL-2.0
 # Makefile for Linux MDIO bus drivers
 
+# Enable W=1
+subdir-ccflags-y := $(KBUILD_CFLAGS_W1)
+
 obj-$(CONFIG_OF_MDIO)	+= of_mdio.o
 
 obj-$(CONFIG_MDIO_ASPEED)		+= mdio-aspeed.o
