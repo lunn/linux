@@ -3,6 +3,9 @@
 # Makefile for the kernel auxiliary displays device drivers.
 #
 
+# Enable W=1
+subdir-ccflags-y := $(KBUILD_CFLAGS_W1)
+
 obj-$(CONFIG_CHARLCD)		+= charlcd.o
 obj-$(CONFIG_ARM_CHARLCD)	+= arm-charlcd.o
 obj-$(CONFIG_KS0108)		+= ks0108.o
