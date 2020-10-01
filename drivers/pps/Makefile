@@ -3,6 +3,9 @@
 # Makefile for the PPS core.
 #
 
+# Enable W=1
+subdir-ccflags-y := $(KBUILD_CFLAGS_W1)
+
 pps_core-y			:= pps.o kapi.o sysfs.o
 pps_core-$(CONFIG_NTP_PPS)	+= kc.o
 obj-$(CONFIG_PPS)		:= pps_core.o
