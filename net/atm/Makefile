@@ -3,6 +3,9 @@
 # Makefile for the ATM Protocol Families.
 #
 
+# Enable W=1
+ccflags-y := $(KBUILD_CFLAGS_W1)
+
 atm-y		:= addr.o pvc.o signaling.o svc.o ioctl.o common.o atm_misc.o raw.o resources.o atm_sysfs.o
 mpoa-objs	:= mpc.o mpoa_caches.o mpoa_proc.o
 

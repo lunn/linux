@@ -1,5 +1,8 @@
 # SPDX-License-Identifier: GPL-2.0
 
+# Enable W=1
+ccflags-y := $(KBUILD_CFLAGS_W1)
+
 obj-$(CONFIG_DECNET) += decnet.o
 
 decnet-y := af_decnet.o dn_nsp_in.o dn_nsp_out.o \

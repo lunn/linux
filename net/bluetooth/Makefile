@@ -3,6 +3,9 @@
 # Makefile for the Linux Bluetooth subsystem.
 #
 
+# Enable W=1
+ccflags-y := $(KBUILD_CFLAGS_W1)
+
 obj-$(CONFIG_BT)	+= bluetooth.o
 obj-$(CONFIG_BT_RFCOMM)	+= rfcomm/
 obj-$(CONFIG_BT_BNEP)	+= bnep/

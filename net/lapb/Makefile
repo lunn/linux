@@ -3,6 +3,9 @@
 # Makefile for the Linux LAPB layer.
 #
 
+# Enable W=1
+ccflags-y := $(KBUILD_CFLAGS_W1)
+
 obj-$(CONFIG_LAPB) += lapb.o
 
 lapb-y := lapb_in.o lapb_out.o lapb_subr.o lapb_timer.o lapb_iface.o

@@ -3,6 +3,9 @@
 # Makefile for the TLS subsystem.
 #
 
+# Enable W=1
+ccflags-y := $(KBUILD_CFLAGS_W1)
+
 CFLAGS_trace.o := -I$(src)
 
 obj-$(CONFIG_TLS) += tls.o

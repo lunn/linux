@@ -3,6 +3,9 @@
 # Makefile for the Linux X.25 Packet layer.
 #
 
+# Enable W=1
+ccflags-y := $(KBUILD_CFLAGS_W1)
+
 obj-$(CONFIG_X25) += x25.o
 
 x25-y			:= af_x25.o x25_dev.o x25_facilities.o x25_in.o \

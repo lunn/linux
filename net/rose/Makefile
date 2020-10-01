@@ -3,6 +3,9 @@
 # Makefile for the Linux Rose (X.25 PLP) layer.
 #
 
+# Enable W=1
+ccflags-y := $(KBUILD_CFLAGS_W1)
+
 obj-$(CONFIG_ROSE) += rose.o
 
 rose-y	  := af_rose.o rose_dev.o rose_in.o rose_link.o rose_loopback.o \

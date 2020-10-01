@@ -3,6 +3,9 @@
 #
 # Marek Lindner, Simon Wunderlich
 
+# Enable W=1
+ccflags-y := $(KBUILD_CFLAGS_W1)
+
 obj-$(CONFIG_BATMAN_ADV) += batman-adv.o
 batman-adv-y += bat_algo.o
 batman-adv-y += bat_iv_ogm.o

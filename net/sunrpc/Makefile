@@ -3,6 +3,8 @@
 # Makefile for Linux kernel SUN RPC
 #
 
+# Enable W=1
+ccflags-y := $(KBUILD_CFLAGS_W1)
 
 obj-$(CONFIG_SUNRPC) += sunrpc.o
 obj-$(CONFIG_SUNRPC_GSS) += auth_gss/

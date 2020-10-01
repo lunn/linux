@@ -3,6 +3,9 @@
 # Makefile for the Linux BPFILTER layer.
 #
 
+# Enable W=1
+ccflags-y := $(KBUILD_CFLAGS_W1)
+
 userprogs := bpfilter_umh
 bpfilter_umh-objs := main.o
 userccflags += -I $(srctree)/tools/include/ -I $(srctree)/tools/include/uapi

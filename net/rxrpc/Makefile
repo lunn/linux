@@ -3,6 +3,9 @@
 # Makefile for Linux kernel RxRPC
 #
 
+# Enable W=1
+ccflags-y := $(KBUILD_CFLAGS_W1)
+
 obj-$(CONFIG_AF_RXRPC) += rxrpc.o
 
 rxrpc-y := \

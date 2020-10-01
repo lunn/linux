@@ -1,4 +1,8 @@
 # SPDX-License-Identifier: GPL-2.0
+
+# Enable W=1
+ccflags-y := $(KBUILD_CFLAGS_W1)
+
 obj-$(CONFIG_RDS) += rds.o
 rds-y :=	af_rds.o bind.o cong.o connection.o info.o message.o   \
 			recv.o send.o stats.o sysctl.o threads.o transport.o \

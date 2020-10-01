@@ -1,6 +1,9 @@
 # SPDX-License-Identifier: GPL-2.0
 obj-$(CONFIG_MAC80211) += mac80211.o
 
+# Enable W=1
+ccflags-y := $(KBUILD_CFLAGS_W1)
+
 # mac80211 objects
 mac80211-y := \
 	main.o status.o \

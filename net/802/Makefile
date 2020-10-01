@@ -3,6 +3,9 @@
 # Makefile for the Linux 802.x protocol layers.
 #
 
+# Enable W=1
+ccflags-y := $(KBUILD_CFLAGS_W1)
+
 # Check the p8022 selections against net/core/Makefile.
 obj-$(CONFIG_LLC)	+= p8022.o psnap.o
 obj-$(CONFIG_NET_FC)	+=                 fc.o

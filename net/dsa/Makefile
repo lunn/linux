@@ -1,5 +1,9 @@
 # SPDX-License-Identifier: GPL-2.0
 # the core
+
+# Enable W=1
+ccflags-y := $(KBUILD_CFLAGS_W1)
+
 obj-$(CONFIG_NET_DSA) += dsa_core.o
 dsa_core-y += dsa.o dsa2.o master.o port.o slave.o switch.o
 

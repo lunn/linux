@@ -3,6 +3,9 @@
 #  Makefile for the Linux Controller Area Network core.
 #
 
+# Enable W=1
+ccflags-y := $(KBUILD_CFLAGS_W1)
+
 obj-$(CONFIG_CAN)	+= can.o
 can-y			:= af_can.o
 can-$(CONFIG_PROC_FS)	+= proc.o

@@ -3,6 +3,9 @@
 # Makefile for the L2TP.
 #
 
+# Enable W=1
+ccflags-y := $(KBUILD_CFLAGS_W1)
+
 obj-$(CONFIG_L2TP) += l2tp_core.o
 
 CFLAGS_l2tp_core.o += -I$(src)

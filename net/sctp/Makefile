@@ -3,6 +3,9 @@
 # Makefile for SCTP support code.
 #
 
+# Enable W=1
+ccflags-y := $(KBUILD_CFLAGS_W1)
+
 obj-$(CONFIG_IP_SCTP) += sctp.o
 obj-$(CONFIG_INET_SCTP_DIAG) += sctp_diag.o
 
