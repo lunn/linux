@@ -3,6 +3,9 @@
 # Makefile for the Linux network device drivers.
 #
 
+# Enable W=1
+ccflags-y := $(KBUILD_CFLAGS_W1)
+
 #
 # Networking Core Drivers
 #
