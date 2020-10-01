@@ -1,3 +1,6 @@
+# Enable W=1
+subdir-ccflags-y := $(KBUILD_CFLAGS_W1)
+
 ccflags-y := -O3
 ccflags-y += -D'pr_fmt(fmt)=KBUILD_MODNAME ": " fmt'
 ccflags-$(CONFIG_WIREGUARD_DEBUG) += -DDEBUG
