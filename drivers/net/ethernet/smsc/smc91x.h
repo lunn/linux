@@ -1056,6 +1056,16 @@ static const char * chip_ids[ 16 ] =  {
 		}							\
 	} while (0)
 
+#define SMC_GET_PKT_HDR_STATUS(lp, status)				\
+	do {								\
+		if (SMC_32BIT(lp)) {					\
+			unsigned int __val = SMC_inl(ioaddr, DATA_REG(lp)); \
+			(status) = __val & 0xffff;			\
+		} else {						\
+			(status) = SMC_inw(ioaddr, DATA_REG(lp));	\
+		}							\
+	} while (0)
+
 #define SMC_PUSH_DATA(lp, p, l)					\
 	do {								\
 		if (SMC_32BIT(lp)) {				\
