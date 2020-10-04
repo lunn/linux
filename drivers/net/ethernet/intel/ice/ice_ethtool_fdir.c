@@ -374,7 +374,7 @@ void ice_fdir_replay_flows(struct ice_hw *hw)
 					  &hw_prof);
 			for (j = 0; j < prof->cnt; j++) {
 				enum ice_flow_priority prio;
-				u64 entry_h = 0;
+				long entry_h = 0;
 				int err;
 
 				prio = ICE_FLOW_PRIO_NORMAL;
@@ -531,8 +531,8 @@ ice_fdir_set_hw_fltr_rule(struct ice_pf *pf, struct ice_flow_seg_info *seg,
 	struct ice_fd_hw_prof *hw_prof;
 	struct ice_hw *hw = &pf->hw;
 	enum ice_status status;
-	u64 entry1_h = 0;
-	u64 entry2_h = 0;
+	long entry1_h = 0;
+	long entry2_h = 0;
 	u64 prof_id;
 	int err;
 
