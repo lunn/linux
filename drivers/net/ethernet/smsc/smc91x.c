@@ -703,7 +703,7 @@ static void smc_tx(struct net_device *dev)
 {
 	struct smc_local *lp = netdev_priv(dev);
 	void __iomem *ioaddr = lp->base;
-	unsigned int saved_packet, packet_no, tx_status, pkt_len;
+	unsigned int saved_packet, packet_no, tx_status;
 
 	DBG(3, dev, "%s\n", __func__);
 
@@ -720,7 +720,7 @@ static void smc_tx(struct net_device *dev)
 
 	/* read the first word (status word) from this packet */
 	SMC_SET_PTR(lp, PTR_AUTOINC | PTR_READ);
-	SMC_GET_PKT_HDR(lp, tx_status, pkt_len);
+	SMC_GET_PKT_HDR_STATUS(lp, tx_status);
 	DBG(2, dev, "TX STATUS 0x%04x PNR 0x%02x\n",
 	    tx_status, packet_no);
 
