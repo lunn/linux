@@ -466,9 +466,9 @@ static void smc911x_hardware_send_pkt(struct net_device *dev)
 			TX_CMD_A_INT_FIRST_SEG_ | TX_CMD_A_INT_LAST_SEG_ |
 			skb->len;
 #else
-	buf = (char*)((u32)skb->data & ~0x3);
-	len = (skb->len + 3 + ((u32)skb->data & 3)) & ~0x3;
-	cmdA = (((u32)skb->data & 0x3) << 16) |
+	buf = (char*)((long)skb->data & ~0x3);
+	len = (skb->len + 3 + ((long)skb->data & 3)) & ~0x3;
+	cmdA = (((long)skb->data & 0x3) << 16) |
 			TX_CMD_A_INT_FIRST_SEG_ | TX_CMD_A_INT_LAST_SEG_ |
 			skb->len;
 #endif
