@@ -429,7 +429,10 @@ static int is_out(const struct crush_map *map,
 /**
  * crush_choose_firstn - choose numrep distinct items of given type
  * @map: the crush_map
+ * @work: working area for a CRUSH placement computation
  * @bucket: the bucket we are choose an item from
+ * @weight: weight vector (for map leaves)
+ * @weight_max: size of weight vector
  * @x: crush input value
  * @numrep: the number of items to choose
  * @type: the type of item to choose
@@ -445,6 +448,7 @@ static int is_out(const struct crush_map *map,
  * @vary_r: pass r to recursive calls
  * @out2: second output vector for leaf items (if @recurse_to_leaf)
  * @parent_r: r value passed from the parent
+ * @choose_args: weights and ids for each known bucket
  */
 static int crush_choose_firstn(const struct crush_map *map,
 			       struct crush_work *work,
@@ -638,7 +642,22 @@ reject:
 
 /**
  * crush_choose_indep: alternative breadth-first positionally stable mapping
- *
+ * @map: the crush_map
+ * @work: working area for a CRUSH placement computation
+ * @bucket: the bucket we are choose an item from
+ * @weight: weight vector (for map leaves)
+ * @weight_max: size of weight vector
+ * @x: crush input value
+ * @numrep: the number of items to choose
+ * @type: the type of item to choose
+ * @out: pointer to output vector
+ * @outpos: our position in that vector
+ * @tries: number of attempts to make
+ * @recurse_tries: number of attempts to have recursive chooseleaf make
+ * @recurse_to_leaf: true if we want one device under each item of given type (chooseleaf instead of choose)
+ * @out2: second output vector for leaf items (if @recurse_to_leaf)
+ * @parent_r: r value passed from the parent
+ * @choose_args: weights and ids for each known bucket
  */
 static void crush_choose_indep(const struct crush_map *map,
 			       struct crush_work *work,
