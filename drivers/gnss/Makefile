@@ -3,6 +3,9 @@
 # Makefile for the GNSS subsystem.
 #
 
+# Enable W=1
+subdir-ccflags-y := $(KBUILD_CFLAGS_W1)
+
 obj-$(CONFIG_GNSS)			+= gnss.o
 gnss-y := core.o
 
