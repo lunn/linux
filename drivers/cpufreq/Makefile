@@ -1,5 +1,9 @@
 # SPDX-License-Identifier: GPL-2.0
 # CPUfreq core
+
+# Enable W=1
+subdir-ccflags-y := $(KBUILD_CFLAGS_W1)
+
 obj-$(CONFIG_CPU_FREQ)			+= cpufreq.o freq_table.o
 
 # CPUfreq stats
