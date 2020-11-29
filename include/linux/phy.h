@@ -817,13 +817,6 @@ struct phy_driver {
 	int (*write_page)(struct phy_device *dev, int page);
 
 	/**
-	 * @module_info: Get the size and type of the eeprom contained
-	 * within a plug-in module
-	 */
-	int (*module_info)(struct phy_device *dev,
-			   struct ethtool_modinfo *modinfo);
-
-	/**
 	 * @module_eeprom: Get the eeprom information from the plug-in
 	 * module
 	 */

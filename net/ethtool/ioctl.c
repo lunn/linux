@@ -2185,9 +2185,6 @@ static int __ethtool_get_module_info(struct net_device *dev,
 	if (dev->sfp_bus)
 		return sfp_get_module_info(dev->sfp_bus, modinfo);
 
-	if (phydev && phydev->drv && phydev->drv->module_info)
-		return phydev->drv->module_info(phydev, modinfo);
-
 	if (ops->get_module_info)
 		return ops->get_module_info(dev, modinfo);
 
