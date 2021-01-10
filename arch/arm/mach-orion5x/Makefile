@@ -9,7 +9,6 @@ obj-$(CONFIG_MACH_TS209)	+= ts209-setup.o tsx09-common.o
 obj-$(CONFIG_MACH_TS409)	+= ts409-setup.o tsx09-common.o
 obj-$(CONFIG_MACH_MV2120)	+= mv2120-setup.o
 obj-$(CONFIG_MACH_NET2BIG)	+= net2big-setup.o
-obj-$(CONFIG_MACH_WNR854T)	+= wnr854t-setup.o
 
 obj-$(CONFIG_ARCH_ORION5X_DT)		+= board-dt.o
 obj-$(CONFIG_MACH_D2NET_DT)	+= board-d2net.o
