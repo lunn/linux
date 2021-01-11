@@ -881,7 +881,8 @@ dtb-$(CONFIG_ARCH_ORION5X) += \
 	orion5x-lswsgl.dtb \
 	orion5x-maxtor-shared-storage-2.dtb \
 	orion5x-netgear-wnr854t.dtb \
-	orion5x-rd88f5182-nas.dtb
+	orion5x-rd88f5182-nas.dtb \
+	orion5x-terastation-pro2.dtb
 dtb-$(CONFIG_ARCH_ACTIONS) += \
 	owl-s500-cubieboard6.dtb \
 	owl-s500-guitar-bb-rev-b.dtb \

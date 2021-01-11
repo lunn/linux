@@ -18,6 +18,7 @@ board. Currently known boards are:
 "buffalo,lsgl"
 "buffalo,lswsgl"
 "buffalo,lswtgl"
+"buffalo,pro2"
 "lacie,ethernet-disk-mini-v2"
 "lacie,d2-network"
 "marvell,rd-88f5182-nas"

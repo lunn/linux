@@ -48,7 +48,8 @@ config MACH_TS209
 	  QNAP TS-109/TS-209 platform.
 
 config MACH_TERASTATION_PRO2
-	bool "Buffalo Terastation Pro II/Live"
+	bool "Buffalo Terastation Pro II/Live (Flattened Device Tree)"
+	select ARCH_ORION5X_DT
 	help
 	  Say 'Y' here if you want your kernel to support the
 	  Buffalo Terastation Pro II/Live platform.

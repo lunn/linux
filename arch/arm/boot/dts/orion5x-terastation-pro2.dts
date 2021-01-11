@@ -1,0 +1,100 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Device Tree file for Buffalo Terastation Pro II/Live
+ *
+ * Copyright (C) 2021 Andrew Lunn <andrew@lunn.ch>
+ */
+/dts-v1/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+#include "orion5x-mv88f5182.dtsi"
+
+/ {
+	model = "Buffalo Terastation Pro II";
+	compatible = "buffalo,pro2", "marvell,orion5x-88f5182", "marvell,orion5x";
+
+	memory { /* 128 MB */
+		device_type = "memory";
+		reg = <0x00000000 0x8000000>;
+	};
+
+	soc {
+		ranges = <MBUS_ID(0xf0, 0x01) 0 0xf1000000 0x100000>,
+				 <MBUS_ID(0x09, 0x00) 0 0xf2200000 0x800>,
+				 <MBUS_ID(0x01, 0x0f) 0 0xf4000000 0x40000>;
+	};
+
+};
+
+&devbus_bootcs {
+	status = "okay";
+	devbus,keep-config;
+
+	flash@0 {
+		compatible = "jedec-flash";
+		reg = <0 0x40000>;
+		bank-width = <1>;
+	};
+};
+
+&ehci0 {
+	status = "okay";
+};
+
+&eth {
+	status = "okay";
+
+	ethernet-port@0 {
+		phy-handle = <&ethphy>;
+	};
+
+};
+
+&i2c {
+	status = "okay";
+
+	rtc@32 {
+		compatible = "ricoh,rs5c372a";
+		reg = <0x32>;
+		interrupt-parent = <&gpio0>;
+		pinctrl-0 = <&pmx_rtc>;
+		pinctrl-names = "default";
+		interrupts = <9 IRQ_TYPE_LEVEL_HIGH>;
+	};
+};
+
+&mdio {
+	status = "okay";
+
+	ethphy: ethernet-phy {
+		reg = <0>;
+	};
+};
+
+&uart0 {
+	status = "okay";
+};
+
+&uart1 {
+	status = "okay";
+};
+
+&wdt {
+	status = "disabled";
+};
+
+&pinctrl {
+	pinctrl-0 = <&pmx_pci_gpios>;
+	pinctrl-names = "default";
+
+	pmx_pci_gpios: pmx-pci-gpios {
+		marvell,pins = "mpp0, mpp11";
+		marvell,function = "gpio";
+	};
+
+	pmx_rtc: pmx-rtc {
+		marvell,pins = "mpp9";
+		marvell,function = "gpio";
+	};
+};
