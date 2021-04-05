@@ -2208,13 +2208,9 @@ static int __ethtool_get_module_info(struct net_device *dev,
 				     struct ethtool_modinfo *modinfo)
 {
 	const struct ethtool_ops *ops = dev->ethtool_ops;
-	struct phy_device *phydev = dev->phydev;
 
 	if (dev->sfp_bus)
 		return sfp_get_module_info(dev->sfp_bus, modinfo);
-
-	if (phydev && phydev->drv && phydev->drv->module_info)
-		return phydev->drv->module_info(phydev, modinfo);
 
 	if (ops->get_module_info)
 		return ops->get_module_info(dev, modinfo);
@@ -2245,13 +2241,9 @@ static int __ethtool_get_module_eeprom(struct net_device *dev,
 				       struct ethtool_eeprom *ee, u8 *data)
 {
 	const struct ethtool_ops *ops = dev->ethtool_ops;
-	struct phy_device *phydev = dev->phydev;
 
 	if (dev->sfp_bus)
 		return sfp_get_module_eeprom(dev->sfp_bus, ee, data);
-
-	if (phydev && phydev->drv && phydev->drv->module_eeprom)
-		return phydev->drv->module_eeprom(phydev, ee, data);
 
 	if (ops->get_module_eeprom)
 		return ops->get_module_eeprom(dev, ee, data);

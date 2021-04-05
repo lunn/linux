@@ -832,20 +832,6 @@ struct phy_driver {
 	/** @write_page: Set the current PHY register page number */
 	int (*write_page)(struct phy_device *dev, int page);
 
-	/**
-	 * @module_info: Get the size and type of the eeprom contained
-	 * within a plug-in module
-	 */
-	int (*module_info)(struct phy_device *dev,
-			   struct ethtool_modinfo *modinfo);
-
-	/**
-	 * @module_eeprom: Get the eeprom information from the plug-in
-	 * module
-	 */
-	int (*module_eeprom)(struct phy_device *dev,
-			     struct ethtool_eeprom *ee, u8 *data);
-
 	/** @cable_test_start: Start a cable test */
 	int (*cable_test_start)(struct phy_device *dev);
 
