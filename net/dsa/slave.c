@@ -1638,8 +1638,10 @@ int dsa_slave_change_mtu(struct net_device *dev, int new_mtu)
 	mtu_limit = min_t(int, master->max_mtu, dev->max_mtu);
 	old_master_mtu = master->mtu;
 	new_master_mtu = largest_mtu + dsa_tag_protocol_overhead(cpu_dp->tag_ops);
-	if (new_master_mtu > mtu_limit)
+	if (new_master_mtu > mtu_limit) {
+		pr_info("%s: %d %d\n", __func__, new_master_mtu, mtu_limit);
 		return -ERANGE;
+	}
 
 	/* If the master MTU isn't over limit, there's no need to check the CPU
 	 * MTU, since that surely isn't either.
@@ -1961,6 +1963,8 @@ int dsa_slave_create(struct dsa_port *port)
 	slave_dev->netdev_ops = &dsa_slave_netdev_ops;
 	if (ds->ops->port_max_mtu)
 		slave_dev->max_mtu = ds->ops->port_max_mtu(ds, port->index);
+	pr_info("%s: slave_dev->max_mtu: %d\n", __func__, slave_dev->max_mtu);
+
 	SET_NETDEV_DEVTYPE(slave_dev, &dsa_type);
 
 	netdev_for_each_tx_queue(slave_dev, dsa_slave_set_lockdep_class_one,

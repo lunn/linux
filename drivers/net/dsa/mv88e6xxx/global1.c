@@ -232,6 +232,8 @@ int mv88e6185_g1_set_max_frame_size(struct mv88e6xxx_chip *chip, int mtu)
 	u16 val;
 	int err;
 
+	dev_info(chip->dev, "%s: mtu %d\n", __func__, mtu);
+
 	mtu += ETH_HLEN + ETH_FCS_LEN;
 
 	err = mv88e6xxx_g1_read(chip, MV88E6XXX_G1_CTL1, &val);
@@ -242,6 +244,8 @@ int mv88e6185_g1_set_max_frame_size(struct mv88e6xxx_chip *chip, int mtu)
 
 	if (mtu > 1518)
 		val |= MV88E6185_G1_CTL1_MAX_FRAME_1632;
+
+	dev_info(chip->dev, "%s: %4x\n", __func__, val);
 
 	return mv88e6xxx_g1_write(chip, MV88E6XXX_G1_CTL1, val);
 }

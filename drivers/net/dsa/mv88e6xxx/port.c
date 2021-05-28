@@ -1277,9 +1277,14 @@ int mv88e6165_port_set_jumbo_size(struct mv88e6xxx_chip *chip, int port,
 	u16 reg;
 	int err;
 
+	dev_info(chip->dev, "%s: port %d, size %d\n", __func__, port, size);
+
 	size += VLAN_ETH_HLEN + ETH_FCS_LEN;
 
+	dev_info(chip->dev, "%s: port %d, size %d\n", __func__, port, size);
+
 	err = mv88e6xxx_port_read(chip, port, MV88E6XXX_PORT_CTL2, &reg);
+	dev_info(chip->dev, "%s: %4x\n", __func__, reg);
 	if (err)
 		return err;
 
@@ -1291,8 +1296,11 @@ int mv88e6165_port_set_jumbo_size(struct mv88e6xxx_chip *chip, int port,
 		reg |= MV88E6XXX_PORT_CTL2_JUMBO_MODE_2048;
 	else if (size <= 10240)
 		reg |= MV88E6XXX_PORT_CTL2_JUMBO_MODE_10240;
-	else
+	else {
+		dev_info(chip->dev, "Invalid size\n");
 		return -ERANGE;
+	}
+	dev_info(chip->dev, "%s: %4x\n", __func__, reg);
 
 	return mv88e6xxx_port_write(chip, port, MV88E6XXX_PORT_CTL2, reg);
 }
