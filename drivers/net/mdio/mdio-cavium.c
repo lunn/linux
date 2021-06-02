@@ -10,6 +10,24 @@
 
 #include "mdio-cavium.h"
 
+static int cavium_mdiobus_wait_wr(struct cavium_mdiobus *p)
+{
+	union cvmx_smix_wr_dat smi_wr;
+	int timeout = 1000;
+
+	do {
+		/* Wait 1000 clocks so we don't saturate the RSL bus
+		 * doing reads.
+		 */
+		__delay(1000);
+		smi_wr.u64 = oct_mdio_readq(p->register_base + SMI_WR_DAT);
+	} while (smi_wr.s.pending && --timeout);
+
+	if (timeout <= 0)
+		return -EIO;
+	return 0;
+}
+
 static void cavium_mdiobus_set_mode(struct cavium_mdiobus *p,
 				    enum cavium_mdiobus_mode m)
 {
@@ -30,7 +48,6 @@ static int cavium_mdiobus_c45_addr(struct cavium_mdiobus *p,
 {
 	union cvmx_smix_cmd smi_cmd;
 	union cvmx_smix_wr_dat smi_wr;
-	int timeout = 1000;
 
 	cavium_mdiobus_set_mode(p, C45);
 
@@ -46,17 +63,7 @@ static int cavium_mdiobus_c45_addr(struct cavium_mdiobus *p,
 	smi_cmd.s.reg_adr = regnum;
 	oct_mdio_writeq(smi_cmd.u64, p->register_base + SMI_CMD);
 
-	do {
-		/* Wait 1000 clocks so we don't saturate the RSL bus
-		 * doing reads.
-		 */
-		__delay(1000);
-		smi_wr.u64 = oct_mdio_readq(p->register_base + SMI_WR_DAT);
-	} while (smi_wr.s.pending && --timeout);
-
-	if (timeout <= 0)
-		return -EIO;
-	return 0;
+	return cavium_mdiobus_wait_wr(p);
 }
 
 int cavium_mdiobus_read(struct mii_bus *bus, int phy_id, int regnum)
@@ -106,7 +113,6 @@ int cavium_mdiobus_write(struct mii_bus *bus, int phy_id, int regnum, u16 val)
 	union cvmx_smix_cmd smi_cmd;
 	union cvmx_smix_wr_dat smi_wr;
 	unsigned int op = 0; /* MDIO_CLAUSE_22_WRITE */
-	int timeout = 1000;
 
 	if (regnum & MII_ADDR_C45) {
 		int r = cavium_mdiobus_c45_addr(p, phy_id, regnum);
@@ -130,18 +136,7 @@ int cavium_mdiobus_write(struct mii_bus *bus, int phy_id, int regnum, u16 val)
 	smi_cmd.s.reg_adr = regnum;
 	oct_mdio_writeq(smi_cmd.u64, p->register_base + SMI_CMD);
 
-	do {
-		/* Wait 1000 clocks so we don't saturate the RSL bus
-		 * doing reads.
-		 */
-		__delay(1000);
-		smi_wr.u64 = oct_mdio_readq(p->register_base + SMI_WR_DAT);
-	} while (smi_wr.s.pending && --timeout);
-
-	if (timeout <= 0)
-		return -EIO;
-
-	return 0;
+	return cavium_mdiobus_wait_wr(p);
 }
 EXPORT_SYMBOL(cavium_mdiobus_write);
 
