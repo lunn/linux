@@ -63,7 +63,7 @@ int cavium_mdiobus_read(struct mii_bus *bus, int phy_id, int regnum)
 	union cvmx_smix_cmd smi_cmd;
 	union cvmx_smix_rd_dat smi_rd;
 	unsigned int op = 1; /* MDIO_CLAUSE_22_READ */
-	int timeout = 1000;
+	int ret;
 
 	if (regnum & MII_ADDR_C45) {
 		int r = cavium_mdiobus_c45_addr(p, phy_id, regnum);
@@ -83,13 +83,11 @@ int cavium_mdiobus_read(struct mii_bus *bus, int phy_id, int regnum)
 	smi_cmd.s.reg_adr = regnum;
 	oct_mdio_writeq(smi_cmd.u64, p->register_base + SMI_CMD);
 
-	do {
-		/* Wait 1000 clocks so we don't saturate the RSL bus
-		 * doing reads.
-		 */
-		__delay(1000);
-		smi_rd.u64 = oct_mdio_readq(p->register_base + SMI_RD_DAT);
-	} while (smi_rd.s.pending && --timeout);
+	ret = read_poll_timeout_atomic(oct_mdio_readq, smi_rd.u64,
+				       !smi_rd.s.pending, 1000, 1000000, true,
+				       p->register_base + SMI_RD_DAT);
+	if (ret)
+		return ret;
 
 	if (smi_rd.s.val)
 		return smi_rd.s.dat;
