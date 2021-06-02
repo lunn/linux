@@ -13,19 +13,10 @@
 static int cavium_mdiobus_wait_wr(struct cavium_mdiobus *p)
 {
 	union cvmx_smix_wr_dat smi_wr;
-	int timeout = 1000;
 
-	do {
-		/* Wait 1000 clocks so we don't saturate the RSL bus
-		 * doing reads.
-		 */
-		__delay(1000);
-		smi_wr.u64 = oct_mdio_readq(p->register_base + SMI_WR_DAT);
-	} while (smi_wr.s.pending && --timeout);
-
-	if (timeout <= 0)
-		return -EIO;
-	return 0;
+	return read_poll_timeout_atomic(oct_mdio_readq, smi_wr.u64,
+					!smi_wr.s.pending, 1000, 1000000, true,
+					p->register_base + SMI_WR_DAT);
 }
 
 static void cavium_mdiobus_set_mode(struct cavium_mdiobus *p,
