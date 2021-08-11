@@ -700,6 +700,18 @@ out:
 }
 EXPORT_SYMBOL(phy_start_cable_test_tdr);
 
+int phy_read_status(struct phy_device *phydev)
+{
+	if (!phydev->drv)
+		return -EIO;
+
+	if (phydev->drv->read_status)
+		return phydev->drv->read_status(phydev);
+	else
+		return genphy_read_status(phydev);
+}
+EXPORT_SYMBOL(phy_read_status);
+
 int phy_config_aneg(struct phy_device *phydev)
 {
 	if (phydev->drv->config_aneg)
