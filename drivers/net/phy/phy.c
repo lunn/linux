@@ -713,7 +713,13 @@ static int _phy_read_status(struct phy_device *phydev)
 
 int phy_read_status(struct phy_device *phydev)
 {
-	return _phy_read_status(phydev);
+	int err;
+
+	mutex_lock(&phydev->lock);
+	err = _phy_read_status(phydev);
+	mutex_unlock(&phydev->lock);
+
+	return err;
 }
 EXPORT_SYMBOL(phy_read_status);
 

@@ -1162,10 +1162,8 @@ static int lan78xx_link_reset(struct lan78xx_net *dev)
 	if (unlikely(ret < 0))
 		return -EIO;
 
-	mutex_lock(&phydev->lock);
 	phy_read_status(phydev);
 	link = phydev->link;
-	mutex_unlock(&phydev->lock);
 
 	if (!link && dev->link_on) {
 		dev->link_on = false;
