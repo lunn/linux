@@ -700,7 +700,7 @@ out:
 }
 EXPORT_SYMBOL(phy_start_cable_test_tdr);
 
-int phy_read_status(struct phy_device *phydev)
+static int _phy_read_status(struct phy_device *phydev)
 {
 	if (!phydev->drv)
 		return -EIO;
@@ -709,6 +709,11 @@ int phy_read_status(struct phy_device *phydev)
 		return phydev->drv->read_status(phydev);
 	else
 		return genphy_read_status(phydev);
+}
+
+int phy_read_status(struct phy_device *phydev)
+{
+	return _phy_read_status(phydev);
 }
 EXPORT_SYMBOL(phy_read_status);
 
@@ -746,7 +751,7 @@ static int phy_check_link_status(struct phy_device *phydev)
 	if (phydev->loopback_enabled)
 		return 0;
 
-	err = phy_read_status(phydev);
+	err = _phy_read_status(phydev);
 	if (err)
 		return err;
 
@@ -1239,7 +1244,7 @@ int phy_init_eee(struct phy_device *phydev, bool clk_stop_enable)
 		u32 cap;
 
 		/* Read phy status to properly get the right settings */
-		status = phy_read_status(phydev);
+		status = _phy_read_status(phydev);
 		if (status)
 			return status;
 
