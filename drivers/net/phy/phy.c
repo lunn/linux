@@ -702,6 +702,8 @@ EXPORT_SYMBOL(phy_start_cable_test_tdr);
 
 static int _phy_read_status(struct phy_device *phydev)
 {
+	lockdep_assert_held(&phydev->lock);
+
 	if (!phydev->drv)
 		return -EIO;
 
