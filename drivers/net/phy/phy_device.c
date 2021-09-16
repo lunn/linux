@@ -1004,6 +1004,8 @@ static void phy_link_change(struct phy_device *phydev, bool up)
 {
 	struct net_device *netdev = phydev->attached_dev;
 
+	lockdep_assert_held(&phydev->lock);
+
 	if (up)
 		netif_carrier_on(netdev);
 	else
