@@ -130,6 +130,27 @@ static int phy_config_interrupt(struct phy_device *phydev, bool interrupts)
 }
 
 /**
+ * _phy_restart_aneg - restart auto-negotiation
+ * @phydev: target phy_device struct
+ *
+ * Restart the autonegotiation on @phydev.  Returns >= 0 on success or
+ * negative errno on error.
+ */
+static int _phy_restart_aneg(struct phy_device *phydev)
+{
+	int ret;
+
+	lockdep_assert_held(&phydev->lock);
+
+	if (phydev->is_c45 && !(phydev->c45_ids.devices_in_package & BIT(0)))
+		ret = genphy_c45_restart_aneg(phydev);
+	else
+		ret = genphy_restart_aneg(phydev);
+
+	return ret;
+}
+
+/**
  * phy_restart_aneg - restart auto-negotiation
  * @phydev: target phy_device struct
  *
@@ -140,10 +161,9 @@ int phy_restart_aneg(struct phy_device *phydev)
 {
 	int ret;
 
-	if (phydev->is_c45 && !(phydev->c45_ids.devices_in_package & BIT(0)))
-		ret = genphy_c45_restart_aneg(phydev);
-	else
-		ret = genphy_restart_aneg(phydev);
+	mutex_lock(&phydev->lock);
+	ret = _phy_restart_aneg(phydev);
+	mutex_unlock(&phydev->lock);
 
 	return ret;
 }
@@ -1440,7 +1460,7 @@ static int _phy_ethtool_set_eee(struct phy_device *phydev,
 		 * link partner.
 		 */
 		if (phydev->autoneg == AUTONEG_ENABLE) {
-			ret = phy_restart_aneg(phydev);
+			ret = _phy_restart_aneg(phydev);
 			if (ret < 0)
 				return ret;
 		}
