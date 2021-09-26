@@ -1294,7 +1294,7 @@ static void b53_adjust_link(struct dsa_switch *ds, int port,
 	}
 
 	/* Re-negotiate EEE if it was enabled already */
-	p->eee_enabled = b53_eee_init(ds, port, phydev);
+	p->eee_enabled = b53_adjust_init(ds, port, phydev);
 }
 
 void b53_port_event(struct dsa_switch *ds, int port)

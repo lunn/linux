@@ -1270,7 +1270,7 @@ static void mmd_eee_adv_to_linkmode(unsigned long *advertising, u16 eee_adv)
 }
 
 /**
- * phy_init_eee - init and check the EEE feature
+ * phy_adjust_eee - init and check the EEE feature
  * @phydev: target phy_device struct
  * @clk_stop_enable: PHY may stop the clock during LPI
  *
@@ -1278,11 +1278,17 @@ static void mmd_eee_adv_to_linkmode(unsigned long *advertising, u16 eee_adv)
  * is supported by looking at the MMD registers 3.20 and 7.60/61
  * and it programs the MMD register 3.0 setting the "Clock stop enable"
  * bit if required.
+ *
+ * This function should be used from the phylib adjust list callback
+ * and the phylink mac_link_up() callback, where the PHY is already
+ * locked.
  */
-int phy_init_eee(struct phy_device *phydev, bool clk_stop_enable)
+int phy_adjust_eee(struct phy_device *phydev, bool clk_stop_enable)
 {
 	if (!phydev->drv)
 		return -EIO;
+
+	lockdep_assert_held(&phydev->lock);
 
 	/* According to 802.3az,the EEE is supported only in full duplex-mode.
 	 */
@@ -1337,6 +1343,32 @@ int phy_init_eee(struct phy_device *phydev, bool clk_stop_enable)
 	}
 eee_exit_err:
 	return -EPROTONOSUPPORT;
+}
+EXPORT_SYMBOL(phy_adjust_eee);
+
+/**
+ * phy_init_eee - init and check the EEE feature
+ * @phydev: target phy_device struct
+ * @clk_stop_enable: PHY may stop the clock during LPI
+ *
+ * Description: it checks if the Energy-Efficient Ethernet (EEE)
+ * is supported by looking at the MMD registers 3.20 and 7.60/61
+ * and it programs the MMD register 3.0 setting the "Clock stop enable"
+ * bit if required.
+ *
+ * This function should be used from outside of the phylib adjust list
+ * callback and outside of the phylink mac_link_up() callback. It is
+ * assumed the PHY is not locked.
+ */
+int phy_init_eee(struct phy_device *phydev, bool clk_stop_enable)
+{
+	int ret;
+
+	mutex_lock(&phydev->lock);
+	ret = phy_adjust_eee(phydev, clk_stop_enable);
+	mutex_unlock(&phydev->lock);
+
+	return ret;
 }
 EXPORT_SYMBOL(phy_init_eee);
 
