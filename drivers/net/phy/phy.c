@@ -1337,16 +1337,19 @@ int phy_get_eee_err(struct phy_device *phydev)
 EXPORT_SYMBOL(phy_get_eee_err);
 
 /**
- * phy_ethtool_get_eee - get EEE supported and status
+ * _phy_ethtool_get_eee - get EEE supported and status
  * @phydev: target phy_device struct
  * @data: ethtool_eee data
  *
  * Description: it reportes the Supported/Advertisement/LP Advertisement
  * capabilities.
  */
-int phy_ethtool_get_eee(struct phy_device *phydev, struct ethtool_eee *data)
+static int _phy_ethtool_get_eee(struct phy_device *phydev,
+				struct ethtool_eee *data)
 {
 	int val;
+
+	lockdep_assert_held(&phydev->lock);
 
 	if (!phydev->drv)
 		return -EIO;
@@ -1374,18 +1377,40 @@ int phy_ethtool_get_eee(struct phy_device *phydev, struct ethtool_eee *data)
 
 	return 0;
 }
+
+/**
+ * phy_ethtool_get_eee - get EEE supported and status
+ * @phydev: target phy_device struct
+ * @data: ethtool_eee data
+ *
+ * Description: it reportes the Supported/Advertisement/LP Advertisement
+ * capabilities.
+ */
+int phy_ethtool_get_eee(struct phy_device *phydev, struct ethtool_eee *data)
+{
+	int ret;
+
+	mutex_lock(&phydev->lock);
+	ret = _phy_ethtool_get_eee(phydev, data);
+	mutex_unlock(&phydev->lock);
+
+	return ret;
+}
 EXPORT_SYMBOL(phy_ethtool_get_eee);
 
 /**
- * phy_ethtool_set_eee - set EEE supported and status
+ * _phy_ethtool_set_eee - set EEE supported and status
  * @phydev: target phy_device struct
  * @data: ethtool_eee data
  *
  * Description: it is to program the Advertisement EEE register.
  */
-int phy_ethtool_set_eee(struct phy_device *phydev, struct ethtool_eee *data)
+static int _phy_ethtool_set_eee(struct phy_device *phydev,
+				struct ethtool_eee *data)
 {
 	int cap, old_adv, adv = 0, ret;
+
+	lockdep_assert_held(&phydev->lock);
 
 	if (!phydev->drv)
 		return -EIO;
@@ -1422,6 +1447,24 @@ int phy_ethtool_set_eee(struct phy_device *phydev, struct ethtool_eee *data)
 	}
 
 	return 0;
+}
+
+/**
+ * phy_ethtool_set_eee - set EEE supported and status
+ * @phydev: target phy_device struct
+ * @data: ethtool_eee data
+ *
+ * Description: it is to program the Advertisement EEE register.
+ */
+int phy_ethtool_set_eee(struct phy_device *phydev, struct ethtool_eee *data)
+{
+	int ret;
+
+	mutex_lock(&phydev->lock);
+	ret = _phy_ethtool_set_eee(phydev, data);
+	mutex_unlock(&phydev->lock);
+
+	return ret;
 }
 EXPORT_SYMBOL(phy_ethtool_set_eee);
 
