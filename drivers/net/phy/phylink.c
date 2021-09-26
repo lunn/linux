@@ -624,11 +624,15 @@ static void phylink_link_up(struct phylink *pl,
 					 pl->cur_interface,
 					 link_state.speed, link_state.duplex);
 
+	if (pl->phydev)
+		mutex_lock(&pl->phydev->lock);
 	pl->mac_ops->mac_link_up(pl->config, pl->phydev,
 				 pl->cur_link_an_mode, pl->cur_interface,
 				 link_state.speed, link_state.duplex,
 				 !!(link_state.pause & MLO_PAUSE_TX),
 				 !!(link_state.pause & MLO_PAUSE_RX));
+	if (pl->phydev)
+		mutex_unlock(&pl->phydev->lock);
 
 	if (ndev)
 		netif_carrier_on(ndev);
