@@ -659,6 +659,8 @@ static void phylink_resolve(struct work_struct *w)
 	bool mac_config = false;
 	bool cur_link_state;
 
+	if (pl->phydev)
+		mutex_lock(&pl->phydev->lock);
 	mutex_lock(&pl->state_mutex);
 	if (pl->netdev)
 		cur_link_state = netif_carrier_ok(ndev);
@@ -741,6 +743,8 @@ static void phylink_resolve(struct work_struct *w)
 		queue_work(system_power_efficient_wq, &pl->resolve);
 	}
 	mutex_unlock(&pl->state_mutex);
+	if (pl->phydev)
+		mutex_unlock(&pl->phydev->lock);
 }
 
 static void phylink_run_resolve(struct phylink *pl)
