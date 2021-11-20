@@ -383,6 +383,14 @@ err:
 
 static const struct dmi_system_id zii_rap_device_table[] __initconst = {
 	{
+		.ident = "TQMX86",
+		.matches = {
+			DMI_MATCH(DMI_SYS_VENDOR, "TQ-Group"),
+			DMI_MATCH(DMI_PRODUCT_NAME, "TQMx"),
+		},
+		.callback = zii_rap_create_platform_device,
+	},
+	{
 		.ident = "RaveAP0101",
 		.matches = {
 			DMI_MATCH(DMI_SYS_VENDOR, "Safran"),
