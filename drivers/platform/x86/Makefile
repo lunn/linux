@@ -136,3 +136,8 @@ obj-$(CONFIG_SIEMENS_SIMATIC_IPC)	+= simatic-ipc.o
 
 # Winmate
 obj-$(CONFIG_WINMATE_FM07_KEYS)		+= winmate-fm07-keys.o
+obj-$(CONFIG_INTEL_TELEMETRY)		+= intel_telemetry_core.o \
+					   intel_telemetry_pltdrv.o \
+					   intel_telemetry_debugfs.o
+obj-$(CONFIG_ZII_RAP) 			+= zii-rap.o
+obj-$(CONFIG_PMC_ATOM)			+= pmc_atom.o
