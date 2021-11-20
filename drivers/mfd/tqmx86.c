@@ -253,6 +253,16 @@ static const struct dmi_system_id tqmx86_dmi_table[] __initconst = {
 		},
 		.callback = tqmx86_create_platform_device,
 	},
+	{
+		.ident = "RaveAP0101",
+		.matches = {
+			DMI_MATCH(DMI_SYS_VENDOR, "Safran"),
+			DMI_MATCH(DMI_PRODUCT_NAME, "RaveAP"),
+			DMI_MATCH(DMI_PRODUCT_VERSION, "01"),
+			DMI_MATCH(DMI_CHASSIS_VERSION, "01"),
+		},
+		.callback = tqmx86_create_platform_device,
+	},
 	{}
 };
 MODULE_DEVICE_TABLE(dmi, tqmx86_dmi_table);
