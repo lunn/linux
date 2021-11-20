@@ -84,6 +84,7 @@ enum ds_type {
 #define DS1337_REG_CONTROL	0x0e
 #	define DS1337_BIT_nEOSC		0x80
 #	define DS1339_BIT_BBSQI		0x20
+#	define DS1341_BIT_EGFIL		0x20
 #	define DS3231_BIT_BBSQW		0x40 /* same as BBSQI */
 #	define DS1337_BIT_RS2		0x10
 #	define DS1337_BIT_RS1		0x08
@@ -99,7 +100,9 @@ enum ds_type {
 #	define DS1340_BIT_OSF		0x80
 #define DS1337_REG_STATUS	0x0f
 #	define DS1337_BIT_OSF		0x80
+#	define DS1341_BIT_DOSF		0x40
 #	define DS3231_BIT_EN32KHZ	0x08
+#	define DS1341_BIT_ECLK		0x04
 #	define DS1337_BIT_A2I		0x02
 #	define DS1337_BIT_A1I		0x01
 #define DS1339_REG_ALARM1_SECS	0x07
@@ -1780,9 +1783,15 @@ static int ds1307_probe(struct i2c_client *client,
 		ds1307_can_wakeup_device = true;
 
 	switch (ds1307->type) {
+	case ds_1341:
+		regmap_update_bits(ds1307->regmap, DS1337_REG_CONTROL,
+				   DS1341_BIT_EGFIL, 0);
+		regmap_update_bits(ds1307->regmap, DS1337_REG_STATUS,
+				   DS1341_BIT_DOSF | DS1341_BIT_ECLK,
+				   DS1341_BIT_DOSF);
+		fallthrough;
 	case ds_1337:
 	case ds_1339:
-	case ds_1341:
 	case ds_3231:
 		/* get registers that the "rtc" read below won't read... */
 		err = regmap_bulk_read(ds1307->regmap, DS1337_REG_CONTROL,
