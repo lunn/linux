@@ -2,6 +2,7 @@
 # the core
 obj-$(CONFIG_NET_DSA) += dsa_core.o
 dsa_core-y += dsa.o dsa2.o master.o port.o slave.o switch.o tag_8021q.o
+dsa_core-$(CONFIG_NET_DSA_DEBUGFS) += debugfs.o
 
 # tagging formats
 obj-$(CONFIG_NET_DSA_TAG_AR9331) += tag_ar9331.o
