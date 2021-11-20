@@ -99,7 +99,8 @@ int dsa_port_set_state(struct dsa_port *dp, u8 state, bool do_fast_age)
 		     dp->stp_state == BR_STATE_FORWARDING) &&
 		    (state == BR_STATE_DISABLED ||
 		     state == BR_STATE_BLOCKING ||
-		     state == BR_STATE_LISTENING))
+		     state == BR_STATE_LISTENING ||
+		     state == BR_STATE_FORWARDING))
 			dsa_port_fast_age(dp);
 	}
 
