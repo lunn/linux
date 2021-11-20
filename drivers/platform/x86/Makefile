@@ -134,3 +134,4 @@ obj-$(CONFIG_SIEMENS_SIMATIC_IPC)	+= simatic-ipc.o
 
 # Winmate
 obj-$(CONFIG_WINMATE_FM07_KEYS)		+= winmate-fm07-keys.o
+obj-$(CONFIG_ZII_RAP) 			+= zii-rap.o
