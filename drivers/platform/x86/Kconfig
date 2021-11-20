@@ -1046,6 +1046,41 @@ config INTEL_SCU_IPC_UTIL
 	  low level access for debug work and updating the firmware. Say
 	  N unless you will be doing this on an Intel MID platform.
 
+config ZII_RAP
+	tristate "Zodiac RAVE Access Point"
+	select DS1682
+	select EEPROM_AT24
+	select GENERIC_PINCONF
+	select GPIOLIB
+	select GPIO_TQMX86
+	select I2C_OCORES
+	select IGB
+	select KEYBOARD_GPIO_POLLED
+	select MARVELL_PHY
+	select MDIO_BITBANG
+	select MDIO_GPIO
+	select MFD_TQMX86
+	select MMC
+	select MMC_SDHCI
+	select MMC_SDHCI_PCI
+	select NET_DSA
+	select NET_DSA_MV88E6XXX
+	select PHYLIB
+	select PINCTRL
+	select PINCTRL_SX150X
+	select RTC_CLASS
+	select RTC_DRV_DS1307
+	select TQMX86_WDT
+	select USB_SERIAL
+	select USB_SERIAL_CONSOLE
+	select USB_SERIAL_FTDI_SIO
+	help
+	  This option adds platform drivers for the zodiac RAVE Access
+	  Point.
+
+	  To compile this driver as a module, choose M here: the module
+	  will be called zii_rap.
+
 endif # X86_PLATFORM_DEVICES
 
 config PMC_ATOM
