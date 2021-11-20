@@ -164,92 +164,22 @@ static void zii_rap_keys(struct device *dev)
 				      sizeof(zii_rap_key));
 }
 
-static int zii_rap_pinstrap_get(struct gpio_descs* pdesc)
+static struct gpiod_lookup_table zii_rap_decoder_gpiod_table = {
+	.dev_id = "gpio-decoder.1",
+	.table = {
+		GPIO_LOOKUP_IDX("sx1502q", 0, NULL, 0, GPIO_ACTIVE_LOW),
+		GPIO_LOOKUP_IDX("sx1502q", 1, NULL, 1, GPIO_ACTIVE_LOW),
+		GPIO_LOOKUP_IDX("sx1502q", 2, NULL, 2, GPIO_ACTIVE_LOW),
+		GPIO_LOOKUP_IDX("sx1502q", 3, NULL, 3, GPIO_ACTIVE_LOW),
+		{ },
+	}
+};
+
+static void zii_rap_decoder(struct device *dev)
 {
-	unsigned int state = 0;
-	int i, val;
-	if (!pdesc)
-	{
-		return -1;
-	}
+	gpiod_add_lookup_table(&zii_rap_decoder_gpiod_table);
 
-	for (i = pdesc->ndescs - 1; i >= 0; --i) {
-		val = gpiod_get_value_cansleep(pdesc->desc[i]);
-		if (val < 0) {
-			return val;
-		}
-		val = !!val;
-		state = (state << 1) | val;
-	}
-	return state;
-}
-
-static void zii_rap_pinstrap_poll_gpios(struct input_dev *input)
-{
-	struct gpio_descs* pdesc = input_get_drvdata(input);
-	input_report_abs(input, 0, zii_rap_pinstrap_get(pdesc));
-	input_sync(input);
-}
-
-static ssize_t zii_rap_pinstrap_show(struct device *dev,
-				     struct device_attribute *attr,
-				     char *buf)
-{
-	int len, val;
-	struct gpio_descs* pdesc = dev_get_drvdata(dev);
-	val = zii_rap_pinstrap_get(pdesc);
-
-	len = sprintf(buf, "%d\n", val);
-	if (len <= 0)
-		dev_err(dev, "zii_rap_pinstrap: Invalid read len: %d\n", len);
-
-	return len;
-}
-
-static DEVICE_ATTR(pinstrap, S_IRUGO, zii_rap_pinstrap_show, 0);
-
-static int zii_rap_pinstraps(struct platform_device *pdev)
-{
-	struct input_dev *input;
-	struct gpio_descs* pdesc = devm_gpiod_get_array(&pdev->dev, "pinstrap", GPIOD_IN);
-	int err;
-
-	if (IS_ERR(pdesc)) {
-		dev_err(&pdev->dev, "No GPIOs assigned to the pinstrap function!\n");
-		return PTR_ERR(pdesc);
-	}
-	dev_info(&pdev->dev, "Found %d pinstrap GPIOs\n", pdesc->ndescs);
-
-	input = devm_input_allocate_device(&pdev->dev);
-	if (!input)
-		return -ENOMEM;
-	input_set_drvdata(input, pdesc);
-
-	input->name = "Pinstrap input from J3";
-	input->id.bustype = BUS_I2C;
-	input_set_abs_params(input, ABS_X, 0, 15, 0, 0);
-	input->absinfo->value = 13;
-
-	err = input_setup_polling(input, zii_rap_pinstrap_poll_gpios);
-	input_set_poll_interval(input, 10000);
-	if (err) {
-		dev_err(&pdev->dev, "failed to set up polling\n");
-		return err;
-	}
-
-	err = input_register_device(input);
-	if (err) {
-		dev_err(&pdev->dev, "failed to register input device\n");
-		return err;
-	}
-	platform_device_register_data(&pdev->dev, "pinstrap", 1,
-				      0,
-				      0);
-
-	platform_set_drvdata(pdev, pdesc);
-	device_create_file(&pdev->dev, &dev_attr_pinstrap);
-
-	return 0;
+	platform_device_register_data(dev, "gpio-decoder", 1, 0, 0);
 }
 
 static int zii_rap_i2c_adap_name_match(struct device *dev, const void *data)
@@ -326,10 +256,6 @@ static struct gpiod_lookup_table zii_rap_gpiod_table = {
 				GPIO_ACTIVE_LOW),
 		GPIO_LOOKUP_IDX("gpio-tqmx86", 7, "RF-enable", 0,
 				GPIO_ACTIVE_LOW),
-		GPIO_LOOKUP_IDX("sx1502q", 0, "pinstrap", 0, GPIO_ACTIVE_LOW),
-		GPIO_LOOKUP_IDX("sx1502q", 1, "pinstrap", 1, GPIO_ACTIVE_LOW),
-		GPIO_LOOKUP_IDX("sx1502q", 2, "pinstrap", 2, GPIO_ACTIVE_LOW),
-		GPIO_LOOKUP_IDX("sx1502q", 3, "pinstrap", 3, GPIO_ACTIVE_LOW),
 		{ },
 	}
 };
@@ -424,7 +350,7 @@ static int zii_rap_probe(struct platform_device *pdev)
 
 	zii_rap_leds(dev);
 	zii_rap_keys(dev);
-	zii_rap_pinstraps(pdev);
+	zii_rap_decoder(dev);
 
 	return 0;
 }
