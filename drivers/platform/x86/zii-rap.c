@@ -165,7 +165,7 @@ static void zii_rap_keys(struct device *dev)
 }
 
 static struct gpiod_lookup_table zii_rap_decoder_gpiod_table = {
-	.dev_id = "gpio-decoder.1",
+	.dev_id = "Pinstrap input from J3.1",
 	.table = {
 		GPIO_LOOKUP_IDX("sx1502q", 0, NULL, 0, GPIO_ACTIVE_LOW),
 		GPIO_LOOKUP_IDX("sx1502q", 1, NULL, 1, GPIO_ACTIVE_LOW),
@@ -175,11 +175,26 @@ static struct gpiod_lookup_table zii_rap_decoder_gpiod_table = {
 	}
 };
 
-static void zii_rap_decoder(struct device *dev)
+static int zii_rap_decoder(struct device *dev)
 {
+	struct platform_device *pdev;
+
 	gpiod_add_lookup_table(&zii_rap_decoder_gpiod_table);
 
-	platform_device_register_data(dev, "gpio-decoder", 1, 0, 0);
+	pdev = platform_device_alloc("Pinstrap input from J3", 1);
+	if (!pdev)
+		return -ENOMEM;
+
+	/* Using pdev->driver_override allows the input name to be
+	 * more meaningful that "gpio-decoder"
+	 */
+	pdev->driver_override = kstrdup("gpio-decoder", GFP_KERNEL);
+	if (!pdev->driver_override) {
+		kfree(pdev);
+		return -ENOMEM;
+	}
+
+	return platform_device_add(pdev);
 }
 
 static int zii_rap_i2c_adap_name_match(struct device *dev, const void *data)
