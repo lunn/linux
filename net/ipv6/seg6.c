@@ -134,6 +134,27 @@ out:
 	skb->network_header = network_header;
 }
 
+/* If the packet which invoked an ICMP error contains an SRH return
+ * the true destination address from within the SRH, otherwise use the
+ * destination address in the IP header.
+ */
+const struct in6_addr *seg6_get_daddr(struct sk_buff *skb,
+				      struct inet6_skb_parm *opt)
+{
+	/* ipv6_hdr() does not work here, since this IP header is
+	 * nested inside an ICMP error report packet
+	 */
+	const struct ipv6hdr *hdr = (const struct ipv6hdr *)skb->data;
+	struct ipv6_sr_hdr *srh;
+
+	if (opt->flags & IP6SKB_SEG6) {
+		srh = (struct ipv6_sr_hdr *)(skb->data + opt->srhoff);
+		return  &srh->segments[0];
+	}
+
+	return &hdr->daddr;
+}
+
 static struct genl_family seg6_genl_family;
 
 static const struct nla_policy seg6_genl_policy[SEG6_ATTR_MAX + 1] = {
