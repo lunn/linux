@@ -167,10 +167,10 @@ static void zii_rap_keys(struct device *dev)
 static struct gpiod_lookup_table zii_rap_decoder_gpiod_table = {
 	.dev_id = "Pinstrap input from J3.1",
 	.table = {
-		GPIO_LOOKUP_IDX("sx1502q", 0, NULL, 0, GPIO_ACTIVE_LOW),
-		GPIO_LOOKUP_IDX("sx1502q", 1, NULL, 1, GPIO_ACTIVE_LOW),
-		GPIO_LOOKUP_IDX("sx1502q", 2, NULL, 2, GPIO_ACTIVE_LOW),
-		GPIO_LOOKUP_IDX("sx1502q", 3, NULL, 3, GPIO_ACTIVE_LOW),
+		GPIO_LOOKUP_IDX("sx1502q", 0, NULL, 3, GPIO_ACTIVE_LOW),
+		GPIO_LOOKUP_IDX("sx1502q", 1, NULL, 2, GPIO_ACTIVE_LOW),
+		GPIO_LOOKUP_IDX("sx1502q", 2, NULL, 1, GPIO_ACTIVE_LOW),
+		GPIO_LOOKUP_IDX("sx1502q", 3, NULL, 0, GPIO_ACTIVE_LOW),
 		{ },
 	}
 };
