@@ -164,6 +164,7 @@ int mlxbf_gige_mdio_probe(struct platform_device *pdev, struct mlxbf_gige *priv)
 	priv->mdiobus->name = "mlxbf-mdio";
 	priv->mdiobus->read = mlxbf_gige_mdio_read;
 	priv->mdiobus->write = mlxbf_gige_mdio_write;
+	priv->mdiobus->probe_capabilities = MDIOBUS_C22;
 	priv->mdiobus->parent = dev;
 	priv->mdiobus->priv = priv;
 	snprintf(priv->mdiobus->id, MII_BUS_ID_SIZE, "%s",

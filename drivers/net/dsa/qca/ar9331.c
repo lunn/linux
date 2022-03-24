@@ -371,7 +371,7 @@ static int ar9331_sw_mbus_init(struct ar9331_sw_priv *priv)
 
 	mbus->read = ar9331_sw_mbus_read;
 	mbus->write = ar9331_sw_mbus_write;
-	bus->probe_capabilities = MDIOBUS_C22;
+	mbus->probe_capabilities = MDIOBUS_C22;
 	mbus->priv = priv;
 	mbus->parent = dev;
 

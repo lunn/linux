@@ -300,6 +300,7 @@ static int orion_mdio_probe(struct platform_device *pdev)
 	case BUS_TYPE_SMI:
 		bus->read = orion_mdio_smi_read;
 		bus->write = orion_mdio_smi_write;
+		bus->probe_capabilities = MDIOBUS_C22;
 		break;
 	case BUS_TYPE_XSMI:
 		bus->read = orion_mdio_xsmi_read;

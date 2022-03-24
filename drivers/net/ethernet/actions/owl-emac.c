@@ -1351,6 +1351,7 @@ static int owl_emac_mdio_init(struct net_device *netdev)
 	priv->mii->parent = dev;
 	priv->mii->read = owl_emac_mdio_read;
 	priv->mii->write = owl_emac_mdio_write;
+	priv->mii->probe_capabilities = MDIOBUS_C22;
 	priv->mii->phy_mask = ~0; /* Mask out all PHYs from auto probing. */
 	priv->mii->priv = priv;
 

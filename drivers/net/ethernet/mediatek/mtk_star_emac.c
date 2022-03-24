@@ -1389,6 +1389,7 @@ static int mtk_star_mdio_init(struct net_device *ndev)
 	priv->mii->parent = dev;
 	priv->mii->read = mtk_star_mdio_read;
 	priv->mii->write = mtk_star_mdio_write;
+	priv->mii->probe_capabilities = MDIOBUS_C22;
 	priv->mii->priv = priv;
 
 	ret = devm_of_mdiobus_register(dev, priv->mii, mdio_node);

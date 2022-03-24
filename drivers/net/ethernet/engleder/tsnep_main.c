@@ -1081,6 +1081,7 @@ static int tsnep_mdio_init(struct tsnep_adapter *adapter)
 	adapter->mdiobus->parent = &adapter->pdev->dev;
 	adapter->mdiobus->read = tsnep_mdiobus_read;
 	adapter->mdiobus->write = tsnep_mdiobus_write;
+	adapter->mdiobus->probe_capabilities = MDIOBUS_C22;
 	adapter->mdiobus->name = TSNEP "-mdiobus";
 	snprintf(adapter->mdiobus->id, MII_BUS_ID_SIZE, "%s",
 		 adapter->pdev->name);
