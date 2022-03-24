@@ -1157,6 +1157,8 @@ static int smsc95xx_bind(struct usbnet *dev, struct usb_interface *intf)
 	pdata->mdiobus->priv = dev;
 	pdata->mdiobus->read = smsc95xx_mdiobus_read;
 	pdata->mdiobus->write = smsc95xx_mdiobus_write;
+	pdata->mdiobus->probe_capabilities = MDIOBUS_C22;
+
 	pdata->mdiobus->name = "smsc95xx-mdiobus";
 	pdata->mdiobus->parent = &dev->udev->dev;
 

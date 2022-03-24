@@ -648,6 +648,8 @@ static int ax88772_init_mdio(struct usbnet *dev)
 	priv->mdio->priv = dev;
 	priv->mdio->read = &asix_mdio_bus_read;
 	priv->mdio->write = &asix_mdio_bus_write;
+	priv->mdio->probe_capabilities = MDIOBUS_C22;
+
 	priv->mdio->name = "Asix MDIO Bus";
 	/* mii bus name is usb-<usb bus number>-<usb device number> */
 	snprintf(priv->mdio->id, MII_BUS_ID_SIZE, "usb-%03d:%03d",

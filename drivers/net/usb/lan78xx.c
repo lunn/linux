@@ -2078,6 +2078,8 @@ static int lan78xx_mdio_init(struct lan78xx_net *dev)
 	dev->mdiobus->priv = (void *)dev;
 	dev->mdiobus->read = lan78xx_mdiobus_read;
 	dev->mdiobus->write = lan78xx_mdiobus_write;
+	dev->mdiobus->probe_capabilities = MDIOBUS_C22_C45;
+
 	dev->mdiobus->name = "lan78xx-mdiobus";
 	dev->mdiobus->parent = &dev->udev->dev;
 
