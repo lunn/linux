@@ -302,6 +302,7 @@ static int sja1105_mdiobus_base_tx_register(struct sja1105_private *priv,
 		 dev_name(priv->ds->dev));
 	bus->read = sja1105_base_tx_mdio_read;
 	bus->write = sja1105_base_tx_mdio_write;
+	bus->probe_capabilities = MDIOBUS_C22;
 	bus->parent = priv->ds->dev;
 	mdio_priv = bus->priv;
 	mdio_priv->priv = priv;
@@ -356,6 +357,7 @@ static int sja1105_mdiobus_base_t1_register(struct sja1105_private *priv,
 		 dev_name(priv->ds->dev));
 	bus->read = sja1105_base_t1_mdio_read;
 	bus->write = sja1105_base_t1_mdio_write;
+	bus->probe_capabilities = MDIOBUS_C22_C45;
 	bus->parent = priv->ds->dev;
 	mdio_priv = bus->priv;
 	mdio_priv->priv = priv;
@@ -404,6 +406,7 @@ static int sja1105_mdiobus_pcs_register(struct sja1105_private *priv)
 		 dev_name(ds->dev));
 	bus->read = priv->info->pcs_mdio_read;
 	bus->write = priv->info->pcs_mdio_write;
+	bus->probe_capabilities = MDIOBUS_C45;
 	bus->parent = ds->dev;
 	/* There is no PHY on this MDIO bus => mask out all PHY addresses
 	 * from auto probing.

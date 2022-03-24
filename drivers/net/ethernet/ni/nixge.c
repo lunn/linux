@@ -1195,6 +1195,7 @@ static int nixge_mdio_setup(struct nixge_priv *priv, struct device_node *np)
 	bus->name = "nixge_mii_bus";
 	bus->read = nixge_mdio_read;
 	bus->write = nixge_mdio_write;
+	bus->probe_capabilities = MDIOBUS_C22_C45;
 	bus->parent = priv->dev;
 
 	priv->mii_bus = bus;

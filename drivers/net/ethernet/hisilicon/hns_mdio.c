@@ -441,6 +441,7 @@ static int hns_mdio_probe(struct platform_device *pdev)
 	new_bus->read = hns_mdio_read;
 	new_bus->write = hns_mdio_write;
 	new_bus->reset = hns_mdio_reset;
+	new_bus->probe_capabilities = MDIOBUS_C22_C45;
 	new_bus->priv = mdio_dev;
 	new_bus->parent = &pdev->dev;
 

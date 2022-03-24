@@ -517,6 +517,7 @@ static int gswip_mdio(struct gswip_priv *priv, struct device_node *mdio_np)
 	ds->slave_mii_bus->priv = priv;
 	ds->slave_mii_bus->read = gswip_mdio_rd;
 	ds->slave_mii_bus->write = gswip_mdio_wr;
+	ds->slave_mii_bus->probe_capabilities = MDIOBUS_C22;
 	ds->slave_mii_bus->name = "lantiq,xrx200-mdio";
 	snprintf(ds->slave_mii_bus->id, MII_BUS_ID_SIZE, "%s-mii",
 		 dev_name(priv->dev));

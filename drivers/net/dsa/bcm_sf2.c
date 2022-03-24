@@ -631,6 +631,7 @@ static int bcm_sf2_mdio_register(struct dsa_switch *ds)
 	priv->slave_mii_bus->name = "sf2 slave mii";
 	priv->slave_mii_bus->read = bcm_sf2_sw_mdio_read;
 	priv->slave_mii_bus->write = bcm_sf2_sw_mdio_write;
+	priv->slave_mii_bus->probe_capabilities = MDIOBUS_C22;
 	snprintf(priv->slave_mii_bus->id, MII_BUS_ID_SIZE, "sf2-%d",
 		 index++);
 	priv->slave_mii_bus->dev.of_node = dn;

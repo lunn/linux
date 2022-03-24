@@ -1056,6 +1056,7 @@ static int vsc9959_mdio_bus_alloc(struct ocelot *ocelot)
 	bus->name = "VSC9959 internal MDIO bus";
 	bus->read = enetc_mdio_read;
 	bus->write = enetc_mdio_write;
+	bus->probe_capabilities = MDIOBUS_C22_C45;
 	bus->parent = dev;
 	mdio_priv = bus->priv;
 	mdio_priv->hw = hw;

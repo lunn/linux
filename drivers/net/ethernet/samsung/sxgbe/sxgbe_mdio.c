@@ -163,6 +163,7 @@ int sxgbe_mdio_register(struct net_device *ndev)
 	mdio_bus->name = "sxgbe";
 	mdio_bus->read = &sxgbe_mdio_read;
 	mdio_bus->write = &sxgbe_mdio_write;
+	mdio_bus->probe_capabilities = MDIOBUS_C22_C45;
 	snprintf(mdio_bus->id, MII_BUS_ID_SIZE, "%s-%x",
 		 mdio_bus->name, priv->plat->bus_id);
 	mdio_bus->priv = ndev;

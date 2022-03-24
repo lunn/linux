@@ -1352,6 +1352,7 @@ qca8k_mdio_register(struct qca8k_priv *priv, struct device_node *mdio)
 	bus->name = "qca8k slave mii";
 	bus->read = qca8k_internal_mdio_read;
 	bus->write = qca8k_internal_mdio_write;
+	bus->probe_capabilities = MDIOBUS_C22;
 	snprintf(bus->id, MII_BUS_ID_SIZE, "qca8k-%d",
 		 ds->index);
 

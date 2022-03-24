@@ -388,6 +388,7 @@ static int realtek_smi_setup_mdio(struct dsa_switch *ds)
 	priv->slave_mii_bus->name = "SMI slave MII";
 	priv->slave_mii_bus->read = realtek_smi_mdio_read;
 	priv->slave_mii_bus->write = realtek_smi_mdio_write;
+	priv->slave_mii_bus->probe_capabilities = MDIOBUS_C22;
 	snprintf(priv->slave_mii_bus->id, MII_BUS_ID_SIZE, "SMI-%d",
 		 ds->index);
 	priv->slave_mii_bus->dev.of_node = mdio_np;

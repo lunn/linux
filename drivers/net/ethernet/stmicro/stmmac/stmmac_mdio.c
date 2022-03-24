@@ -465,6 +465,7 @@ int stmmac_mdio_register(struct net_device *ndev)
 	if (priv->plat->has_xgmac) {
 		new_bus->read = &stmmac_xgmac2_mdio_read;
 		new_bus->write = &stmmac_xgmac2_mdio_write;
+		new_bus->probe_capabilities = MDIOBUS_C22;
 
 		/* Right now only C22 phys are supported */
 		max_addr = MII_XGMAC_MAX_C22ADDR + 1;
@@ -476,6 +477,7 @@ int stmmac_mdio_register(struct net_device *ndev)
 	} else {
 		new_bus->read = &stmmac_mdio_read;
 		new_bus->write = &stmmac_mdio_write;
+		new_bus->probe_capabilities = MDIOBUS_C22_C45;
 		max_addr = PHY_MAX_ADDR;
 	}
 

@@ -2073,6 +2073,7 @@ mt7530_setup_mdio(struct mt7530_priv *priv)
 	snprintf(bus->id, MII_BUS_ID_SIZE, KBUILD_MODNAME "-%d", idx++);
 	bus->read = mt753x_phy_read;
 	bus->write = mt753x_phy_write;
+	bus->probe_capabilities = priv->bus->probe_capabilities;
 	bus->parent = dev;
 	bus->phy_mask = ~ds->phys_mii_mask;
 
