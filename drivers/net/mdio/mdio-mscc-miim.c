@@ -218,6 +218,7 @@ int mscc_miim_setup(struct device *dev, struct mii_bus **pbus, const char *name,
 	bus->name = name;
 	bus->read = mscc_miim_read;
 	bus->write = mscc_miim_write;
+	bus->probe_capabilities = MDIOBUS_C22;
 	bus->reset = mscc_miim_reset;
 	snprintf(bus->id, MII_BUS_ID_SIZE, "%s-mii", dev_name(dev));
 	bus->parent = dev;

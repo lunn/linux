@@ -101,6 +101,7 @@ static int sun4i_mdio_probe(struct platform_device *pdev)
 	bus->name = "sun4i_mii_bus";
 	bus->read = &sun4i_mdio_read;
 	bus->write = &sun4i_mdio_write;
+	bus->probe_capabilities = MDIOBUS_C22;
 	snprintf(bus->id, MII_BUS_ID_SIZE, "%s-mii", dev_name(&pdev->dev));
 	bus->parent = &pdev->dev;
 

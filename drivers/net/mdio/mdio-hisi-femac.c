@@ -83,6 +83,7 @@ static int hisi_femac_mdio_probe(struct platform_device *pdev)
 	bus->name = "hisi_femac_mii_bus";
 	bus->read = &hisi_femac_mdio_read;
 	bus->write = &hisi_femac_mdio_write;
+	bus->probe_capabilities = MDIOBUS_C22;
 	snprintf(bus->id, MII_BUS_ID_SIZE, "%s", pdev->name);
 	bus->parent = &pdev->dev;
 

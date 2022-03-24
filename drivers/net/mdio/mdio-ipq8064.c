@@ -138,6 +138,7 @@ ipq8064_mdio_probe(struct platform_device *pdev)
 	bus->name = "ipq8064_mdio_bus";
 	bus->read = ipq8064_mdio_read;
 	bus->write = ipq8064_mdio_write;
+	bus->probe_capabilities = MDIOBUS_C22;
 	snprintf(bus->id, MII_BUS_ID_SIZE, "%s-mii", dev_name(&pdev->dev));
 	bus->parent = &pdev->dev;
 

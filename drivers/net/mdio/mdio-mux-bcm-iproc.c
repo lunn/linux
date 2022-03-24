@@ -225,6 +225,7 @@ static int mdio_mux_iproc_probe(struct platform_device *pdev)
 	bus->parent = &pdev->dev;
 	bus->read = iproc_mdiomux_read;
 	bus->write = iproc_mdiomux_write;
+	bus->probe_capabilities = MDIOBUS_C22_C45;
 
 	bus->phy_mask = ~0;
 	bus->dev.of_node = pdev->dev.of_node;

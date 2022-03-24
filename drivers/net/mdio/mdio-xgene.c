@@ -398,6 +398,7 @@ static int xgene_mdio_probe(struct platform_device *pdev)
 		snprintf(mdio_bus->id, MII_BUS_ID_SIZE, "%s",
 			 "xgene-mii-xfi");
 	}
+	mdio_bus->probe_capabilities = MDIOBUS_C22;
 
 	mdio_bus->parent = dev;
 	platform_set_drvdata(pdev, pdata);

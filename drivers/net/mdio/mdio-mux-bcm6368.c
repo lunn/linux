@@ -125,6 +125,7 @@ static int bcm6368_mdiomux_probe(struct platform_device *pdev)
 	bus->parent = &pdev->dev;
 	bus->read = bcm6368_mdiomux_read;
 	bus->write = bcm6368_mdiomux_write;
+	bus->probe_capabilities = MDIOBUS_C22;
 	bus->phy_mask = 0x3f;
 	bus->dev.of_node = pdev->dev.of_node;
 

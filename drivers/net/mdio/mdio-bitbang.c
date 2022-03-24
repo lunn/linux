@@ -216,6 +216,7 @@ struct mii_bus *alloc_mdio_bitbang(struct mdiobb_ctrl *ctrl)
 
 	bus->read = mdiobb_read;
 	bus->write = mdiobb_write;
+	bus->probe_capabilities = MDIOBUS_C22_C45;
 	bus->priv = ctrl;
 	if (!ctrl->override_op_c22) {
 		ctrl->op_c22_read = MDIO_READ;

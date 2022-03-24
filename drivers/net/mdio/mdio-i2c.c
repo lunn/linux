@@ -106,6 +106,7 @@ struct mii_bus *mdio_i2c_alloc(struct device *parent, struct i2c_adapter *i2c)
 	mii->parent = parent;
 	mii->read = i2c_mii_read;
 	mii->write = i2c_mii_write;
+	mii->probe_capabilities = MDIOBUS_C22_C45;
 	mii->priv = i2c;
 
 	return mii;

@@ -276,6 +276,7 @@ static int unimac_mdio_probe(struct platform_device *pdev)
 	bus->write = unimac_mdio_write;
 	bus->reset = unimac_mdio_reset;
 	snprintf(bus->id, MII_BUS_ID_SIZE, "%s-%d", pdev->name, pdev->id);
+	bus->probe_capabilities = MDIOBUS_C22;
 
 	ret = of_mdiobus_register(bus, np);
 	if (ret) {

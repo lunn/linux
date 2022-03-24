@@ -91,6 +91,7 @@ static int mvusb_mdio_probe(struct usb_interface *interface,
 	mdio->parent = dev;
 	mdio->read = mvusb_mdio_read;
 	mdio->write = mvusb_mdio_write;
+	mdio->probe_capabilities = MDIOBUS_C22;
 
 	usb_set_intfdata(interface, mvusb);
 	return of_mdiobus_register(mdio, dev->of_node);

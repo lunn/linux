@@ -121,6 +121,7 @@ static int moxart_mdio_probe(struct platform_device *pdev)
 	bus->name = "MOXA ART Ethernet MII";
 	bus->read = &moxart_mdio_read;
 	bus->write = &moxart_mdio_write;
+	bus->probe_capabilities = MDIOBUS_C22;
 	bus->reset = &moxart_mdio_reset;
 	snprintf(bus->id, MII_BUS_ID_SIZE, "%s-%d-mii", pdev->name, pdev->id);
 	bus->parent = &pdev->dev;

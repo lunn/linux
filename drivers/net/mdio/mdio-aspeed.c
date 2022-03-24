@@ -125,6 +125,7 @@ static int aspeed_mdio_probe(struct platform_device *pdev)
 	bus->parent = &pdev->dev;
 	bus->read = aspeed_mdio_read;
 	bus->write = aspeed_mdio_write;
+	bus->probe_capabilities = MDIOBUS_C22;
 
 	rc = of_mdiobus_register(bus, pdev->dev.of_node);
 	if (rc) {
