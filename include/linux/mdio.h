@@ -423,6 +423,14 @@ int mdiobus_modify(struct mii_bus *bus, int addr, u32 regnum, u16 mask,
 		   u16 set);
 int mdiobus_modify_changed(struct mii_bus *bus, int addr, u32 regnum,
 			   u16 mask, u16 set);
+int __mdiobus_c45_read(struct mii_bus *bus, int addr, int devad, u32 regnum);
+int mdiobus_c45_read(struct mii_bus *bus, int addr, int devad, u32 regnum);
+int __mdiobus_c45_write(struct mii_bus *bus, int addr,  int devad, u32 regnum,
+			u16 val);
+int mdiobus_c45_write(struct mii_bus *bus, int addr,  int devad, u32 regnum,
+		      u16 val);
+int mdiobus_c45_modify(struct mii_bus *bus, int addr, int devad, u32 regnum,
+		       u16 mask, u16 set);
 
 static inline int mdiodev_read(struct mdio_device *mdiodev, u32 regnum)
 {
@@ -461,31 +469,6 @@ static inline u16 mdiobus_c45_regad(u32 regnum)
 static inline u16 mdiobus_c45_devad(u32 regnum)
 {
 	return FIELD_GET(MII_DEVADDR_C45_MASK, regnum);
-}
-
-static inline int __mdiobus_c45_read(struct mii_bus *bus, int prtad, int devad,
-				     u16 regnum)
-{
-	return __mdiobus_read(bus, prtad, mdiobus_c45_addr(devad, regnum));
-}
-
-static inline int __mdiobus_c45_write(struct mii_bus *bus, int prtad, int devad,
-				      u16 regnum, u16 val)
-{
-	return __mdiobus_write(bus, prtad, mdiobus_c45_addr(devad, regnum),
-			       val);
-}
-
-static inline int mdiobus_c45_read(struct mii_bus *bus, int prtad, int devad,
-				   u16 regnum)
-{
-	return mdiobus_read(bus, prtad, mdiobus_c45_addr(devad, regnum));
-}
-
-static inline int mdiobus_c45_write(struct mii_bus *bus, int prtad, int devad,
-				    u16 regnum, u16 val)
-{
-	return mdiobus_write(bus, prtad, mdiobus_c45_addr(devad, regnum), val);
 }
 
 int mdiobus_register_device(struct mdio_device *mdiodev);
