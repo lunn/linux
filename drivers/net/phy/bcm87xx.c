@@ -54,11 +54,10 @@ static int bcm87xx_of_reg_init(struct phy_device *phydev)
 		u16 reg		= be32_to_cpup(paddr++);
 		u16 mask	= be32_to_cpup(paddr++);
 		u16 val_bits	= be32_to_cpup(paddr++);
-		u32 regnum = mdiobus_c45_addr(devid, reg);
 		int val = 0;
 
 		if (mask) {
-			val = phy_read(phydev, regnum);
+			val = phy_read_mmd(phydev, devid, reg);
 			if (val < 0) {
 				ret = val;
 				goto err;
@@ -67,7 +66,7 @@ static int bcm87xx_of_reg_init(struct phy_device *phydev)
 		}
 		val |= val_bits;
 
-		ret = phy_write(phydev, regnum, val);
+		ret = phy_write_mmd(phydev, devid, reg, val);
 		if (ret < 0)
 			goto err;
 	}
