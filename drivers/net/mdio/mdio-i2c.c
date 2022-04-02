@@ -28,7 +28,7 @@ static unsigned int i2c_mii_phy_addr(int phy_id)
 	return phy_id + 0x40;
 }
 
-static int i2c_mii_read(struct mii_bus *bus, int phy_id, int reg)
+static int i2c_mii_read(struct mii_bus *bus, bool c45, int phy_id, int reg)
 {
 	struct i2c_adapter *i2c = bus->priv;
 	struct i2c_msg msgs[2];
@@ -39,7 +39,7 @@ static int i2c_mii_read(struct mii_bus *bus, int phy_id, int reg)
 		return 0xffff;
 
 	p = addr;
-	if (reg & MII_ADDR_C45) {
+	if (c45) {
 		*p++ = 0x20 | ((reg >> 16) & 31);
 		*p++ = reg >> 8;
 	}
@@ -62,7 +62,19 @@ static int i2c_mii_read(struct mii_bus *bus, int phy_id, int reg)
 	return data[0] << 8 | data[1];
 }
 
-static int i2c_mii_write(struct mii_bus *bus, int phy_id, int reg, u16 val)
+static int i2c_mii_read_c22(struct mii_bus *bus, int phy_id, int reg)
+{
+	return i2c_mii_read(bus, false, phy_id, reg);
+}
+
+static int i2c_mii_read_c45(struct mii_bus *bus, int phy_id, int devad,
+			    int reg)
+{
+	return i2c_mii_read(bus, true, phy_id, reg | devad << 16);
+}
+
+static int i2c_mii_write(struct mii_bus *bus, bool c45, int phy_id, int reg,
+			 u16 val)
 {
 	struct i2c_adapter *i2c = bus->priv;
 	struct i2c_msg msg;
@@ -73,7 +85,7 @@ static int i2c_mii_write(struct mii_bus *bus, int phy_id, int reg, u16 val)
 		return 0;
 
 	p = data;
-	if (reg & MII_ADDR_C45) {
+	if (c45) {
 		*p++ = (reg >> 16) & 31;
 		*p++ = reg >> 8;
 	}
@@ -91,6 +103,17 @@ static int i2c_mii_write(struct mii_bus *bus, int phy_id, int reg, u16 val)
 	return ret < 0 ? ret : 0;
 }
 
+static int i2c_mii_write_c22(struct mii_bus *bus, int phy_id, int reg, u16 val)
+{
+	return i2c_mii_write(bus, false, phy_id, reg, val);
+}
+
+static int i2c_mii_write_c45(struct mii_bus *bus, int phy_id, int devad,
+			     int reg, u16 val)
+{
+	return i2c_mii_write(bus, true, phy_id, reg | devad << 16, val);
+}
+
 struct mii_bus *mdio_i2c_alloc(struct device *parent, struct i2c_adapter *i2c)
 {
 	struct mii_bus *mii;
@@ -104,8 +127,10 @@ struct mii_bus *mdio_i2c_alloc(struct device *parent, struct i2c_adapter *i2c)
 
 	snprintf(mii->id, MII_BUS_ID_SIZE, "i2c:%s", dev_name(parent));
 	mii->parent = parent;
-	mii->read = i2c_mii_read;
-	mii->write = i2c_mii_write;
+	mii->read = i2c_mii_read_c22;
+	mii->write = i2c_mii_write_c22;
+	mii->read_c45 = i2c_mii_read_c45;
+	mii->write_c45 = i2c_mii_write_c45;
 	mii->priv = i2c;
 
 	return mii;
