@@ -526,8 +526,16 @@ int __mdiobus_register(struct mii_bus *bus, struct module *owner)
 	int i, err;
 	struct gpio_desc *gpiod;
 
-	if (NULL == bus || NULL == bus->name ||
-	    NULL == bus->read || NULL == bus->write)
+	if (!bus || !bus->name)
+		return -EINVAL;
+
+	if (!bus->read != !bus->write)
+		return -EINVAL;
+
+	if (!bus->read_c45 != !bus->write_c45)
+		return -EINVAL;
+
+	if (!bus->read && !bus->read_c45)
 		return -EINVAL;
 
 	if (bus->parent && bus->parent->of_node)
