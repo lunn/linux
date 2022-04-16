@@ -144,9 +144,6 @@ static int lan937x_sw_mdio_read(struct mii_bus *bus, int addr, int regnum)
 	u16 val;
 	int ret;
 
-	if (regnum & MII_ADDR_C45)
-		return -EOPNOTSUPP;
-
 	ret = lan937x_internal_phy_read(dev, addr, regnum, &val);
 	if (ret < 0)
 		return ret;
@@ -158,9 +155,6 @@ static int lan937x_sw_mdio_write(struct mii_bus *bus, int addr, int regnum,
 				 u16 val)
 {
 	struct ksz_device *dev = bus->priv;
-
-	if (regnum & MII_ADDR_C45)
-		return -EOPNOTSUPP;
 
 	return lan937x_internal_phy_write(dev, addr, regnum, val);
 }
