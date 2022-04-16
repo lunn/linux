@@ -55,21 +55,34 @@ static const struct regmap_bus regmap_mdio_c22_bus = {
 static int regmap_mdio_c45_read(void *context, unsigned int reg, unsigned int *val)
 {
 	struct mdio_device *mdio_dev = context;
+	unsigned int devad;
 
 	if (unlikely(reg & ~REGNUM_C45_MASK))
 		return -ENXIO;
 
-	return regmap_mdio_read(mdio_dev, MII_ADDR_C45 | reg, val);
+	devad = reg >> 16;
+	reg = reg & 0xffff;
+
+	ret = mdiodev_c45_read(mdio_dev, devad, reg);
+	if (ret < 0)
+		return ret;
+
+	*val = ret & REGVAL_MASK;
+	return 0;
 }
 
 static int regmap_mdio_c45_write(void *context, unsigned int reg, unsigned int val)
 {
 	struct mdio_device *mdio_dev = context;
+	unsigned int devad;
 
 	if (unlikely(reg & ~REGNUM_C45_MASK))
 		return -ENXIO;
 
-	return regmap_mdio_write(mdio_dev, MII_ADDR_C45 | reg, val);
+	devad = reg >> 16;
+	reg = reg & 0xffff;
+
+	return mdiodev_c45_write(mdio_dev, devad, reg, val);
 }
 
 static const struct regmap_bus regmap_mdio_c45_bus = {
