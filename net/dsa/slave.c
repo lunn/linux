@@ -165,7 +165,7 @@ static int dsa_slave_unsync_mc(struct net_device *dev,
 }
 
 /* slave mii_bus handling ***************************************************/
-static int dsa_slave_phy_read(struct mii_bus *bus, int addr, int reg)
+static int dsa_slave_phy_read_c22(struct mii_bus *bus, int addr, int reg)
 {
 	struct dsa_switch *ds = bus->priv;
 
@@ -175,7 +175,19 @@ static int dsa_slave_phy_read(struct mii_bus *bus, int addr, int reg)
 	return 0xffff;
 }
 
-static int dsa_slave_phy_write(struct mii_bus *bus, int addr, int reg, u16 val)
+static int dsa_slave_phy_read_c45(struct mii_bus *bus, int addr, int devad,
+				  int reg)
+{
+	struct dsa_switch *ds = bus->priv;
+
+	if (ds->phys_mii_mask & (1 << addr))
+		return ds->ops->phy_read_c45(ds, addr, devad, reg);
+
+	return 0xffff;
+}
+
+static int dsa_slave_phy_write_c22(struct mii_bus *bus, int addr, int reg,
+				   u16 val)
 {
 	struct dsa_switch *ds = bus->priv;
 
@@ -185,12 +197,27 @@ static int dsa_slave_phy_write(struct mii_bus *bus, int addr, int reg, u16 val)
 	return 0;
 }
 
+static int dsa_slave_phy_write_c45(struct mii_bus *bus, int addr, int reg,
+				   int devad, u16 val)
+{
+	struct dsa_switch *ds = bus->priv;
+
+	if (ds->phys_mii_mask & (1 << addr))
+		return ds->ops->phy_write_c45(ds, addr, devad, reg, val);
+
+	return 0;
+}
+
 void dsa_slave_mii_bus_init(struct dsa_switch *ds)
 {
 	ds->slave_mii_bus->priv = (void *)ds;
 	ds->slave_mii_bus->name = "dsa slave smi";
-	ds->slave_mii_bus->read = dsa_slave_phy_read;
-	ds->slave_mii_bus->write = dsa_slave_phy_write;
+	ds->slave_mii_bus->read = dsa_slave_phy_read_c22;
+	ds->slave_mii_bus->write = dsa_slave_phy_write_c22;
+	if (ds->ops->phy_read_c45 && ds->ops->phy_write_c45) {
+		ds->slave_mii_bus->read_c45 = dsa_slave_phy_read_c45;
+		ds->slave_mii_bus->write_c45 = dsa_slave_phy_write_c45;
+	}
 	snprintf(ds->slave_mii_bus->id, MII_BUS_ID_SIZE, "dsa-%d.%d",
 		 ds->dst->index, ds->index);
 	ds->slave_mii_bus->parent = ds->dev;

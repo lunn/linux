@@ -820,6 +820,10 @@ struct dsa_switch_ops {
 	int	(*phy_read)(struct dsa_switch *ds, int port, int regnum);
 	int	(*phy_write)(struct dsa_switch *ds, int port,
 			     int regnum, u16 val);
+	int	(*phy_read_c45)(struct dsa_switch *ds, int port, int devad,
+				int regnum);
+	int	(*phy_write_c45)(struct dsa_switch *ds, int port, int devad,
+				 int regnum, u16 val);
 
 	/*
 	 * Link state adjustment (called from libphy)
