@@ -830,7 +830,7 @@ struct dsa_switch_ops {
 	u32	(*get_phy_flags)(struct dsa_switch *ds, int port);
 
 	/*
-	 * Access to the switch's PHY registers.
+	 * Access to the switch's PHY registers. C22 only.
 	 */
 	int	(*phy_read)(struct dsa_switch *ds, int port, int regnum);
 	int	(*phy_write)(struct dsa_switch *ds, int port,
