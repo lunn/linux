@@ -82,9 +82,6 @@ static int tsnep_mdiobus_read(struct mii_bus *bus, int addr, int regnum)
 	u32 md;
 	int retval;
 
-	if (regnum & MII_ADDR_C45)
-		return -EOPNOTSUPP;
-
 	md = ECM_MD_READ;
 	if (!adapter->suppress_preamble)
 		md |= ECM_MD_PREAMBLE;
@@ -105,9 +102,6 @@ static int tsnep_mdiobus_write(struct mii_bus *bus, int addr, int regnum,
 	struct tsnep_adapter *adapter = bus->priv;
 	u32 md;
 	int retval;
-
-	if (regnum & MII_ADDR_C45)
-		return -EOPNOTSUPP;
 
 	md = ECM_MD_WRITE;
 	if (!adapter->suppress_preamble)
