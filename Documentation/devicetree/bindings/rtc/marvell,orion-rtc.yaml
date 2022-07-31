@@ -1,0 +1,48 @@
+# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/rtc/marvell,orion-rtc.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: MVEBU Orion RTC
+
+allOf:
+  - $ref: "rtc.yaml#"
+
+maintainers:
+  - Andrew Lunn <andrew@lunn.ch>
+
+properties:
+  compatible:
+    oneOf:
+      - enum:
+          - marvell,orion-rtc
+      - items:
+          - enum:
+              - marvell,kirkwood-rtc
+          - const: marvell,orion-rtc
+
+  reg:
+    maxItems: 1
+
+  interrupts:
+    maxItems: 1
+
+  clocks:
+    maxItems: 1
+
+required:
+  - compatible
+  - reg
+  - interrupts
+
+additionalProperties: false
+
+examples:
+  - |
+    rtc@10300 {
+        compatible = "marvell,orion-rtc";
+        reg = <0xd0010300 0x20>;
+        interrupts = <50>;
+    };
+...
