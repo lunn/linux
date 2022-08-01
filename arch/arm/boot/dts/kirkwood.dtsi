@@ -42,7 +42,7 @@
 		pcie-mem-aperture = <0xe0000000 0x10000000>; /* 256 MiB memory space */
 		pcie-io-aperture  = <0xf2000000 0x100000>;   /*   1 MiB    I/O space */
 
-		nand: nand@12f {
+		nand: nand-controller@12f {
 			#address-cells = <1>;
 			#size-cells = <1>;
 			cle = <0>;
