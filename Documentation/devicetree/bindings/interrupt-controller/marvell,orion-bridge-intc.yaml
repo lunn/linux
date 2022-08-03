@@ -1,0 +1,57 @@
+# SPDX-License-Identifier: GPL-2.0-only
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/interrupt-controller/marvell,orion-bridge-intc.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Marvell Orion Bridge Interrupt controller bindings
+
+maintainers:
+  - Andrew Lunn <andrew@lunn.ch>
+  - Gregory Clement <gregory.clement@bootlin.com>
+
+properties:
+  compatible:
+    enum:
+      - marvell,orion-bridge-intc
+
+  reg:
+    description:
+      Base address of bridge interrupt registers starting with CAUSE register
+
+  interrupts:
+    description:
+      bridge interrupt of the main interrupt controller
+
+  interrupt-controller: true
+
+  '#interrupt-cells':
+    const: 1
+
+  'marvell,#interrupts':
+    description:
+      number of interrupts provided by bridge interrupt controller
+    $ref: /schemas/types.yaml#/definitions/uint32
+    default: 32
+
+required:
+  - '#interrupt-cells'
+  - compatible
+  - reg
+  - interrupt-controller
+
+additionalProperties: false
+
+examples:
+  - |
+    bridge_intc: interrupt-controller@20110 {
+      compatible = "marvell,orion-bridge-intc";
+      interrupt-controller;
+      #interrupt-cells = <1>;
+      reg = <0x20110 0x8>;
+      interrupts = <0>;
+      /* Dove bridge provides 5 interrupts */
+      marvell,#interrupts = <5>;
+    };
+
+...
