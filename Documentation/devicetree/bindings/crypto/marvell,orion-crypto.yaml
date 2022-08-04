@@ -1,0 +1,74 @@
+# SPDX-License-Identifier: GPL-2.0
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/crypto/marvell,orion-crypto.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Marvell Orion Cryptographic Engines And Security Accelerator
+
+maintainers:
+  - Andrew Lunn <andrew@lunn.ch>
+
+properties:
+  compatible:
+    enum:
+      - marvell,orion-crypto
+      - marvell,kirkwood-crypto
+      - marvell,dove-crypto
+
+  reg:
+    description:
+      base physical address of the engine and length of memory mapped
+      region. Can also contain an entry for the SRAM attached to the CESA,
+      but this representation is deprecated and marvell,crypto-srams should
+      be used instead
+    minItems: 1
+    maxItems: 2
+
+  reg-names:
+    description:
+      Can contain an "sram" entry, but this representation is deprecated and
+      marvell,crypto-srams should be used instead
+    oneOf:
+      - items:
+          - const: regs
+      - items:
+          - const: regs
+          - const: sram
+
+  interrupts:
+    maxItems: 1
+
+  clocks:
+    maxItems: 1
+
+  marvell,crypto-srams:
+    $ref: /schemas/types.yaml#/definitions/phandle
+    description:
+      phandle to crypto SRAM definitions
+
+  marvell,crypto-sram-size:
+    $ref: '/schemas/types.yaml#/definitions/uint32'
+    description:
+      SRAM size reserved for crypto operations, if not specified the whole
+      SRAM is used (2KB)
+
+required:
+  - compatible
+  - reg
+  - interrupts
+
+additionalProperties: false
+
+examples:
+  - |
+    crypto@30000 {
+        compatible = "marvell,orion-crypto";
+        reg = <0x30000 0x10000>;
+        reg-names = "regs";
+        interrupts = <22>;
+        marvell,crypto-srams = <&crypto_sram>;
+        marvell,crypto-sram-size = <0x600>;
+    };
+
+...
