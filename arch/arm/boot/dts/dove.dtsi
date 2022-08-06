@@ -784,7 +784,7 @@
 			};
 
 			crypto_sram: sram@ffffe000 {
-				compatible = "mmio-sram";
+				compatible = "marvell,orion-sram", "mmio-sram";
 				reg = <0xffffe000 0x800>;
 				clocks = <&gate_clk 15>;
 				#address-cells = <1>;
