@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 / {
-	mbus@f1000000 {
+	bus@f1000000 {
 		pciec: pcie@82000000 {
 			compatible = "marvell,kirkwood-pcie";
 			status = "disabled";
