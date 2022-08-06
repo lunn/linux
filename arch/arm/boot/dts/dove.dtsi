@@ -337,7 +337,7 @@
 				};
 			};
 
-			sdio1: sdio-host@90000 {
+			sdio1: mmc@90000 {
 				compatible = "marvell,dove-sdhci";
 				reg = <0x90000 0x100>;
 				interrupts = <36>, <38>;
@@ -380,7 +380,7 @@
 				};
 			};
 
-			sdio0: sdio-host@92000 {
+			sdio0: mmc@92000 {
 				compatible = "marvell,dove-sdhci";
 				reg = <0x92000 0x100>;
 				interrupts = <35>, <37>;

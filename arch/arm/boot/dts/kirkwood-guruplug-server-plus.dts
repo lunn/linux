@@ -47,7 +47,7 @@
 		};
 
 		/* AzureWave AW-GH381 WiFi/BT */
-		mvsdio@90000 {
+		mmc@90000 {
 			status = "okay";
 			non-removable;
 		};

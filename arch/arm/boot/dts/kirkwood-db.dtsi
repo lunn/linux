@@ -43,7 +43,7 @@
 			status = "okay";
 		};
 
-		mvsdio@90000 {
+		mmc@90000 {
 			pinctrl-0 = <&pmx_sdio_gpios>;
 			pinctrl-names = "default";
 			wp-gpios = <&gpio1 5 GPIO_ACTIVE_HIGH>;
