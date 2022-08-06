@@ -36,6 +36,7 @@ properties:
         - nvidia,tegra234-sysram
         - qcom,rpm-msg-ram
         - rockchip,rk3288-pmu-sram
+        - marvell,orion-sram
 
   reg:
     maxItems: 1
@@ -143,6 +144,8 @@ if:
           enum:
             - qcom,rpm-msg-ram
             - rockchip,rk3288-pmu-sram
+            - marvell,orion-sram
+
 then:
   required:
     - "#address-cells"
