@@ -6,7 +6,7 @@
 
 / {
 	model = "LaCie CloudBox";
-	compatible = "lacie,cloudbox", "marvell,kirkwood-88f6702", "marvell,kirkwood";
+	compatible = "lacie,cloudbox", "marvell,kirkwood-88f6281", "marvell,kirkwood";
 
 	memory {
 		device_type = "memory";
