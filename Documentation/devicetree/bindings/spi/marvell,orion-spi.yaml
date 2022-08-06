@@ -122,5 +122,5 @@ examples:
 #
 # For further information on the MBus bindings, please see the MBus
 # DT documentation:
-# Documentation/devicetree/bindings/bus/mvebu-mbus.txt
+# Documentation/devicetree/bindings/bus/marvell,kirkwood-mbus.yaml
 ...

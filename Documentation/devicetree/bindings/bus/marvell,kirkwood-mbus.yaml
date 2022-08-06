@@ -1,0 +1,201 @@
+# SPDX-License-Identifier: GPL-2.0
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/bus/marvell,kirkwood-mbus.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Marvell MBus
+
+maintainers:
+  - Andrew Lunn <andrew@lunn.ch>
+
+description: |
+  ** MBus address decoding window specification
+
+  The MBus children address space is comprised of two cells: the first one for
+  the window ID and the second one for the offset within the window.
+  In order to allow to describe valid and non-valid window entries, the
+  following encoding is used:
+
+    0xSIAA0000 0x00oooooo
+
+  Where:
+
+    S = 0x0 for a MBus valid window
+    S = 0xf for a non-valid window (see below)
+
+  If S = 0x0, then:
+
+     I = 4-bit window target ID
+    AA = windpw attribute
+
+  If S = 0xf, then:
+
+     I = don't care
+     AA = 1 for internal register
+
+  Following the above encoding, for each ranges entry for a MBus valid window
+  (S = 0x0), an address decoding window is allocated. On the other side,
+  entries for translation that do not correspond to valid windows (S = 0xf)
+  are skipped.
+
+  In the shown example, the translation entry in the 'ranges' property is what
+  makes the MBus driver create a static decoding window for the corresponding
+  given child device. Note that the binding does not require child nodes to be
+  present. Of course, child nodes are needed to probe the devices.
+
+  Since each window is identified by its target ID and attribute ID there's
+  a special macro that can be use to simplify the translation entries:
+
+  #define MBUS_ID(target,attributes) (((target) << 24) | ((attributes) << 16))
+
+  ** About the window base address
+
+  Remember the MBus controller allows a great deal of flexibility for choosing
+  the decoding window base address. When planning the device tree layout it's
+  possible to choose any address as the base address, provided of course there's
+  a region large enough available, and with the required alignment.
+
+  Yet in other words: there's nothing preventing us from setting a base address
+  of 0xf0000000, or 0xd0000000 for the NOR device shown above, if such region is
+  unused.
+
+  ** Window allocation policy
+
+  The mbus-node ranges property defines a set of mbus windows that are expected
+  to be set by the operating system and that are guaranteed to be free of
+  overlaps with one another or with the system memory ranges.
+
+  Each entry in the property refers to exactly one window. If the
+  operating system chooses to use a different set of mbus windows, it
+  must ensure that any address translations performed from downstream
+  devices are adapted accordingly.
+
+  The operating system may insert additional mbus windows that do not
+  conflict with the ones listed in the ranges, e.g. for mapping PCIe
+  devices.  As a special case, the internal register window must be
+  set up by the boot loader at the address listed in the ranges
+  property, since access to that region is needed to set up the other
+  windows.
+
+allOf:
+  - $ref: /schemas/simple-bus.yaml#
+
+select:
+  properties:
+    compatible:
+      contains:
+        enum:
+          - marvell,kirkwood-mbus
+          - marvell,dove-mbus
+          - marvell,armada370-mbus
+          - marvell,armada375-mbus
+          - marvell,armada380-mbus
+          - marvell,armada390-mbus
+          - marvell,armadaxp-mbus
+          - marvell,orion5x-88f5281-mbus
+          - marvell,orion5x-88f5182-mbus
+          - marvell,orion5x-88f5181-mbus
+          - marvell,orion5x-88f6183-mbus
+          - marvell,mv78xx0-mbus
+
+  required:
+    - compatible
+
+properties:
+  compatible:
+    contains:
+      enum:
+        - marvell,kirkwood-mbus
+        - marvell,dove-mbus
+        - marvell,armada370-mbus
+        - marvell,armada375-mbus
+        - marvell,armada380-mbus
+        - marvell,armada390-mbus
+        - marvell,armadaxp-mbus
+        - marvell,orion5x-88f5281-mbus
+        - marvell,orion5x-88f5182-mbus
+        - marvell,orion5x-88f5181-mbus
+        - marvell,orion5x-88f6183-mbus
+        - marvell,mv78xx0-mbus
+
+  "#address-cells":
+    const: 2
+
+  "#size-cells":
+    const: 1
+
+  ranges: true
+
+  controller:
+    $ref: /schemas/types.yaml#/definitions/phandle
+    description:
+      Contains a single phandle referring to the MBus controller
+      node. This allows to specify the node that contains the
+      registers that control the MBus, which is typically contained
+      within the internal register window
+
+  pcie-mem-aperture:
+    description:
+      This optional property contains the aperture for the memory region
+      of the PCIe driver.  If it's defined, it must encode the base
+      address and size for the address decoding windows allocated for
+      the PCIe memory region.
+    maxItems: 1
+
+  pcie-io-aperture:
+    description:
+      Just as explained for the above property, this optional property
+      contains the aperture for the I/O region of the PCIe driver.
+    maxItems: 1
+
+required:
+  - compatible
+  - "#address-cells"
+  - "#size-cells"
+  - ranges
+  - controller
+
+additionalProperties: false
+
+patternProperties:
+  "^.*@[0-9a-f]+$":
+    type: object
+
+    properties:
+      compatible:
+        contains:
+          enum:
+            - marvell,orion-nand
+            - marvell,orion-sram
+            - marvell,kirkwood-pcie
+
+    required:
+      - compatible
+
+examples:
+  - |
+    #define MBUS_ID(target,attributes) (((target) << 24) | ((attributes) << 16))
+
+    bus@f1000000 {
+        compatible = "marvell,kirkwood-mbus", "simple-bus";
+        #address-cells = <2>;
+        #size-cells = <1>;
+        ranges = <MBUS_ID(0xf0, 0x01) 0 0xf1000000 0x100000  /* internal-regs */
+                  MBUS_ID(0x01, 0x2f) 0 0xf4000000 0x10000   /* nand flash */
+                  MBUS_ID(0x03, 0x01) 0 0xf5000000 0x10000   /* crypto sram */
+                 >;
+        controller = <&mbusc>;
+        pcie-mem-aperture = <0xe0000000 0x10000000>; /* 256 MiB memory space */
+        pcie-io-aperture  = <0xf2000000 0x100000>;   /*   1 MiB    I/O space */
+
+        crypto_sram: sram@301000000000000 {
+            compatible = "marvell,orion-sram", "mmio-sram";
+            reg = <MBUS_ID(0x03, 0x01) 0x0 0x800>;
+            clocks = <&gate_clk 17>;
+            #address-cells = <1>;
+            #size-cells = <1>;
+        };
+    };
+
+...
