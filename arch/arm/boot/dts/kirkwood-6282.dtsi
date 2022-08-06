@@ -124,7 +124,7 @@
 			status = "disabled";
 		};
 
-		sdio: mvsdio@90000 {
+		sdio: mmc@90000 {
 			compatible = "marvell,orion-sdio";
 			reg = <0x90000 0x200>;
 			interrupts = <28>;
