@@ -13,7 +13,8 @@
 
 / {
 	model = "Synology DS409, DS410j";
-	compatible = "synology,ds409", "synology,ds410j", "marvell,kirkwood";
+	compatible = "synology,ds409", "synology,ds410j",
+	             "marvell,kirkwood-88f6281", "marvell,kirkwood";
 
 	memory {
 		device_type = "memory";

@@ -16,7 +16,7 @@
 	compatible = "synology,ds212", "synology,ds212pv10",
 		     "synology,ds212pv10", "synology,ds212pv20",
 		     "synology,ds213airv10", "synology,ds213v10",
-		     "marvell,kirkwood";
+		     "marvell,kirkwood-88f6282", "marvell,kirkwood";
 
 	memory {
 		device_type = "memory";

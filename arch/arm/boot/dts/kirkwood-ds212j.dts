@@ -14,7 +14,7 @@
 / {
 	model = "Synology DS212j v10, v20";
 	compatible = "synology,ds212jv10", "synology,ds212jv20",
-		     "marvell,kirkwood";
+		     "marvell,kirkwood-88f6281", "marvell,kirkwood";
 
 	memory {
 		device_type = "memory";
