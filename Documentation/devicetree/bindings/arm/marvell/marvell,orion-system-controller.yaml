@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR X11)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/arm/marvell/marvell,orion-system-controller.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Marvell System Controller Device Tree Bindings
+
+maintainers:
+  - Andrew Lunn <andrew@lunn.ch>
+
+properties:
+  compatible:
+    enum:
+      - marvell,orion-system-controller
+      - marvell,armada-370-xp-system-controller
+      - marvell,armada-375-system-controller
+
+  reg:
+    maxItems: 1
+
+required:
+  - compatible
+  - reg
+
+additionalProperties: false
+
+examples:
+  - |
+    system-controller@d0018200 {
+        compatible = "marvell,armada-370-xp-system-controller";
+        reg = <0xd0018200 0x500>;
+    };
+...
