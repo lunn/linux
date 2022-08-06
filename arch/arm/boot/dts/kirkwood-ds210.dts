@@ -15,7 +15,7 @@
 	model = "Synology DS210 v10, v20, v30, DS211j";
 	compatible = "synology,ds210jv10", "synology,ds210jv20",
 		     "synology,ds210jv30", "synology,ds211j",
-		     "marvell,kirkwood";
+		     "marvell,kirkwood-88f6281", "marvell,kirkwood";
 
 	memory {
 		device_type = "memory";

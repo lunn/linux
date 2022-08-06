@@ -13,7 +13,8 @@
 
 / {
 	model = "Synology RS212";
-	compatible = "synology,rs212", "marvell,kirkwood";
+	compatible = "synology,rs212", "marvell,kirkwood-88f6282",
+	             "marvell,kirkwood";
 
 	memory {
 		device_type = "memory";
