@@ -231,8 +231,8 @@
 			};
 		};
 
-		crypto_sram: sa-sram {
-			compatible = "mmio-sram";
+		crypto_sram: sram {
+			compatible = "marvell,orion-sram", "mmio-sram";
 			reg = <MBUS_ID(0x09, 0x00) 0x0 0x800>;
 			#address-cells = <1>;
 			#size-cells = <1>;

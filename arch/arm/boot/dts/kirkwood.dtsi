@@ -58,8 +58,8 @@
 			status = "disabled";
 		};
 
-		crypto_sram: sa-sram@301 {
-			compatible = "mmio-sram";
+		crypto_sram: sram@301 {
+			compatible = "marvell,orion-sram", "mmio-sram";
 			reg = <MBUS_ID(0x03, 0x01) 0x0 0x800>;
 			clocks = <&gate_clk 17>;
 			#address-cells = <1>;
