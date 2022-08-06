@@ -1,0 +1,149 @@
+# SPDX-License-Identifier: GPL-2.0
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/net/marvell,orion-eth.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Marvell Orion Controller
+
+maintainers:
+  - Andrew Lunn <andrew@lunn.ch>
+
+description: |
+  The Marvell Discovery ethernet controller can be found on Marvell
+  Orion SoCs (Kirkwood, Dove, Orion5x, and Discovery Innovation) and
+  as part of Marvell Discovery system controller chips (mv64[345]60).
+
+  The Discovery ethernet controller is described with two levels of
+  nodes. The first level describes the ethernet controller itself and
+  the second level describes up to 3 ethernet port nodes within that
+  controller. The reason for the multiple levels is that the port
+  registers are interleaved within a single set of controller
+  registers. Each port node describes port-specific properties.
+
+  Note: The above separation is only true for Discovery system
+  controllers.  For Orion SoCs we stick to the separation, although
+  there each controller has only one port associated. Multiple ports
+  are implemented as multiple single-port controllers. As Kirkwood has
+  some issues with proper initialization after reset, an extra
+  compatible string is added for it.
+
+properties:
+  compatible:
+    enum:
+      - marvell,orion-eth
+      - marvell,kirkwood-eth
+
+  reg:
+    maxItems: 1
+    description: The USB port number on the host controller
+
+  "#address-cells":
+    const: 1
+
+  '#size-cells':
+    const: 0
+
+  clocks:
+    maxItems: 1
+
+  marvell,tx-checksum-limit:
+    $ref: "/schemas/types.yaml#/definitions/uint32"
+    description:
+      max tx packet size for hardware checksum
+
+patternProperties:
+  "^ethernet[01]*-port@[0-9]$":
+    type: object
+    description: Ethernet port of controller
+
+    $ref: ethernet-controller.yaml#
+
+    properties:
+      compatible:
+        enum:
+          - marvell,orion-eth-port
+          - marvell,kirkwood-eth-port
+
+      reg:
+        description: port number relative to ethernet controller
+        items:
+          - enum: [0, 2]
+
+      interrupts:
+        maxItems: 1
+
+      marvell,tx-queue-size:
+        description:
+          size of the transmit ring buffer.
+        $ref: "/schemas/types.yaml#/definitions/uint32"
+
+      marvell,tx-sram-addr:
+        description:
+          address of transmit descriptor buffer located in SRAM.
+        $ref: "/schemas/types.yaml#/definitions/uint32"
+
+      marvell,tx-sram-size:
+        description:
+          size of transmit descriptor buffer located in SRAM.
+        $ref: "/schemas/types.yaml#/definitions/uint32"
+
+      marvell,rx-queue-size:
+        description:
+          size of the receive ring buffer.
+        $ref: "/schemas/types.yaml#/definitions/uint32"
+
+      marvell,rx-sram-addr:
+        description:
+          address of receive descriptor buffer located in SRAM.
+        $ref: "/schemas/types.yaml#/definitions/uint32"
+
+      marvell,rx-sram-size:
+        description:
+          size of receive descriptor buffer located in SRAM.
+        $ref: "/schemas/types.yaml#/definitions/uint32"
+
+      speed:
+        description: port speed if no PHY connected
+        $ref: "/schemas/types.yaml#/definitions/uint32"
+        enum: [10, 100, 1000]
+
+      duplex:
+        description: port mode if no PHY connected
+        $ref: "/schemas/types.yaml#/definitions/uint32"
+        enum: [0, 1]
+
+    required:
+      - compatible
+      - reg
+      - interrupts
+
+    unevaluatedProperties: false
+
+required:
+  - compatible
+  - reg
+  - "#address-cells"
+  - "#size-cells"
+
+unevaluatedProperties: false
+
+examples:
+  - |
+    eth: ethernet-controller@72000 {
+        compatible = "marvell,orion-eth";
+        #address-cells = <1>;
+        #size-cells = <0>;
+        reg = <0x72000 0x2000>;
+        clocks = <&gate_clk 2>;
+        marvell,tx-checksum-limit = <1600>;
+
+        ethernet-port@0 {
+                compatible = "marvell,orion-eth-port";
+                reg = <0>;
+                interrupts = <29>;
+                phy-handle = <&ethphy>;
+                local-mac-address = [00 00 00 00 00 00];
+        };
+    };
+...
