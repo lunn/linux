@@ -1,0 +1,337 @@
+# SPDX-License-Identifier: (GPL-2.0+ OR X11)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/arm/marvell/kirkwood.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Marvell Kirkwood Platforms
+
+maintainers:
+  - Andrew Lunn <andrew@lunn.ch>
+
+properties:
+  $nodename:
+    const: '/'
+  compatible:
+    oneOf:
+
+      - description: Kirkwood 6192 SoC based boards
+        items:
+          - enum:
+              - cloudengines,pogoplugv4
+              - lacie,laplug
+              - lacie,netspace_lite_v2
+              - lacie,netspace_mini_v2
+              - marvell,rd88f6192
+              - seagate,blackarmor-nas220
+          - const: marvell,kirkwood-88f6192
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 6281 SoC based boards
+        items:
+          - enum:
+              - buffalo,lschlv2
+              - buffalo,lswsxl
+              - buffalo,lswxl
+              - buffalo,lsxhl
+              - checkpoint,l-50
+              - cloudengines,pogoe02
+              - ctera,c200-v1
+              - dlink,dir-665
+              - dlink,dns-320-a1
+              - dlink,dns-325-a1
+              - excito,b3
+              - globalscale,sheevaplug
+              - globalscale,sheevaplug-esata-rev13
+              - hp,t5325
+              - iom,iconnect-1.1
+              - iom,ix2-200
+              - lacie,cloudbox
+              - lacie,d2net_v2
+              - lacie,inetspace_v2
+              - lacie,net2big_v2
+              - lacie,net5big_v2
+              - lacie,netspace_max_v2
+              - lacie,netspace_v2
+              - marvell,db-88f6281-bp
+              - marvell,mv88f6281gtw-ge
+              - marvell,rd88f6281-a
+              - marvell,rd88f6281-z0
+              - mpl,cec4-10
+              - raidsonic,ib-nas6210-b
+              - seagate,dockstar
+              - seagate,goflexnet
+              - synology,ds209
+              - synology,ds409slim
+              - synology,ds411j
+              - zyxel,nsa310
+              - zyxel,nsa310a
+              - zyxel,nsa320
+          - const: marvell,kirkwood-88f6281
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 6281 SoC based Buffalo
+        items:
+          - const: buffalo,lschlv2
+          - const: buffalo,lsxl
+          - const: marvell,kirkwood-88f6281
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 6281 SoC based Buffalo
+        items:
+          - const: buffalo,lsxhl
+          - const: buffalo,lsxl
+          - const: marvell,kirkwood-88f6281
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 6281 SoC based Dreamplug
+        items:
+          - const: globalscale,dreamplug-003-ds2001
+          - const: globalscale,dreamplug
+          - const: marvell,kirkwood-88f6281
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 6281 SoC based D-Link DNS-320
+        items:
+          - const: dlink,dns-320-a1
+          - const: dlink,dns-320
+          - const: dlink,dns-kirkwood
+          - const: marvell,kirkwood-88f6281
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 6281 SoC based D-Link DNS-325
+        items:
+          - const: dlink,dns-325-a1
+          - const: dlink,dns-325
+          - const: dlink,dns-kirkwood
+          - const: marvell,kirkwood-88f6281
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 6281 SoC based Guruplug
+        items:
+          - const: globalscale,guruplug-server-plus
+          - const: globalscale,guruplug
+          - const: marvell,kirkwood-88f6281
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 6281 SoC based iconnect
+        items:
+          - const: iom,iconnect-1.1
+          - const: iom,iconnect
+          - const: marvell,kirkwood-88f6281
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 6281 SoC based LaCie
+        items:
+          - const: lacie,d2net_v2
+          - const: lacie,netxbig
+          - const: marvell,kirkwood-88f6281
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 6281 SoC based LaCie
+        items:
+          - const: lacie,net2big_v2
+          - const: lacie,netxbig
+          - const: marvell,kirkwood-88f6281
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 6281 SoC based LaCie
+        items:
+          - const: lacie,net5big_v2
+          - const: lacie,netxbig
+          - const: marvell,kirkwood-88f6281
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 6281 SoC based OpenRD boards
+        items:
+          - enum:
+              - marvell,openrd-client
+              - marvell,openrd-base
+              - marvell,openrd-ultimate
+          - const: marvell,openrd
+          - const: marvell,kirkwood-88f6281
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 6281 SoC based MPL CEC4
+        items:
+          - const: mpl,cec4-10
+          - const: mpl,cec4
+          - const: marvell,kirkwood-88f6281
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 6281 SoC based RaidSonic
+        items:
+          - const: raidsonic,ib-nas6210-b
+          - const: raidsonic,ib-nas6220-b
+          - const: raidsonic,ib-nas6210
+          - const: raidsonic,ib-nas6220
+          - const: raidsonic,ib-nas62x0
+          - const: marvell,kirkwood-88f6281
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 6281 SoC Marvell RD
+        items:
+          - enum:
+              - marvell,rd88f6281-z0
+              - marvell,rd88f6281-a
+          - const: marvell,rd88f6281
+          - const: marvell,kirkwood-88f6281
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 6281 SoC based Sheevaplug
+        items:
+          - const: globalscale,sheevaplug-esata-rev13
+          - const: globalscale,sheevaplug-esata
+          - const: globalscale,sheevaplug
+          - const: marvell,kirkwood-88f6281
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 6281 SoC based Synology
+        items:
+          - const: synology,ds109
+          - const: synology,ds110jv20
+          - const: synology,ds110
+          - const: marvell,kirkwood-88f6281
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 6281 SoC based Synology
+        items:
+          - const: synology,ds110jv10
+          - const: synology,ds110jv30
+          - const: marvell,kirkwood-88f6281
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 6281 SoC based Synology
+        items:
+          - const: synology,ds210jv10
+          - const: synology,ds210jv20
+          - const: synology,ds210jv30
+          - const: synology,ds211j
+          - const: marvell,kirkwood-88f6281
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 6281 SoC based Synology
+        items:
+          - const: synology,ds212jv10
+          - const: synology,ds212jv20
+          - const: marvell,kirkwood-88f6281
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 6281 SoC based Synology
+        items:
+          - const: synology,ds409
+          - const: synology,ds410j
+          - const: marvell,kirkwood-88f6281
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 6281 SoC based Synology
+        items:
+          - const: synology,rs409
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 6281 SoC based Zyxel
+        items:
+          - const: zyxel,nsa310a
+          - const: zyxel,nsa310
+          - const: marvell,kirkwood-88f6281
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 6282 SoC
+        items:
+          - enum:
+              - buffalo,lsqvl
+              - buffalo,lsvl
+              - buffalo,lswvl
+              - lacie,nas2big
+              - linksys,viper
+              - marvell,db-88f6282-bp
+              - netgear,readynas-duo-v2
+              - netgear,readynas-nv+-v2
+              - synology,ds111
+              - synology,ds411slim
+              - synology,rs212
+              - usi,topkick-1281P2
+              - zyxel,nsa325
+          - const: marvell,kirkwood-88f6282
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 6282 SoC based LaCie
+        items:
+          - const: lacie,nas2big
+          - const: lacie,netxbig
+          - const: marvell,kirkwood-88f6282
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 6282 SoC based ReadyNAS
+        items:
+          - const: netgear,readynas-duo-v2
+          - const: netgear,readynas
+          - const: marvell,kirkwood-88f6282
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 6282 SoC based ReadyNAS
+        items:
+          - const: netgear,readynas-nv+-v2
+          - const: netgear,readynas
+          - const: marvell,kirkwood-88f6282
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 6282 SoC based Synology
+        items:
+          - const: synology,ds411
+          - const: synology,ds413jv10
+          - const: marvell,kirkwood-88f6282
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 6282 SoC based Synology
+        items:
+          - const: synology,ds212
+          - const: synology,ds212pv10
+          - const: synology,ds212pv10
+          - const: synology,ds212pv20
+          - const: synology,ds213airv10
+          - const: synology,ds213v10
+          - const: marvell,kirkwood-88f6282
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 6282 SoC based Topkick
+        items:
+          - const: usi,topkick-1281P2
+          - const: usi,topkick
+          - const: marvell,kirkwood-88f6282
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 6282 SoC based Synology
+        items:
+          - const: synology,rs411
+          - const: synology,rs812
+          - const: marvell,kirkwood
+
+      - description: Kirkwood TS219
+        items:
+          - const: qnap,ts219
+          - const: marvell,kirkwood
+
+      - description: Kirkwood TS419
+        items:
+          - const: qnap,ts419
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 6283 SoC
+        items:
+          - enum:
+              - plathome,openblocks-a6
+              - plathome,openblocks-a7
+          - const: marvell,kirkwood-88f6283
+          - const: marvell,kirkwood
+
+      - description: Kirkwood 98dx4122 SoC inside Marvell Switch
+        items:
+          - enum:
+              - keymile,km_fixedeth
+              - keymile,km_kirkwood
+              - marvell,db-dxbc2
+          - const: marvell,kirkwood-98dx4122
+          - const: marvell,kirkwood
+
+additionalProperties: true
