@@ -25,6 +25,8 @@ properties:
       # AB-RTCMC-32.768kHz-EOZ9: Real Time Clock/Calendar Module with I2C Interface
       - abracon,abeoz9
       # I2C, 32-Bit Binary Counter Watchdog RTC with Trickle Charger and Reset Input/Output
+      - dallas,ds1307
+      - dallas,ds1338
       - dallas,ds1374
       # Dallas DS1672 Real-time Clock
       - dallas,ds1672
@@ -69,6 +71,8 @@ properties:
       - ricoh,rv5c387a
       # 2-wire CMOS real-time clock
       - sii,s35390a
+      # Serial real-time clock (RTC) with alarm
+      - st,m41t81
       # I2C bus SERIAL INTERFACE REAL-TIME CLOCK IC
       - whwave,sd3078
       # Xircom X1205 I2C RTC
