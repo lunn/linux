@@ -22,7 +22,7 @@
 		stdout-path = &uart0;
 	};
 
-	ocp@f1000000 {
+	soc@f1000000 {
 		pin-controller@10000 {
 			pmx_sdio_gpios: pmx-sdio-gpios {
 				marvell,pins = "mpp37", "mpp38";

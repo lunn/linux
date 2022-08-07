@@ -16,7 +16,7 @@
 	model = "OpenRD Client";
 	compatible = "marvell,openrd-client", "marvell,openrd", "marvell,kirkwood-88f6281", "marvell,kirkwood";
 
-	ocp@f1000000 {
+	soc@f1000000 {
 		audio-controller@a0000 {
 			status = "okay";
 		};

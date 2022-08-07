@@ -16,7 +16,7 @@
 	model = "OpenRD Ultimate";
 	compatible = "marvell,openrd-ultimate", "marvell,openrd", "marvell,kirkwood-88f6281", "marvell,kirkwood";
 
-	ocp@f1000000 {
+	soc@f1000000 {
 		i2c@11000 {
 			status = "okay";
 			clock-frequency = <400000>;

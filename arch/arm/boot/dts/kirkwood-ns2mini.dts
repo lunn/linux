@@ -14,7 +14,7 @@
 		reg = <0x00000000 0x8000000>;
 	};
 
-	ocp@f1000000 {
+	soc@f1000000 {
 		sata@80000 {
 			pinctrl-0 = <&pmx_ns2_sata0>;
 			pinctrl-names = "default";

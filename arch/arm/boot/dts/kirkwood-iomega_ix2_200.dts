@@ -18,7 +18,7 @@
 		stdout-path = &uart0;
 	};
 
-	ocp@f1000000 {
+	soc@f1000000 {
 		pinctrl: pin-controller@10000 {
 			pinctrl-0 = < &pmx_led_sata_brt_ctrl_1
 				      &pmx_led_sata_brt_ctrl_2

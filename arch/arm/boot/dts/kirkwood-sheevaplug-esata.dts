@@ -13,7 +13,7 @@
 	model = "Globalscale Technologies eSATA SheevaPlug";
 	compatible = "globalscale,sheevaplug-esata-rev13", "globalscale,sheevaplug-esata", "globalscale,sheevaplug", "marvell,kirkwood-88f6281", "marvell,kirkwood";
 
-	ocp@f1000000 {
+	soc@f1000000 {
 		sata@80000 {
 			status = "okay";
 			nr-ports = <2>;

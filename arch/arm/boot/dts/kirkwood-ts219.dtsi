@@ -13,7 +13,7 @@
 		stdout-path = &uart0;
 	};
 
-	ocp@f1000000 {
+	soc@f1000000 {
 		i2c@11000 {
 			status = "okay";
 			clock-frequency = <400000>;

@@ -18,7 +18,7 @@
 		stdout-path = &uart0;
 	};
 
-	ocp@f1000000 {
+	soc@f1000000 {
 		serial@12000 {
 			status = "okay";
 		};
