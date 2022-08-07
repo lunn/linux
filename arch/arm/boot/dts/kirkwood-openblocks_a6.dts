@@ -41,7 +41,7 @@
 			};
 		};
 
-		pinctrl: pin-controller@10000 {
+		pinctrl: pinctrl@10000 {
 			pinctrl-0 = <&pmx_dip_switches>;
 			pinctrl-names = "default";
 

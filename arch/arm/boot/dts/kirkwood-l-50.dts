@@ -24,7 +24,7 @@
 	};
 
 	soc@f1000000 {
-		pinctrl: pin-controller@10000 {
+		pinctrl: pinctrl@10000 {
 			pinctrl-0 = <&pmx_led38 &pmx_sysrst &pmx_button29>;
 			pinctrl-names = "default";
 

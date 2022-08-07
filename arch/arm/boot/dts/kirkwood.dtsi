@@ -73,7 +73,7 @@
 		#address-cells = <1>;
 		#size-cells = <1>;
 
-		pinctrl: pin-controller@10000 {
+		pinctrl: pinctrl@10000 {
 			/* set compatible property in SoC file */
 			reg = <0x10000 0x20>;
 
