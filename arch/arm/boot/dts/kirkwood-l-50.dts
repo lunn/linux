@@ -86,7 +86,7 @@
 			};
 
 			rtc@30 {
-				compatible = "s35390a";
+				compatible = "sii,s35390a";
 				reg = <0x30>;
 			};
 		};
