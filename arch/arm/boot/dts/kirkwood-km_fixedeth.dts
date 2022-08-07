@@ -7,7 +7,7 @@
 
 / {
 	model = "Keymile Kirkwood Fixed Eth";
-	compatible = "keymile,km_fixedeth", "marvell,kirkwood-98DX4122", "marvell,kirkwood";
+	compatible = "keymile,km_fixedeth", "marvell,kirkwood-98dx4122", "marvell,kirkwood";
 
 	memory@0 {
 		device_type = "memory";
