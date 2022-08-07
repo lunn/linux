@@ -57,7 +57,7 @@
 		spi@10600 {
 			status = "okay";
 
-			m25p16@0 {
+			flash@0 {
 				#address-cells = <1>;
 				#size-cells = <1>;
 				compatible = "st,m25p16", "jedec,spi-nor";
