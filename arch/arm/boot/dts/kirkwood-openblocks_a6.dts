@@ -35,7 +35,7 @@
 		i2c@11100 {
 			status = "okay";
 
-			s35390a: s35390a@30 {
+			s35390a: rtc@30 {
 				compatible = "sii,s35390a";
 				reg = <0x30>;
 			};

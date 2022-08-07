@@ -122,7 +122,7 @@
 		i2c@11000 {
 			status = "okay";
 
-			pcf8563: pcf8563@51 {
+			pcf8563: rtc@51 {
 				compatible = "nxp,pcf8563";
 				reg = <0x51>;
 			};
