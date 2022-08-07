@@ -242,13 +242,13 @@
 			status = "okay";
 			clock-frequency = <400000>;
 
-			rs5c372: rs5c372@32 {
+			rs5c372: rtc@32 {
 				status = "disabled";
 				compatible = "ricoh,rs5c372a";
 				reg = <0x32>;
 			};
 
-			s35390a: s35390a@30 {
+			s35390a: rtc@30 {
 				status = "disabled";
 				compatible = "sii,s35390a";
 				reg = <0x30>;

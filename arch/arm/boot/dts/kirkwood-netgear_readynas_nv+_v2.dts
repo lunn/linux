@@ -88,7 +88,7 @@
 		i2c@11000 {
 			status = "okay";
 
-			rs5c372a: rs5c372a@32 {
+			rs5c372a: rtc@32 {
 				compatible = "ricoh,rs5c372a";
 				reg = <0x32>;
 			};
