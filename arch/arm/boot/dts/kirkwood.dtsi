@@ -67,7 +67,7 @@
 		};
 	};
 
-	ocp@f1000000 {
+	soc@f1000000 {
 		compatible = "simple-bus";
 		ranges = <0x00000000 0xf1000000 0x0100000>;
 		#address-cells = <1>;

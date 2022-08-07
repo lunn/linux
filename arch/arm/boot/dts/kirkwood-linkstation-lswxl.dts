@@ -18,7 +18,7 @@
 		reg = <0x00000000 0x8000000>;
 	};
 
-	ocp@f1000000 {
+	soc@f1000000 {
 		pinctrl: pin-controller@10000 {
 			pmx_led_hdderr0: pmx-led-hdderr0 {
 				marvell,pins = "mpp8";

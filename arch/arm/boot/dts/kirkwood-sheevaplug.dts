@@ -13,7 +13,7 @@
 	model = "Globalscale Technologies SheevaPlug";
 	compatible = "globalscale,sheevaplug", "marvell,kirkwood-88f6281", "marvell,kirkwood";
 
-	ocp@f1000000 {
+	soc@f1000000 {
 		mmc@90000 {
 			pinctrl-0 = <&pmx_sdio>;
 			pinctrl-names = "default";

@@ -16,7 +16,7 @@
 	model = "OpenRD Base";
 	compatible = "marvell,openrd-base", "marvell,openrd", "marvell,kirkwood-88f6281", "marvell,kirkwood";
 
-	ocp@f1000000 {
+	soc@f1000000 {
 		serial@12100 {
 			status = "okay";
 		};

@@ -26,7 +26,7 @@
 		stdout-path = &uart0;
 	};
 
-	ocp@f1000000 {
+	soc@f1000000 {
 		rtc@10300 {
 			/* The on-chip RTC is not powered (no supercap). */
 			status = "disabled";
