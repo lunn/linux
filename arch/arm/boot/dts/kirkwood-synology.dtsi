@@ -204,7 +204,6 @@
 				compatible = "st,m25p80", "jedec,spi-nor";
 				reg = <0>;
 				spi-max-frequency = <20000000>;
-				mode = <0>;
 
 				partition@0 {
 					reg = <0x00000000 0x00080000>;
