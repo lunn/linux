@@ -127,10 +127,8 @@
 		};
 	};
 
-	regulators {
-		usb0_power: regulator@1 {
-			enable-active-high;
-		};
+	usb0_power: regulator-5v {
+		enable-active-high;
 	};
 
 	gpio-leds {

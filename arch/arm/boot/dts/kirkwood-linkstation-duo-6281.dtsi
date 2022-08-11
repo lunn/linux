@@ -106,28 +106,26 @@
 		};
 	};
 
-	regulators {
-		pinctrl-0 = <&pmx_power_hdd0 &pmx_power_hdd1 &pmx_usb_vbus>;
+	usb_power: regulator-usb-5v {
+		pinctrl-0 = <&pmx_usb_vbus>;
+		gpio = <&gpio1 5 GPIO_ACTIVE_HIGH>;
+	};
 
-		usb_power: regulator@1 {
-			gpio = <&gpio1 5 GPIO_ACTIVE_HIGH>;
-		};
+	hdd_power0: regulator-hdd0-5v {
+		pinctrl-0 = <&pmx_power_hdd0>;
+		gpio = <&gpio0 28 GPIO_ACTIVE_HIGH>;
+	};
 
-		hdd_power0: regulator@2 {
-			gpio = <&gpio0 28 GPIO_ACTIVE_HIGH>;
-		};
-
-		hdd_power1: regulator@3 {
-			compatible = "regulator-fixed";
-			reg = <3>;
-			regulator-name = "HDD1 Power";
-			regulator-min-microvolt = <5000000>;
-			regulator-max-microvolt = <5000000>;
-			enable-active-high;
-			regulator-always-on;
-			regulator-boot-on;
-			gpio = <&gpio0 29 GPIO_ACTIVE_HIGH>;
-		};
+	hdd_power1: regulator-hdd1-5v {
+		pinctrl-0 = <&pmx_power_hdd1>;
+		compatible = "regulator-fixed";
+		regulator-name = "HDD1 Power";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		enable-active-high;
+		regulator-always-on;
+		regulator-boot-on;
+		gpio = <&gpio0 29 GPIO_ACTIVE_HIGH>;
 	};
 };
 

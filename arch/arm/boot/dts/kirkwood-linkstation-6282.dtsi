@@ -126,14 +126,12 @@
 		alarm-gpios = <&gpio1 11 GPIO_ACTIVE_HIGH>;
 	};
 
-	regulators {
-		usb_power: regulator@1 {
-			gpio = <&gpio0 12 GPIO_ACTIVE_HIGH>;
-		};
+	usb_power: regulator-usb-5v {
+		gpio = <&gpio0 12 GPIO_ACTIVE_HIGH>;
+	};
 
-		hdd_power0: regulator@2 {
-			gpio = <&gpio0 8 GPIO_ACTIVE_HIGH>;
-		};
+	hdd_power0: regulator-hdd0-5v {
+		gpio = <&gpio0 8 GPIO_ACTIVE_HIGH>;
 	};
 };
 

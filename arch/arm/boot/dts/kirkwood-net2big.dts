@@ -30,12 +30,9 @@
 		compatible = "gpio-fan";
 		alarm-gpios = <&gpio0 25 GPIO_ACTIVE_LOW>;
 	};
-};
 
-&regulators {
-	regulator@2 {
+	regulator-5v {
 		compatible = "regulator-fixed";
-		reg = <2>;
 		regulator-name = "hdd1power";
 		regulator-min-microvolt = <5000000>;
 		regulator-max-microvolt = <5000000>;
