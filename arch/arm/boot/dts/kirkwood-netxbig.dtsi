@@ -84,24 +84,15 @@
 		gpios = <&gpio0 7 GPIO_ACTIVE_HIGH>;
 	};
 
-	regulators: regulators {
-		status = "okay";
-		compatible = "simple-bus";
-		#address-cells = <1>;
-		#size-cells = <0>;
-		pinctrl-names = "default";
-
-		regulator@1 {
-			compatible = "regulator-fixed";
-			reg = <1>;
-			regulator-name = "hdd0power";
-			regulator-min-microvolt = <5000000>;
-			regulator-max-microvolt = <5000000>;
-			enable-active-high;
-			regulator-always-on;
-			regulator-boot-on;
-			gpio = <&gpio0 16 GPIO_ACTIVE_HIGH>;
-		};
+	regulator-v5 {
+		compatible = "regulator-fixed";
+		regulator-name = "hdd0power";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		enable-active-high;
+		regulator-always-on;
+		regulator-boot-on;
+		gpio = <&gpio0 16 GPIO_ACTIVE_HIGH>;
 	};
 
 	netxbig_gpio_ext: netxbig-gpio-ext {

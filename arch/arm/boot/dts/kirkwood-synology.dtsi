@@ -589,229 +589,187 @@
 		};
 	};
 
-	regulators-hdd-29 {
+	regulator-hdd-29-hdd1 {
+		compatible = "regulator-fixed";
+		pinctrl-0 = <&pmx_hdd1_pwr_29>;
+		regulator-name = "hdd1power";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		enable-active-high;
+		regulator-always-on;
+		regulator-boot-on;
+		startup-delay-us = <5000000>;
+		gpio = <&gpio0 29 GPIO_ACTIVE_HIGH>;
 		status = "disabled";
-		compatible = "simple-bus";
-		#address-cells = <1>;
-		#size-cells = <0>;
-		pinctrl-0 = <&pmx_hdd1_pwr_29 &pmx_hdd2_pwr_31>;
-		pinctrl-names = "default";
 
-		regulator@1 {
-			compatible = "regulator-fixed";
-			reg = <1>;
-			regulator-name = "hdd1power";
-			regulator-min-microvolt = <5000000>;
-			regulator-max-microvolt = <5000000>;
-			enable-active-high;
-			regulator-always-on;
-			regulator-boot-on;
-			startup-delay-us = <5000000>;
-			gpio = <&gpio0 29 GPIO_ACTIVE_HIGH>;
-		};
-
-		regulator@2 {
-			compatible = "regulator-fixed";
-			reg = <2>;
-			regulator-name = "hdd2power";
-			regulator-min-microvolt = <5000000>;
-			regulator-max-microvolt = <5000000>;
-			enable-active-high;
-			regulator-always-on;
-			regulator-boot-on;
-			startup-delay-us = <5000000>;
-			gpio = <&gpio0 31 GPIO_ACTIVE_HIGH>;
-		};
 	};
 
-	regulators-hdd-30-1 {
-		status = "disabled";
-		compatible = "simple-bus";
-		#address-cells = <1>;
-		#size-cells = <0>;
-		pinctrl-0 = <&pmx_hdd1_pwr_30>;
-		pinctrl-names = "default";
-
-		regulator@1 {
-			compatible = "regulator-fixed";
-			reg = <1>;
-			regulator-name = "hdd1power";
-			regulator-min-microvolt = <5000000>;
-			regulator-max-microvolt = <5000000>;
-			enable-active-high;
-			regulator-always-on;
-			regulator-boot-on;
-			startup-delay-us = <5000000>;
-			gpio = <&gpio0 30 GPIO_ACTIVE_HIGH>;
-		};
-	};
-
-	regulators-hdd-30-2 {
-		status = "disabled";
-		compatible = "simple-bus";
-		#address-cells = <1>;
-		#size-cells = <0>;
-		pinctrl-0 = <&pmx_hdd1_pwr_30 &pmx_hdd2_pwr_34>;
-		pinctrl-names = "default";
-
-		regulator@1 {
-			compatible = "regulator-fixed";
-			reg = <1>;
-			regulator-name = "hdd1power";
-			regulator-min-microvolt = <5000000>;
-			regulator-max-microvolt = <5000000>;
-			enable-active-high;
-			regulator-always-on;
-			regulator-boot-on;
-			startup-delay-us = <5000000>;
-			gpio = <&gpio0 30 GPIO_ACTIVE_HIGH>;
-		};
-
-		regulator@2 {
-			compatible = "regulator-fixed";
-			reg = <2>;
-			regulator-name = "hdd2power";
-			regulator-min-microvolt = <5000000>;
-			regulator-max-microvolt = <5000000>;
-			enable-active-high;
-			regulator-always-on;
-			regulator-boot-on;
-			startup-delay-us = <5000000>;
-			gpio = <&gpio1 2 GPIO_ACTIVE_HIGH>;
-		};
-	};
-
-	regulators-hdd-30-4 {
-		status = "disabled";
-		compatible = "simple-bus";
-		#address-cells = <1>;
-		#size-cells = <0>;
-		pinctrl-0 = <&pmx_hdd1_pwr_30 &pmx_hdd2_pwr_34
-			     &pmx_hdd3_pwr_44 &pmx_hdd4_pwr_45>;
-		pinctrl-names = "default";
-
-		regulator@1 {
-			compatible = "regulator-fixed";
-			reg = <1>;
-			regulator-name = "hdd1power";
-			regulator-min-microvolt = <5000000>;
-			regulator-max-microvolt = <5000000>;
-			enable-active-high;
-			regulator-always-on;
-			regulator-boot-on;
-			startup-delay-us = <5000000>;
-			gpio = <&gpio0 30 GPIO_ACTIVE_HIGH>;
-		};
-
-		regulator@2 {
-			compatible = "regulator-fixed";
-			reg = <2>;
-			regulator-name = "hdd2power";
-			regulator-min-microvolt = <5000000>;
-			regulator-max-microvolt = <5000000>;
-			enable-active-high;
-			regulator-always-on;
-			regulator-boot-on;
-			startup-delay-us = <5000000>;
-			gpio = <&gpio1 2 GPIO_ACTIVE_HIGH>;
-		};
-
-		regulator@3 {
-			compatible = "regulator-fixed";
-			reg = <3>;
-			regulator-name = "hdd3power";
-			regulator-min-microvolt = <5000000>;
-			regulator-max-microvolt = <5000000>;
-			enable-active-high;
-			regulator-always-on;
-			regulator-boot-on;
-			startup-delay-us = <5000000>;
-			gpio = <&gpio1 12 GPIO_ACTIVE_HIGH>;
-		};
-
-		regulator@4 {
-			compatible = "regulator-fixed";
-			reg = <4>;
-			regulator-name = "hdd4power";
-			regulator-min-microvolt = <5000000>;
-			regulator-max-microvolt = <5000000>;
-			enable-active-high;
-			regulator-always-on;
-			regulator-boot-on;
-			startup-delay-us = <5000000>;
-			gpio = <&gpio1 13 GPIO_ACTIVE_HIGH>;
-		};
-	};
-
-	regulators-hdd-31 {
-		status = "disabled";
-		compatible = "simple-bus";
-		#address-cells = <1>;
-		#size-cells = <0>;
+	regulator-hdd-29-hdd2 {
+		compatible = "regulator-fixed";
 		pinctrl-0 = <&pmx_hdd2_pwr_31>;
-		pinctrl-names = "default";
-
-		regulator@1 {
-			compatible = "regulator-fixed";
-			reg = <1>;
-			regulator-name = "hdd2power";
-			regulator-min-microvolt = <5000000>;
-			regulator-max-microvolt = <5000000>;
-			enable-active-high;
-			regulator-always-on;
-			regulator-boot-on;
-			startup-delay-us = <5000000>;
-			gpio = <&gpio0 31 GPIO_ACTIVE_HIGH>;
-		};
+		regulator-name = "hdd2power";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		enable-active-high;
+		regulator-always-on;
+		regulator-boot-on;
+		startup-delay-us = <5000000>;
+		gpio = <&gpio0 31 GPIO_ACTIVE_HIGH>;
+		status = "disabled";
 	};
 
-	regulators-hdd-34 {
+	regulator-hdd-30-hdd1 {
+		compatible = "regulator-fixed";
+		pinctrl-0 = <&pmx_hdd1_pwr_30>;
+		regulator-name = "hdd1power";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		enable-active-high;
+		regulator-always-on;
+		regulator-boot-on;
+		startup-delay-us = <5000000>;
+		gpio = <&gpio0 30 GPIO_ACTIVE_HIGH>;
 		status = "disabled";
-		compatible = "simple-bus";
-		#address-cells = <1>;
-		#size-cells = <0>;
-		pinctrl-0 = <&pmx_hdd2_pwr_34 &pmx_hdd3_pwr_44
-			     &pmx_hdd4_pwr_45>;
-		pinctrl-names = "default";
+	};
 
-		regulator@2 {
-			compatible = "regulator-fixed";
-			reg = <2>;
-			regulator-name = "hdd2power";
-			regulator-min-microvolt = <5000000>;
-			regulator-max-microvolt = <5000000>;
-			enable-active-high;
-			regulator-always-on;
-			regulator-boot-on;
-			startup-delay-us = <5000000>;
-			gpio = <&gpio1 2 GPIO_ACTIVE_HIGH>;
-		};
+	regulator-hdd-30-2-hdd1 {
+		compatible = "regulator-fixed";
+		pinctrl-0 = <&pmx_hdd1_pwr_30>;
+		regulator-name = "hdd1power";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		enable-active-high;
+		regulator-always-on;
+		regulator-boot-on;
+		startup-delay-us = <5000000>;
+		gpio = <&gpio0 30 GPIO_ACTIVE_HIGH>;
+		status = "disabled";
+	};
 
-		regulator@3 {
-			compatible = "regulator-fixed";
-			reg = <3>;
-			regulator-name = "hdd3power";
-			regulator-min-microvolt = <5000000>;
-			regulator-max-microvolt = <5000000>;
-			enable-active-high;
-			regulator-always-on;
-			regulator-boot-on;
-			startup-delay-us = <5000000>;
-			gpio = <&gpio1 12 GPIO_ACTIVE_HIGH>;
-		};
+	regulator-hdd-30-2-hdd2 {
+		compatible = "regulator-fixed";
+		pinctrl-0 = <&pmx_hdd2_pwr_34>;
+		regulator-name = "hdd2power";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		enable-active-high;
+		regulator-always-on;
+		regulator-boot-on;
+		startup-delay-us = <5000000>;
+		gpio = <&gpio1 2 GPIO_ACTIVE_HIGH>;
+		status = "disabled";
+	};
 
-		regulator@4 {
-			compatible = "regulator-fixed";
-			reg = <4>;
-			regulator-name = "hdd4power";
-			regulator-min-microvolt = <5000000>;
-			regulator-max-microvolt = <5000000>;
-			enable-active-high;
-			regulator-always-on;
-			regulator-boot-on;
-			startup-delay-us = <5000000>;
-			gpio = <&gpio1 13 GPIO_ACTIVE_HIGH>;
-		};
+	regulator-hdd-30-4-hdd1 {
+		compatible = "regulator-fixed";
+		pinctrl-0 = <&pmx_hdd1_pwr_30 5>;
+		regulator-name = "hdd1power";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		enable-active-high;
+		regulator-always-on;
+		regulator-boot-on;
+		startup-delay-us = <5000000>;
+		gpio = <&gpio0 30 GPIO_ACTIVE_HIGH>;
+		status = "disabled";
+	};
+
+	regulator-hdd-30-4-hdd2 {
+		compatible = "regulator-fixed";
+		pinctrl-0 = <&pmx_hdd2_pwr_34>;
+		regulator-name = "hdd2power";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		enable-active-high;
+		regulator-always-on;
+		regulator-boot-on;
+		startup-delay-us = <5000000>;
+		gpio = <&gpio1 2 GPIO_ACTIVE_HIGH>;
+		status = "disabled";
+	};
+
+	regulator-hdd-30-4-hdd3 {
+		compatible = "regulator-fixed";
+		pinctrl-0 = <&pmx_hdd3_pwr_44>;
+		regulator-name = "hdd3power";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		enable-active-high;
+		regulator-always-on;
+		regulator-boot-on;
+		startup-delay-us = <5000000>;
+		gpio = <&gpio1 12 GPIO_ACTIVE_HIGH>;
+		status = "disabled";
+	};
+
+	regulator-hdd-30-4-hdd4 {
+		compatible = "regulator-fixed";
+		pinctrl-0 = <&pmx_hdd4_pwr_45>;
+		regulator-name = "hdd4power";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		enable-active-high;
+		regulator-always-on;
+		regulator-boot-on;
+		startup-delay-us = <5000000>;
+		gpio = <&gpio1 13 GPIO_ACTIVE_HIGH>;
+		status = "disabled";
+	};
+
+	regulator-hdd-31-hdd2 {
+		compatible = "regulator-fixed";
+		pinctrl-0 = <&pmx_hdd2_pwr_31>;
+		regulator-name = "hdd2power";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		enable-active-high;
+		regulator-always-on;
+		regulator-boot-on;
+		startup-delay-us = <5000000>;
+		gpio = <&gpio0 31 GPIO_ACTIVE_HIGH>;
+		status = "disabled";
+	};
+
+	regulator-hdd-34-hdd2 {
+		compatible = "regulator-fixed";
+		pinctrl-0 = <&pmx_hdd2_pwr_34>;
+		regulator-name = "hdd2power";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		enable-active-high;
+		regulator-always-on;
+		regulator-boot-on;
+		startup-delay-us = <5000000>;
+		gpio = <&gpio1 2 GPIO_ACTIVE_HIGH>;
+		status = "disabled";
+	};
+
+	regulator-hdd-34-hdd3 {
+		compatible = "regulator-fixed";
+		pinctrl-0 = <&pmx_hdd3_pwr_44>;
+		regulator-name = "hdd3power";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		enable-active-high;
+		regulator-always-on;
+		regulator-boot-on;
+		startup-delay-us = <5000000>;
+		gpio = <&gpio1 12 GPIO_ACTIVE_HIGH>;
+		status = "disabled";
+	};
+
+	regulator-hdd-34-hdd4 {
+		compatible = "regulator-fixed";
+		pinctrl-0 = <&pmx_hdd4_pwr_45>;
+		regulator-name = "hdd4power";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		enable-active-high;
+		regulator-always-on;
+		regulator-boot-on;
+		startup-delay-us = <5000000>;
+		gpio = <&gpio1 13 GPIO_ACTIVE_HIGH>;
+		status = "disabled";
 	};
 };
 

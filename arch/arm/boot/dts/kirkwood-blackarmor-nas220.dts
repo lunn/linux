@@ -58,36 +58,26 @@
 		};
 	};
 
-	regulators {
-		compatible = "simple-bus";
-		#address-cells = <1>;
-		#size-cells = <0>;
-		pinctrl-0 = <&pmx_power_sata0 &pmx_power_sata1>;
-		pinctrl-names = "default";
+	sata0_power: regulator-sata0-5v {
+		compatible = "regulator-fixed";
+		regulator-name = "SATA0 Power";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		enable-active-high;
+		regulator-always-on;
+		regulator-boot-on;
+		gpio = <&gpio0 24 GPIO_ACTIVE_LOW>;
+	};
 
-		sata0_power: regulator@1 {
-			compatible = "regulator-fixed";
-			reg = <1>;
-			regulator-name = "SATA0 Power";
-			regulator-min-microvolt = <5000000>;
-			regulator-max-microvolt = <5000000>;
-			enable-active-high;
-			regulator-always-on;
-			regulator-boot-on;
-			gpio = <&gpio0 24 GPIO_ACTIVE_LOW>;
-		};
-
-		sata1_power: regulator@2 {
-			compatible = "regulator-fixed";
-			reg = <2>;
-			regulator-name = "SATA1 Power";
-			regulator-min-microvolt = <5000000>;
-			regulator-max-microvolt = <5000000>;
-			enable-active-high;
-			regulator-always-on;
-			regulator-boot-on;
-			gpio = <&gpio0 28 GPIO_ACTIVE_LOW>;
-		};
+	sata1_power: regulator-sata1-5v {
+		compatible = "regulator-fixed";
+		regulator-name = "SATA1 Power";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		enable-active-high;
+		regulator-always-on;
+		regulator-boot-on;
+		gpio = <&gpio0 28 GPIO_ACTIVE_LOW>;
 	};
 };
 

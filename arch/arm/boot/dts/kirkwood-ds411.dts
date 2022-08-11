@@ -34,7 +34,15 @@
 		status = "okay";
 	};
 
-	regulators-hdd-34 {
+	regulator-hdd-34-hdd2 {
+		status = "okay";
+	};
+
+	regulator-hdd-34-hdd3 {
+		status = "okay";
+	};
+
+	regulator-hdd-34-hdd4 {
 		status = "okay";
 	};
 };

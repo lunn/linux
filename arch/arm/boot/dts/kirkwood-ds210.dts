@@ -35,7 +35,7 @@
 		status = "okay";
 	};
 
-	regulators-hdd-31 {
+	regulator-hdd-31-hdd2 {
 		status = "okay";
 	};
 };

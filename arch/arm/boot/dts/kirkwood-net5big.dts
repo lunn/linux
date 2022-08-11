@@ -26,12 +26,8 @@
 		reg = <0x00000000 0x20000000>;
 	};
 
-};
-
-&regulators {
-	regulator@2 {
+	regulator-hdd1-5v {
 		compatible = "regulator-fixed";
-		reg = <2>;
 		regulator-name = "hdd1power";
 		regulator-min-microvolt = <5000000>;
 		regulator-max-microvolt = <5000000>;
@@ -41,9 +37,8 @@
 		gpio = <&gpio0 17 GPIO_ACTIVE_HIGH>;
 	};
 
-	regulator@3 {
+	regulator-hdd2-5v {
 		compatible = "regulator-fixed";
-		reg = <3>;
 		regulator-name = "hdd2power";
 		regulator-min-microvolt = <5000000>;
 		regulator-max-microvolt = <5000000>;
@@ -53,9 +48,8 @@
 		gpio = <&gpio1 9 GPIO_ACTIVE_HIGH>;
 	};
 
-	regulator@4 {
+	regulator-hdd3-5v {
 		compatible = "regulator-fixed";
-		reg = <4>;
 		regulator-name = "hdd3power";
 		regulator-min-microvolt = <5000000>;
 		regulator-max-microvolt = <5000000>;
@@ -65,9 +59,8 @@
 		gpio = <&gpio1 10 GPIO_ACTIVE_HIGH>;
 	};
 
-	regulator@5 {
+	regulator-hdd4-5v {
 		compatible = "regulator-fixed";
-		reg = <5>;
 		regulator-name = "hdd4power";
 		regulator-min-microvolt = <5000000>;
 		regulator-max-microvolt = <5000000>;

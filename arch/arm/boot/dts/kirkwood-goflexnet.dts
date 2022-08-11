@@ -127,24 +127,16 @@
 			gpios = <&gpio1 9 GPIO_ACTIVE_HIGH>;
 		};
 	};
-	regulators {
-		compatible = "simple-bus";
-		#address-cells = <1>;
-		#size-cells = <0>;
-		pinctrl-0 = <&pmx_usb_power_enable>;
-		pinctrl-names = "default";
 
-		usb_power: regulator@1 {
-			compatible = "regulator-fixed";
-			reg = <1>;
-			regulator-name = "USB Power";
-			regulator-min-microvolt = <5000000>;
-			regulator-max-microvolt = <5000000>;
-			enable-active-high;
-			regulator-always-on;
-			regulator-boot-on;
-			gpio = <&gpio0 29 GPIO_ACTIVE_HIGH>;
-		};
+        usb_power: regulator-5v {
+		compatible = "regulator-fixed";
+		regulator-name = "USB Power";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		enable-active-high;
+		regulator-always-on;
+		regulator-boot-on;
+		gpio = <&gpio0 29 GPIO_ACTIVE_HIGH>;
 	};
 };
 

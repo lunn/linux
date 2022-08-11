@@ -49,30 +49,22 @@
 		alarm-gpios = <&gpio0 25 GPIO_ACTIVE_LOW>;
 	};
 
-	regulators: regulators {
-		status = "okay";
-		compatible = "simple-bus";
-		#address-cells = <1>;
-		#size-cells = <0>;
-		pinctrl-names = "default";
+	regulator-v5 {
+		compatible = "regulator-fixed";
+		regulator-name = "hdd1power";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		enable-active-high;
+		regulator-always-on;
+		regulator-boot-on;
+		gpio = <&gpio0 17 GPIO_ACTIVE_HIGH>;
+	};
 
-		regulator@2 {
-			compatible = "regulator-fixed";
-			reg = <2>;
-			regulator-name = "hdd1power";
-			regulator-min-microvolt = <5000000>;
-			regulator-max-microvolt = <5000000>;
-			enable-active-high;
-			regulator-always-on;
-			regulator-boot-on;
-			gpio = <&gpio0 17 GPIO_ACTIVE_HIGH>;
-		};
-		clocks {
-			g762_clk: g762-oscillator {
-				compatible = "fixed-clock";
-				#clock-cells = <0>;
-				clock-frequency = <32768>;
-			};
+	clocks {
+		g762_clk: g762-oscillator {
+			compatible = "fixed-clock";
+			#clock-cells = <0>;
+			clock-frequency = <32768>;
 		};
 	};
 };
