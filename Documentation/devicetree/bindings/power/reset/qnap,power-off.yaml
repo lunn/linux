@@ -1,0 +1,51 @@
+# SPDX-License-Identifier: (GPL-2.0 OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/power/reset/qnap,power-off.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Qnap Power Off driver binding
+
+maintainers:
+  - Andrew Lunn <andrew@lunn.ch>
+
+description: |
+  QNAP NAS devices have a microcontroller controlling the main power
+  supply. This microcontroller is connected to UART1 of the Kirkwood
+  and Orion5x SoCs. Sending the character 'A', at 19200 baud, tells
+  the microcontroller to turn the power off.
+
+  Synology NAS devices use a similar scheme, but a different baud
+  rate, 9600, and a different character, '1'.
+
+properties:
+  compatible:
+    enum:
+      - qnap,power-off
+      - synology,power-off
+
+  reg:
+    description:
+      Address and length of the register set for UART1
+    maxItems: 1
+
+  clocks:
+    description:
+      tclk clock
+    maxItems: 1
+
+required:
+  - compatible
+  - reg
+  - clocks
+
+unevaluatedProperties: false
+
+examples:
+  - |
+    poweroff@12100 {
+        compatible = "qnap,power-off";
+        reg = <0x12100 0x100>;
+        clocks = <&gate_clk 7>;
+    };
+...
