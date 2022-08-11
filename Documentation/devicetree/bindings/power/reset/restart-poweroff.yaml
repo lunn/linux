@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: (GPL-2.0 OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/power/reset/restart-poweroff.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Qnap Power Off driver binding
+
+maintainers:
+  - Andrew Lunn <andrew@lunn.ch>
+
+description: |
+  Buffalo Linkstation LS-XHL and LS-CHLv2, and other devices power off
+  by restarting and letting u-boot keep hold of the machine until the
+  user presses a button.
+
+properties:
+  compatible:
+    const: restart-poweroff
+
+required:
+  - compatible
+
+unevaluatedProperties: false
+
+examples:
+  - |
+    restart_poweroff {
+        compatible = "restart-poweroff";
+    };
+...
