@@ -1,0 +1,68 @@
+# SPDX-License-Identifier: GPL-2.0-only OR BSD-2-Clause
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/leds/lacie,ns2-leds.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: dual-GPIO LED found on Network Space v2 (and parents).
+
+maintainers:
+  - Andrew Lunn <andrew@lunn.ch>
+
+properties:
+  compatible:
+    const: lacie,ns2-leds
+
+patternProperties:
+  "^.*-.*$":
+    type: object
+    $ref: common.yaml#
+
+    properties:
+      cmd-gpio:
+        description:
+          Command LED GPIO.
+        maxItems: 1
+
+      slow-gpio:
+        description:
+          Slow LED GPIO
+        maxItems: 1
+
+      modes-map:
+        $ref: /schemas/types.yaml#/definitions/uint32-array
+        description:
+          A mapping between LED modes (off, on or SATA activity
+          blinking) and the corresponding cmd-gpio/slow-gpio
+          values. All the GPIO values combinations should be given
+          in order to avoid having an unknown mode at driver probe
+          time.
+
+    required:
+      - cmd-gpio
+      - slow-gpio
+      - modes-map
+
+additionalProperties: false
+
+required:
+  - compatible
+
+examples:
+  - |
+    #include <dt-bindings/leds/leds-ns2.h>
+
+    ns2-leds {
+        compatible = "lacie,ns2-leds";
+
+        blue-sata {
+            label = "ns2:blue:sata";
+            slow-gpio = <&gpio0 29 0>;
+            cmd-gpio = <&gpio0 30 0>;
+            modes-map = <NS_V2_LED_OFF  0 1
+                         NS_V2_LED_ON   1 0
+                         NS_V2_LED_ON   0 0
+                         NS_V2_LED_SATA 1 1>;
+        };
+    };
+...
