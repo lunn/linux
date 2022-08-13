@@ -33,12 +33,12 @@
 				marvell,function = "sysrst";
 			};
 
-			pmx_button29: pmx_button29 {
+			pmx_button29: pmx-button29 {
 				marvell,pins = "mpp29";
 				marvell,function = "gpio";
 			};
 
-			pmx_led38: pmx_led38 {
+			pmx_led38: pmx-led38 {
 				marvell,pins = "mpp38";
 				marvell,function = "gpio";
 			};
