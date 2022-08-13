@@ -34,7 +34,7 @@ properties:
     const: 1
 
   "#size-cells":
-    const: 0
+    enum: [0, 1]
 
   ranges: true
 
@@ -130,11 +130,26 @@ required:
   - "#address-cells"
   - "#size-cells"
 
+if:
+  properties:
+    compatible:
+      contains:
+        const: marvell,orion-nand
+then:
+  properties:
+    "#size-cells":
+      const: 1
+else:
+  properties:
+    "#size-cells":
+      const: 0
+
 additionalProperties: true
 
 examples:
   - |
     nand-controller {
+      compatible = "bar";
       #address-cells = <1>;
       #size-cells = <0>;
       cs-gpios = <0>, <&gpioA 1>; /* A single native CS is available */
