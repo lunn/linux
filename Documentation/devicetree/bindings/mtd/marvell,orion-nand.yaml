@@ -13,12 +13,15 @@ maintainers:
   - Andrew Lunn <andrew@lunn.ch>
 
 properties:
-  "#address-cells": true
-  "#size-cells": true
-
   compatible:
     enum:
       - marvell,orion-nand
+
+  "#address-cells":
+    const: 1
+
+  "#size-cells":
+    const: 1
 
   reg:
     maxItems: 1
@@ -58,11 +61,15 @@ properties:
     maximum: 255
 
   partitions:
+    description:
+      Deprecated container of partitions
     type: object
 
 patternProperties:
   "@[0-9a-f]+$":
     $ref: "/schemas/mtd/partitions/partition.yaml"
+    description:
+      Partitions within the NAND
 
 required:
   - compatible
@@ -73,13 +80,19 @@ additionalProperties: false
 examples:
   - |
     nand-controller@f4000000 {
+        compatible = "marvell,orion-nand";
         #address-cells = <1>;
         #size-cells = <1>;
         cle = <0>;
         ale = <1>;
         bank-width = <1>;
         chip-delay = <25>;
-        compatible = "marvell,orion-nand";
         reg = <0xf4000000 0x400>;
+
+        partition@0 {
+            label = "u-boot";
+            reg = <0x0000000 0x100000>;
+            read-only;
+        };
     };
 ...
