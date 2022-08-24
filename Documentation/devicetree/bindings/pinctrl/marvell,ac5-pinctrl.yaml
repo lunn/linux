@@ -21,7 +21,7 @@ properties:
     maxItems: 1
 
 patternProperties:
-  '-pins$':
+  '^pmx-':
     type: object
     $ref: pinmux-node.yaml#
 
@@ -30,8 +30,9 @@ patternProperties:
         $ref: "/schemas/types.yaml#/definitions/string"
         description:
           Indicates the function to select.
-        enum: [ dev_init_done, ge, gpio, i2c0, i2c1, int_out, led, nand, pcie, ptp, sdio,
-                spi0, spi1, synce, tsen_int, uart0, uart1, uart2, uart3, uartsd, wd_int, xg ]
+        enum: [ dev_init_done, ge, gpio, i2c0, i2c1, int_out, led, nand, pcie,
+                ptp, sdio, spi0, spi1, synce, tsen_int, uart0, uart1, uart2,
+                uart3, uartsd, wd_int, xg ]
 
       marvell,pins:
         $ref: /schemas/types.yaml#/definitions/string-array
@@ -39,11 +40,13 @@ patternProperties:
           Array of MPP pins to be used for the given function.
         minItems: 1
         items:
-          enum: [ mpp0, mpp1, mpp2, mpp3, mpp4, mpp5, mpp6, mpp7, mpp8, mpp9,
-                  mpp10, mpp11, mpp12, mpp13, mpp14, mpp15, mpp16, mpp17, mpp18, mpp19,
-                  mpp20, mpp21, mpp22, mpp23, mpp24, mpp25, mpp26, mpp27, mpp28, mpp29,
-                  mpp30, mpp31, mpp32, mpp33, mpp34, mpp35, mpp36, mpp37, mpp38, mpp39,
-                  mpp40, mpp41, mpp42, mpp43, mpp44, mpp45 ]
+          pattern: '^mpp([0-9]|[1-3][0-9]|4[0-5])$'
+
+    required:
+      - marvell,function
+      - marvell,pins
+
+  additionalProperties: false
 
 allOf:
   - $ref: "pinctrl.yaml#"
@@ -60,12 +63,12 @@ examples:
       compatible = "marvell,ac5-pinctrl";
       reg = <0x80020100 0x20>;
 
-      i2c0_pins: i2c0-pins {
+      pmx_i2c0_pins: pmx-i2c0 {
         marvell,pins = "mpp26", "mpp27";
         marvell,function = "i2c0";
       };
 
-      i2c0_gpio: i2c0-gpio-pins {
+      pmx_i2c0_gpio: pmx-gpio-i2c0 {
         marvell,pins = "mpp26", "mpp27";
         marvell,function = "gpio";
       };
