@@ -31,6 +31,12 @@ properties:
     description: Name of the USB PHY
     const: 'usb'
 
+  vcc-supply:
+    description: phandle to the regulator that provides power to the PHY.
+
+  vbus-supply:
+    description: VBUS power supply when used in OTG switchable mode
+
 required:
   - compatible
   - reg
