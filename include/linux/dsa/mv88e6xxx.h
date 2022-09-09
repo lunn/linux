@@ -5,7 +5,14 @@
 #ifndef _NET_DSA_TAG_MV88E6XXX_H
 #define _NET_DSA_TAG_MV88E6XXX_H
 
-#include <linux/if_vlan.h>
+#include <net/dsa.h>
+
+struct dsa_tagger_data {
+	/* DSA frame decoded to be from the RMU */
+	void (*rmu_frame2reg)(struct dsa_switch *ds,
+			      struct sk_buff *skb,
+			      u8 seqno);
+};
 
 #define MV88E6XXX_VID_STANDALONE	0
 #define MV88E6XXX_VID_BRIDGED		(VLAN_N_VID - 1)
