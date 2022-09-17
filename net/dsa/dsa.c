@@ -1727,6 +1727,28 @@ bool dsa_mdb_present_in_other_db(struct dsa_switch *ds, int port,
 }
 EXPORT_SYMBOL_GPL(dsa_mdb_present_in_other_db);
 
+void dsa_inband_init(struct dsa_inband *inband)
+{
+	init_completion(&inband->completion);
+}
+EXPORT_SYMBOL_GPL(dsa_inband_init);
+
+void dsa_inband_complete(struct dsa_inband *inband)
+{
+	complete(&inband->completion);
+}
+EXPORT_SYMBOL_GPL(dsa_inband_complete);
+
+int dsa_inband_wait_for_completion(struct dsa_inband *inband, int timeout_ms)
+{
+	unsigned long jiffies = msecs_to_jiffies(timeout_ms);
+
+	reinit_completion(&inband->completion);
+
+	return wait_for_completion_timeout(&inband->completion, jiffies);
+}
+EXPORT_SYMBOL_GPL(dsa_inband_wait_for_completion);
+
 static const struct dsa_stubs __dsa_stubs = {
 	.conduit_hwtstamp_validate = __dsa_conduit_hwtstamp_validate,
 };
