@@ -1749,6 +1749,22 @@ int dsa_inband_wait_for_completion(struct dsa_inband *inband, int timeout_ms)
 }
 EXPORT_SYMBOL_GPL(dsa_inband_wait_for_completion);
 
+/* Cannot use dsa_inband_wait_completion since the completion needs to be
+ * reinitialized before the skb is queue to avoid races.
+ */
+int dsa_inband_request(struct dsa_inband *inband, struct sk_buff *skb,
+		       int timeout_ms)
+{
+	unsigned long jiffies = msecs_to_jiffies(timeout_ms);
+
+	reinit_completion(&inband->completion);
+
+	dev_queue_xmit(skb);
+
+	return wait_for_completion_timeout(&inband->completion, jiffies);
+}
+EXPORT_SYMBOL_GPL(dsa_inband_request);
+
 static const struct dsa_stubs __dsa_stubs = {
 	.conduit_hwtstamp_validate = __dsa_conduit_hwtstamp_validate,
 };
