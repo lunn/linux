@@ -1727,9 +1727,11 @@ bool dsa_mdb_present_in_other_db(struct dsa_switch *ds, int port,
 }
 EXPORT_SYMBOL_GPL(dsa_mdb_present_in_other_db);
 
-void dsa_inband_init(struct dsa_inband *inband)
+void dsa_inband_init(struct dsa_inband *inband, u32 seqno_mask)
 {
 	init_completion(&inband->completion);
+	inband->seqno_mask = seqno_mask;
+	inband->seqno = 0;
 }
 EXPORT_SYMBOL_GPL(dsa_inband_init);
 
@@ -1753,10 +1755,16 @@ EXPORT_SYMBOL_GPL(dsa_inband_wait_for_completion);
  * reinitialized before the skb is queue to avoid races.
  */
 int dsa_inband_request(struct dsa_inband *inband, struct sk_buff *skb,
+		       void (*insert_seqno)(struct sk_buff *skb, u32 seqno),
 		       int timeout_ms)
 {
 	unsigned long jiffies = msecs_to_jiffies(timeout_ms);
 	int ret;
+
+	if (insert_seqno) {
+		inband->seqno++;
+		insert_seqno(skb, inband->seqno & inband->seqno_mask);
+	}
 
 	reinit_completion(&inband->completion);
 
@@ -1768,6 +1776,12 @@ int dsa_inband_request(struct dsa_inband *inband, struct sk_buff *skb,
 	return 0;
 }
 EXPORT_SYMBOL_GPL(dsa_inband_request);
+
+u32 dsa_inband_seqno(struct dsa_inband *inband)
+{
+	return READ_ONCE(inband->seqno) & inband->seqno_mask;
+}
+EXPORT_SYMBOL_GPL(dsa_inband_seqno);
 
 static const struct dsa_stubs __dsa_stubs = {
 	.conduit_hwtstamp_validate = __dsa_conduit_hwtstamp_validate,
