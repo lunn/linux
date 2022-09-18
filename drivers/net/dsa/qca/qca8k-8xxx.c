@@ -295,8 +295,8 @@ static int qca8k_read_eth(struct qca8k_priv *priv, u32 reg, u32 *val, int len)
 
 	mutex_unlock(&mgmt_eth_data->mutex);
 
-	if (ret <= 0)
-		return -ETIMEDOUT;
+	if (ret)
+		return ret;
 
 	if (!ack)
 		return -EINVAL;
@@ -339,8 +339,8 @@ static int qca8k_write_eth(struct qca8k_priv *priv, u32 reg, u32 *val, int len)
 
 	mutex_unlock(&mgmt_eth_data->mutex);
 
-	if (ret <= 0)
-		return -ETIMEDOUT;
+	if (ret)
+		return ret;
 
 	if (!ack)
 		return -EINVAL;
@@ -481,8 +481,8 @@ qca8k_phy_eth_busy_wait(struct qca8k_mgmt_eth_data *mgmt_eth_data,
 
 	ack = mgmt_eth_data->ack;
 
-	if (ret <= 0)
-		return -ETIMEDOUT;
+	if (ret)
+		return ret;
 
 	if (!ack)
 		return -EINVAL;
@@ -569,8 +569,7 @@ qca8k_phy_eth_command(struct qca8k_priv *priv, bool read, int phy,
 
 	ack = mgmt_eth_data->ack;
 
-	if (ret <= 0) {
-		ret = -ETIMEDOUT;
+	if (ret) {
 		kfree_skb(read_skb);
 		goto exit;
 	}
@@ -602,10 +601,8 @@ qca8k_phy_eth_command(struct qca8k_priv *priv, bool read, int phy,
 
 		ack = mgmt_eth_data->ack;
 
-		if (ret <= 0) {
-			ret = -ETIMEDOUT;
+		if (ret)
 			goto exit;
-		}
 
 		if (!ack) {
 			ret = -EINVAL;
@@ -622,8 +619,9 @@ exit:
 	qca8k_mdio_header_fill_seq_num(clear_skb, mgmt_eth_data->seq);
 	mgmt_eth_data->ack = false;
 
-	dsa_inband_wait_for_completion(&mgmt_eth_data->inband,
-				       QCA8K_ETHERNET_TIMEOUT);
+	/* This is expected to fail sometimes, so don't check return value. */
+	dsa_inband_request(&mgmt_eth_data->inband, clear_skb,
+			   QCA8K_ETHERNET_TIMEOUT);
 
 	mutex_unlock(&mgmt_eth_data->mutex);
 
