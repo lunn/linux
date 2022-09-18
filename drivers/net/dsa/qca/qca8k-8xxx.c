@@ -139,6 +139,8 @@ static void qca8k_rw_reg_ack_handler(struct dsa_switch *ds, struct sk_buff *skb)
 	struct qca_mgmt_ethhdr *mgmt_ethhdr;
 	u32 command;
 	u8 len, cmd;
+	u32 data[4];
+	int err = 0;
 	int i;
 
 	mgmt_ethhdr = (struct qca_mgmt_ethhdr *)skb_mac_header(skb);
@@ -154,7 +156,7 @@ static void qca8k_rw_reg_ack_handler(struct dsa_switch *ds, struct sk_buff *skb)
 		return;
 
 	if (cmd == MDIO_READ) {
-		u32 *val = mgmt_eth_data->data;
+		u32 *val = &data[0];
 
 		*val = get_unaligned_le32(&mgmt_ethhdr->mdio_data);
 
@@ -176,7 +178,7 @@ static void qca8k_rw_reg_ack_handler(struct dsa_switch *ds, struct sk_buff *skb)
 		}
 	}
 
-	dsa_inband_complete(&mgmt_eth_data->inband);
+	dsa_inband_complete(&mgmt_eth_data->inband, &data, sizeof(data), err);
 }
 
 static struct sk_buff *qca8k_alloc_mdio_header(enum mdio_cmd cmd, u32 reg, u32 *val,
@@ -261,7 +263,7 @@ static int qca8k_read_eth(struct qca8k_priv *priv, u32 reg, u32 *val, int len)
 {
 	struct qca8k_mgmt_eth_data *mgmt_eth_data = &priv->mgmt_eth_data;
 	struct sk_buff *skb;
-	int err;
+	u32 data[4];
 	int ret;
 
 	skb = qca8k_alloc_mdio_header(MDIO_READ, reg, NULL,
@@ -282,30 +284,25 @@ static int qca8k_read_eth(struct qca8k_priv *priv, u32 reg, u32 *val, int len)
 
 	ret = dsa_inband_request(&mgmt_eth_data->inband, skb,
 				 qca8k_mdio_header_fill_seq_num,
+				 &data, sizeof(data),
 				 QCA8K_ETHERNET_TIMEOUT);
+	if (ret < 0)
+		goto out;
 
-	*val = mgmt_eth_data->data[0];
+	*val = data[0];
 	if (len > QCA_HDR_MGMT_DATA1_LEN)
-		memcpy(val + 1, mgmt_eth_data->data + 1, len - QCA_HDR_MGMT_DATA1_LEN);
+		memcpy(val + 1, &data[1], len - QCA_HDR_MGMT_DATA1_LEN);
 
-	err = mgmt_eth_data->err;
-
+out:
 	mutex_unlock(&mgmt_eth_data->mutex);
 
-	if (ret)
-		return ret;
-
-	if (err)
-		return err;
-
-	return 0;
+	return ret;
 }
 
 static int qca8k_write_eth(struct qca8k_priv *priv, u32 reg, u32 *val, int len)
 {
 	struct qca8k_mgmt_eth_data *mgmt_eth_data = &priv->mgmt_eth_data;
 	struct sk_buff *skb;
-	int err;
 	int ret;
 
 	skb = qca8k_alloc_mdio_header(MDIO_WRITE, reg, val,
@@ -326,19 +323,12 @@ static int qca8k_write_eth(struct qca8k_priv *priv, u32 reg, u32 *val, int len)
 
 	ret = dsa_inband_request(&mgmt_eth_data->inband, skb,
 				 qca8k_mdio_header_fill_seq_num,
+				 NULL, 0,
 				 QCA8K_ETHERNET_TIMEOUT);
-
-	err = mgmt_eth_data->err;
 
 	mutex_unlock(&mgmt_eth_data->mutex);
 
-	if (ret)
-		return ret;
-
-	if (err)
-		return err;
-
-	return 0;
+	return ret;
 }
 
 static int
@@ -461,22 +451,18 @@ qca8k_phy_eth_busy_wait(struct qca8k_mgmt_eth_data *mgmt_eth_data,
 			struct sk_buff *read_skb, u32 *val)
 {
 	struct sk_buff *skb = skb_copy(read_skb, GFP_KERNEL);
-	int err;
+	u32 data[4];
 	int ret;
 
 	ret = dsa_inband_request(&mgmt_eth_data->inband, skb,
 				 qca8k_mdio_header_fill_seq_num,
+				 &data, sizeof(data),
 				 QCA8K_ETHERNET_TIMEOUT);
-
-	err = mgmt_eth_data->err;
 
 	if (ret)
 		return ret;
 
-	if (err)
-		return err;
-
-	*val = mgmt_eth_data->data[0];
+	*val = data[0];
 
 	return 0;
 }
@@ -489,8 +475,8 @@ qca8k_phy_eth_command(struct qca8k_priv *priv, bool read, int phy,
 	struct qca8k_mgmt_eth_data *mgmt_eth_data;
 	u32 write_val, clear_val = 0, val;
 	struct net_device *mgmt_master;
+	u32 resp_data[4];
 	int ret, ret1;
-	int err;
 
 	if (regnum >= QCA8K_MDIO_MASTER_MAX_REG)
 		return -EINVAL;
@@ -550,17 +536,10 @@ qca8k_phy_eth_command(struct qca8k_priv *priv, bool read, int phy,
 
 	ret = dsa_inband_request(&mgmt_eth_data->inband, write_skb,
 				 qca8k_mdio_header_fill_seq_num,
+				 NULL, 0,
 				 QCA8K_ETHERNET_TIMEOUT);
 
-	err = mgmt_eth_data->err;
-
 	if (ret) {
-		kfree_skb(read_skb);
-		goto exit;
-	}
-
-	if (err) {
-		ret = err;
 		kfree_skb(read_skb);
 		goto exit;
 	}
@@ -578,19 +557,13 @@ qca8k_phy_eth_command(struct qca8k_priv *priv, bool read, int phy,
 	if (read) {
 		ret = dsa_inband_request(&mgmt_eth_data->inband, read_skb,
 					 qca8k_mdio_header_fill_seq_num,
+					 &resp_data, sizeof(resp_data),
 					 QCA8K_ETHERNET_TIMEOUT);
-
-		err = mgmt_eth_data->err;
 
 		if (ret)
 			goto exit;
 
-		if (err) {
-			ret = err;
-			goto exit;
-		}
-
-		ret = mgmt_eth_data->data[0] & QCA8K_MDIO_MASTER_DATA_MASK;
+		ret = resp_data[0] & QCA8K_MDIO_MASTER_DATA_MASK;
 	} else {
 		kfree_skb(read_skb);
 	}
@@ -599,6 +572,7 @@ exit:
 	/* This is expected to fail sometimes, so don't check return value. */
 	dsa_inband_request(&mgmt_eth_data->inband, clear_skb,
 			   qca8k_mdio_header_fill_seq_num,
+			   NULL, 0,
 			   QCA8K_ETHERNET_TIMEOUT);
 
 	mutex_unlock(&mgmt_eth_data->mutex);
