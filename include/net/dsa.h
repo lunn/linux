@@ -1311,10 +1311,11 @@ struct dsa_inband {
 	struct completion completion;
 	u32 seqno;
 	u32 seqno_mask;
+	int err;
 };
 
 void dsa_inband_init(struct dsa_inband *inband, u32 seqno_mask);
-void dsa_inband_complete(struct dsa_inband *inband);
+void dsa_inband_complete(struct dsa_inband *inband, int err);
 int dsa_inband_request(struct dsa_inband *inband, struct sk_buff *skb,
 		       void (*insert_seqno)(struct sk_buff *skb, u32 seqno),
 		       int timeout_ms);

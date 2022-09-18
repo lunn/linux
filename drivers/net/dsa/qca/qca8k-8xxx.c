@@ -138,6 +138,7 @@ static void qca8k_rw_reg_ack_handler(struct dsa_switch *ds, struct sk_buff *skb)
 	struct qca8k_priv *priv = ds->priv;
 	struct qca_mgmt_ethhdr *mgmt_ethhdr;
 	u8 len, cmd;
+	int err = 0;
 
 	mgmt_ethhdr = (struct qca_mgmt_ethhdr *)skb_mac_header(skb);
 	mgmt_eth_data = &priv->mgmt_eth_data;
@@ -160,7 +161,7 @@ static void qca8k_rw_reg_ack_handler(struct dsa_switch *ds, struct sk_buff *skb)
 			       QCA_HDR_MGMT_DATA2_LEN);
 	}
 
-	dsa_inband_complete(&mgmt_eth_data->inband);
+	dsa_inband_complete(&mgmt_eth_data->inband, err);
 }
 
 static struct sk_buff *qca8k_alloc_mdio_header(enum mdio_cmd cmd, u32 reg, u32 *val,
@@ -229,7 +230,6 @@ static int qca8k_read_eth(struct qca8k_priv *priv, u32 reg, u32 *val, int len)
 {
 	struct qca8k_mgmt_eth_data *mgmt_eth_data = &priv->mgmt_eth_data;
 	struct sk_buff *skb;
-	int err;
 	int ret;
 
 	skb = qca8k_alloc_mdio_header(MDIO_READ, reg, NULL,
@@ -256,24 +256,15 @@ static int qca8k_read_eth(struct qca8k_priv *priv, u32 reg, u32 *val, int len)
 	if (len > QCA_HDR_MGMT_DATA1_LEN)
 		memcpy(val + 1, mgmt_eth_data->data + 1, len - QCA_HDR_MGMT_DATA1_LEN);
 
-	err = mgmt_eth_data->err;
-
 	mutex_unlock(&mgmt_eth_data->mutex);
 
-	if (ret)
-		return ret;
-
-	if (err)
-		return err;
-
-	return 0;
+	return ret;
 }
 
 static int qca8k_write_eth(struct qca8k_priv *priv, u32 reg, u32 *val, int len)
 {
 	struct qca8k_mgmt_eth_data *mgmt_eth_data = &priv->mgmt_eth_data;
 	struct sk_buff *skb;
-	int err;
 	int ret;
 
 	skb = qca8k_alloc_mdio_header(MDIO_WRITE, reg, val,
@@ -296,17 +287,9 @@ static int qca8k_write_eth(struct qca8k_priv *priv, u32 reg, u32 *val, int len)
 				 qca8k_mdio_header_fill_seq_num,
 				 QCA8K_ETHERNET_TIMEOUT);
 
-	err = mgmt_eth_data->err;
-
 	mutex_unlock(&mgmt_eth_data->mutex);
 
-	if (ret)
-		return ret;
-
-	if (err)
-		return err;
-
-	return 0;
+	return ret;
 }
 
 static int
@@ -429,20 +412,14 @@ qca8k_phy_eth_busy_wait(struct qca8k_mgmt_eth_data *mgmt_eth_data,
 			struct sk_buff *read_skb, u32 *val)
 {
 	struct sk_buff *skb = skb_copy(read_skb, GFP_KERNEL);
-	int err;
 	int ret;
 
 	ret = dsa_inband_request(&mgmt_eth_data->inband, skb,
 				 qca8k_mdio_header_fill_seq_num,
 				 QCA8K_ETHERNET_TIMEOUT);
 
-	err = mgmt_eth_data->err;
-
 	if (ret)
 		return ret;
-
-	if (err)
-		return err;
 
 	*val = mgmt_eth_data->data[0];
 
@@ -458,7 +435,6 @@ qca8k_phy_eth_command(struct qca8k_priv *priv, bool read, int phy,
 	u32 write_val, clear_val = 0, val;
 	struct net_device *mgmt_master;
 	int ret, ret1;
-	int err;
 
 	if (regnum >= QCA8K_MDIO_MASTER_MAX_REG)
 		return -EINVAL;
@@ -520,15 +496,7 @@ qca8k_phy_eth_command(struct qca8k_priv *priv, bool read, int phy,
 				 qca8k_mdio_header_fill_seq_num,
 				 QCA8K_ETHERNET_TIMEOUT);
 
-	err = mgmt_eth_data->err;
-
 	if (ret) {
-		kfree_skb(read_skb);
-		goto exit;
-	}
-
-	if (err) {
-		ret = err;
 		kfree_skb(read_skb);
 		goto exit;
 	}
@@ -548,15 +516,8 @@ qca8k_phy_eth_command(struct qca8k_priv *priv, bool read, int phy,
 					 qca8k_mdio_header_fill_seq_num,
 					 QCA8K_ETHERNET_TIMEOUT);
 
-		err = mgmt_eth_data->err;
-
 		if (ret)
 			goto exit;
-
-		if (err) {
-			ret = err;
-			goto exit;
-		}
 
 		ret = mgmt_eth_data->data[0] & QCA8K_MDIO_MASTER_DATA_MASK;
 	} else {
@@ -1439,6 +1400,7 @@ static void qca8k_mib_autocast_handler(struct dsa_switch *ds, struct sk_buff *sk
 	const struct qca8k_mib_desc *mib;
 	struct mib_ethhdr *mib_ethhdr;
 	int i, mib_len, offset = 0;
+	int err = 0;
 	u64 *data;
 	u8 port;
 
@@ -1449,8 +1411,10 @@ static void qca8k_mib_autocast_handler(struct dsa_switch *ds, struct sk_buff *sk
 	 * parse only the requested one.
 	 */
 	port = FIELD_GET(QCA_HDR_RECV_SOURCE_PORT, ntohs(mib_ethhdr->hdr));
-	if (port != mib_eth_data->req_port)
+	if (port != mib_eth_data->req_port) {
+		err = -EPROTO;
 		goto exit;
+	}
 
 	data = mib_eth_data->data;
 
@@ -1479,7 +1443,7 @@ static void qca8k_mib_autocast_handler(struct dsa_switch *ds, struct sk_buff *sk
 exit:
 	/* Complete on receiving all the mib packet */
 	if (refcount_dec_and_test(&mib_eth_data->port_parsed))
-		dsa_inband_complete(&mib_eth_data->inband);
+		dsa_inband_complete(&mib_eth_data->inband, err);
 }
 
 static int

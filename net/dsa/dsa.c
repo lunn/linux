@@ -526,8 +526,9 @@ void dsa_inband_init(struct dsa_inband *inband, u32 seqno_mask)
 }
 EXPORT_SYMBOL_GPL(dsa_inband_init);
 
-void dsa_inband_complete(struct dsa_inband *inband)
+void dsa_inband_complete(struct dsa_inband *inband, int err)
 {
+	inband->err = err;
 	complete(&inband->completion);
 }
 EXPORT_SYMBOL_GPL(dsa_inband_complete);
@@ -552,6 +553,8 @@ int dsa_inband_request(struct dsa_inband *inband, struct sk_buff *skb,
 	unsigned long jiffies = msecs_to_jiffies(timeout_ms);
 	int ret;
 
+	inband->err = 0;
+
 	if (insert_seqno) {
 		inband->seqno++;
 		insert_seqno(skb, inband->seqno & inband->seqno_mask);
@@ -564,7 +567,8 @@ int dsa_inband_request(struct dsa_inband *inband, struct sk_buff *skb,
 	ret = wait_for_completion_timeout(&inband->completion, jiffies);
 	if (ret == 0)
 		return -ETIMEDOUT;
-	return 0;
+
+	return inband->err;
 }
 EXPORT_SYMBOL_GPL(dsa_inband_request);
 
