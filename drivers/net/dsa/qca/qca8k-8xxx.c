@@ -145,9 +145,9 @@ static void qca8k_rw_reg_ack_handler(struct dsa_switch *ds, struct sk_buff *skb)
 	cmd = FIELD_GET(QCA_HDR_MGMT_CMD, mgmt_ethhdr->command);
 	len = FIELD_GET(QCA_HDR_MGMT_LENGTH, mgmt_ethhdr->command);
 
-	/* Make sure the seq match the requested packet */
+	/* Make sure the seq match the requested packet. If not, drop. */
 	if (mgmt_ethhdr->seq == mgmt_eth_data->seq)
-		mgmt_eth_data->ack = true;
+		return;
 
 	if (cmd == MDIO_READ) {
 		mgmt_eth_data->data[0] = mgmt_ethhdr->mdio_data;
