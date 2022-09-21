@@ -148,9 +148,9 @@ static void qca8k_rw_reg_ack_handler(struct dsa_switch *ds, struct sk_buff *skb)
 	cmd = FIELD_GET(QCA_HDR_MGMT_CMD, command);
 	len = FIELD_GET(QCA_HDR_MGMT_LENGTH, command);
 
-	/* Make sure the seq match the requested packet */
-	if (get_unaligned_le32(&mgmt_ethhdr->seq) == mgmt_eth_data->seq)
-		mgmt_eth_data->ack = true;
+	/* Make sure the seq match the requested packet. If not, drop. */
+	if (get_unaligned_le32(&mgmt_ethhdr->seq) != mgmt_eth_data->seq)
+		return;
 
 	if (cmd == MDIO_READ) {
 		u32 *val = mgmt_eth_data->data;
