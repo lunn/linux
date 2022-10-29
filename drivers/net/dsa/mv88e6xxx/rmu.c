@@ -54,4 +54,37 @@ void mv88e6xxx_rmu_frame2reg_handler(struct dsa_switch *ds,
 				     struct sk_buff *skb,
 				     u8 seqno)
 {
+	struct mv88e6xxx_rmu_header *rmu_header;
+	struct mv88e6xxx_chip *chip = ds->priv;
+	unsigned char *ethhdr;
+	u8 expected_seqno;
+
+	/* Check received destination MAC is the masters MAC address*/
+	if (!chip->rmu_master)
+		goto drop;
+
+	ethhdr = skb_mac_header(skb);
+	if (!ether_addr_equal(chip->rmu_master->dev_addr, ethhdr)) {
+		dev_dbg_ratelimited(ds->dev, "RMU: mismatching MAC address for request. Rx %pM expecting %pM\n",
+				    ethhdr, chip->rmu_master->dev_addr);
+		goto drop;
+	}
+
+	expected_seqno = dsa_inband_seqno(&chip->rmu_inband);
+	if (seqno != expected_seqno) {
+		dev_dbg_ratelimited(ds->dev, "RMU: mismatching seqno for request. Rx %d expecting %d\n",
+				    seqno, expected_seqno);
+		goto drop;
+	}
+
+	rmu_header = (struct mv88e6xxx_rmu_header *)(skb->data + 4);
+	if (rmu_header->format != MV88E6XXX_RMU_RESP_FORMAT_1 &&
+	    rmu_header->format != MV88E6XXX_RMU_RESP_FORMAT_2) {
+		dev_dbg_ratelimited(ds->dev, "RMU: invalid format. Rx %d\n",
+				    be16_to_cpu(rmu_header->format));
+		goto drop;
+	}
+
+drop:
+	return;
 }
