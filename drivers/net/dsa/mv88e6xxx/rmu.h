@@ -12,4 +12,7 @@
 void mv88e6xxx_rmu_conduit_state_change(struct dsa_switch *ds,
 					const struct net_device *master,
 					bool operational);
+void mv88e6xxx_rmu_frame2reg_handler(struct dsa_switch *ds,
+				     struct sk_buff *skb,
+				     u8 seqno);
 #endif /* _MV88E6XXX_RMU_H_ */
