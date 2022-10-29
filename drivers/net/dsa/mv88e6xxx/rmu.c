@@ -49,3 +49,9 @@ void mv88e6xxx_rmu_conduit_state_change(struct dsa_switch *ds,
 out:
 	mv88e6xxx_reg_unlock(chip);
 }
+
+void mv88e6xxx_rmu_frame2reg_handler(struct dsa_switch *ds,
+				     struct sk_buff *skb,
+				     u8 seqno)
+{
+}
