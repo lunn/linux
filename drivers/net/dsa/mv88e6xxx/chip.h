@@ -445,6 +445,9 @@ struct mv88e6xxx_chip {
 
 	/* FID map */
 	DECLARE_BITMAP(fid_bitmap, MV88E6XXX_N_FID);
+
+	/* Remote Management Unit state. */
+	struct net_device *rmu_master;
 };
 
 struct mv88e6xxx_bus_ops {
