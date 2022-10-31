@@ -9,8 +9,18 @@
 #ifndef _MV88E6XXX_RMU_H_
 #define _MV88E6XXX_RMU_H_
 
+#define MV88E6XXX_RMU_WAIT_TIME_MS		20
+
+#define MV88E6XXX_RMU_REQ_FORMAT_GET_ID		htons(0x0000)
+#define MV88E6XXX_RMU_REQ_FORMAT_SOHO		htons(0x0001)
+#define MV88E6XXX_RMU_REQ_PAD			htons(0x0000)
+#define MV88E6XXX_RMU_REQ_CODE_GET_ID		htons(0x0000)
+#define MV88E6XXX_RMU_REQ_DATA			htons(0x0000)
+
 #define MV88E6XXX_RMU_RESP_FORMAT_1		htons(0x0001)
 #define MV88E6XXX_RMU_RESP_FORMAT_2		htons(0x0002)
+
+#define MV88E6XXX_RMU_RESP_CODE_GOT_ID		htons(0x0000)
 
 struct mv88e6xxx_rmu_header {
 	__be16 format;
