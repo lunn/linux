@@ -44,6 +44,20 @@ static inline struct net_device *dsa_master_find_slave(struct net_device *dev,
 	return NULL;
 }
 
+static inline struct dsa_switch *dsa_master_find_switch(struct net_device *dev,
+							int device)
+{
+	struct dsa_port *cpu_dp = dev->dsa_ptr;
+	struct dsa_switch_tree *dst = cpu_dp->dst;
+	struct dsa_port *dp;
+
+	list_for_each_entry(dp, &dst->ports, list)
+		if (dp->ds->index == device)
+			return dp->ds;
+
+	return NULL;
+}
+
 /* If under a bridge with vlan_filtering=0, make sure to send pvid-tagged
  * frames as untagged, since the bridge will not untag them.
  */
