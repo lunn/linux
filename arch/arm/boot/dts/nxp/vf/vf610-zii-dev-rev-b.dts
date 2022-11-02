@@ -225,6 +225,7 @@
 						reg = <2>;
 						label = "lan8";
 						phy-handle = <&switch2phy2>;
+						phy-mode = "sgmii";
 					};
 
 					port@3 {
