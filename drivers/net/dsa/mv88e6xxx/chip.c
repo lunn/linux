@@ -1055,10 +1055,10 @@ static struct mv88e6xxx_hw_stat mv88e6xxx_hw_stats[] = {
 	{ "out_management",		4, 0x1f, STATS_TYPE_BANK1, },
 };
 
-static uint64_t _mv88e6xxx_get_ethtool_stat(struct mv88e6xxx_chip *chip,
-					    struct mv88e6xxx_hw_stat *s,
-					    int port, u16 bank1_select,
-					    u16 histogram)
+uint64_t _mv88e6xxx_get_ethtool_stat(struct mv88e6xxx_chip *chip,
+				     struct mv88e6xxx_hw_stat *s,
+				     int port, u16 bank1_select,
+				     u16 histogram)
 {
 	u32 low;
 	u32 high = 0;
@@ -1245,6 +1245,16 @@ static int mv88e6xxx_stats_get_stats(struct mv88e6xxx_chip *chip, int port,
 {
 	struct mv88e6xxx_hw_stat *stat;
 	int i, j;
+	int err;
+
+	err = mv88e6xxx_rmu_stats(chip, port, data, types,
+				  bank1_select, histogram, mv88e6xxx_hw_stats,
+				  ARRAY_SIZE(mv88e6xxx_hw_stats));
+	if (err > 0)
+		return err;
+
+	if (err != -EOPNOTSUPP && err != -ETIMEDOUT)
+		return err;
 
 	for (i = 0, j = 0; i < ARRAY_SIZE(mv88e6xxx_hw_stats); i++) {
 		stat = &mv88e6xxx_hw_stats[i];
