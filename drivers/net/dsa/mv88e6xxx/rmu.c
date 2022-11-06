@@ -10,6 +10,7 @@
 #include <net/dsa.h>
 #include "chip.h"
 #include "global1.h"
+#include "port.h"
 #include "rmu.h"
 
 static const u8 mv88e6xxx_rmu_dest_addr[ETH_ALEN] = {
@@ -86,6 +87,88 @@ static int mv88e6xxx_rmu_request(struct mv88e6xxx_chip *chip,
 				   mv88e6xxx_rmu_fill_seqno_dsa),
 				  resp, resp_len,
 				  MV88E6XXX_RMU_WAIT_TIME_MS);
+}
+
+int mv88e6xxx_rmu_stats(struct mv88e6xxx_chip *chip, int port,
+			uint64_t *data,
+			const struct mv88e6xxx_hw_stat *hw_stats,
+			int num_hw_stats)
+{
+	__be16 req[] = {
+		MV88E6XXX_RMU_REQ_FORMAT_SOHO,
+		MV88E6XXX_RMU_REQ_PAD,
+		MV88E6XXX_RMU_REQ_CODE_MIB,
+		htons(port),
+	};
+	const struct mv88e6xxx_hw_stat *stat;
+	struct mv88e6xxx_rmu_mib_resp resp;
+	int i, j, ret;
+	int resp_len;
+	u64 high;
+
+	if (!chip->rmu_enabled)
+		return -EOPNOTSUPP;
+
+	resp_len = sizeof(resp);
+	ret = mv88e6xxx_rmu_request(chip, req, sizeof(req),
+				    &resp, resp_len);
+	if (ret <  0) {
+		dev_dbg(chip->dev, "RMU: error for command MIB %pe\n",
+			ERR_PTR(ret));
+		return ret;
+	}
+
+	if (ret < resp_len) {
+		dev_err(chip->dev, "RMU: MIB returned wrong length %d %d\n",
+			resp_len, ret);
+		return -EPROTO;
+	}
+
+	if (resp.rmu_header.code != MV88E6XXX_RMU_RESP_CODE_MIB) {
+		dev_err(chip->dev, "RMU: MIB returned wrong code %d\n",
+			be16_to_cpu(resp.rmu_header.code));
+		return -EPROTO;
+	}
+
+
+	for (i = 0, j = 0; i < num_hw_stats; i++) {
+		stat = &hw_stats[i];
+		if (!(stat->type & chip->info->stats_type))
+			continue;
+
+		if (stat->type & STATS_TYPE_PORT) {
+			switch (stat->reg) {
+			case MV88E6XXX_PORT_IN_DISCARD_LO:
+				data[j] = be16_to_cpu(resp.port[0]) << 16;
+				data[j] |= be16_to_cpu(resp.port[1]);
+				break;
+			case MV88E6XXX_PORT_IN_FILTERED:
+				data[j] = be16_to_cpu(resp.port[3]);
+				break;
+			case MV88E6XXX_PORT_OUT_FILTERED:
+				data[j] = be16_to_cpu(resp.port[5]);
+				break;
+			default:
+				return -EINVAL;
+			}
+		}
+
+		if (stat->type & STATS_TYPE_BANK0) {
+			data[j] = be32_to_cpu(resp.bank0[stat->reg]);
+			if (stat->size == 8) {
+				high = be32_to_cpu(resp.bank0[stat->reg + 1]);
+				data[j] |= (high << 32);
+			}
+		}
+
+		if (stat->type & STATS_TYPE_BANK1) {
+			/* Not available via RMU, use SMI */
+			mv88e6xxx_stats_get_stat(chip, port, stat, &data[j]);
+		}
+		j++;
+	}
+
+	return j;
 }
 
 int mv88e6xxx_rmu_write(struct mv88e6xxx_chip *chip, int addr, int reg, u16 val)
