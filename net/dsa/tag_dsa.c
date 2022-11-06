@@ -334,6 +334,29 @@ static struct sk_buff *dsa_rcv_ll(struct sk_buff *skb, struct net_device *dev,
 	return skb;
 }
 
+static void dsa_rmu_reg2frame(struct  dsa_switch *ds,
+			      struct sk_buff *skb)
+{
+	enum dsa_cmd cmd = DSA_CMD_FROM_CPU;
+	u8 tag_dev = ds->index;
+	u8 *dsa_header;
+
+	dsa_header = skb_push(skb, DSA_HLEN);
+	dsa_header[0] = (cmd << 6) | tag_dev;
+	dsa_header[1] = BIT(1) | 0x3e << 2;
+	dsa_header[2] = 6 << 5 | 0xf;
+	dsa_header[3] = 0; /* Sequence number is filled in later */
+
+	if (ds->dst->tag_ops->proto == DSA_TAG_PROTO_EDSA) {
+		u8 *edsa_header = skb_push(skb, 4);
+
+		edsa_header[0] = (ETH_P_EDSA >> 8) & 0xff;
+		edsa_header[1] = ETH_P_EDSA & 0xff;
+		edsa_header[2] = 0x00;
+		edsa_header[3] = 0x00;
+	}
+}
+
 static int dsa_tag_connect(struct dsa_switch *ds)
 {
 	struct dsa_tagger_data *tagger_data;
@@ -342,6 +365,7 @@ static int dsa_tag_connect(struct dsa_switch *ds)
 	if (!tagger_data)
 		return -ENOMEM;
 
+	tagger_data->rmu_reg2frame = dsa_rmu_reg2frame;
 	ds->tagger_data = tagger_data;
 
 	return 0;

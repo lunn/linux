@@ -12,6 +12,9 @@ struct dsa_tagger_data {
 	void (*rmu_frame2reg)(struct dsa_switch *ds,
 			      struct sk_buff *skb,
 			      u8 seqno);
+	/* Add DSA header to frame to be sent to switch */
+	void (*rmu_reg2frame)(struct  dsa_switch *ds,
+			      struct sk_buff *skb);
 };
 
 #define MV88E6XXX_VID_STANDALONE	0
