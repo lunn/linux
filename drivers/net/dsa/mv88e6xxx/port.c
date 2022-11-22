@@ -585,10 +585,6 @@ static int mv88e6xxx_port_set_cmode(struct mv88e6xxx_chip *chip, int port,
 		reg &= ~MV88E6XXX_PORT_STS_CMODE_MASK;
 		reg |= cmode;
 
-		err = mv88e6xxx_port_write(chip, port, MV88E6XXX_PORT_STS, reg);
-		if (err)
-			return err;
-
 		chip->ports[port].cmode = cmode;
 
 		lane = mv88e6xxx_serdes_get_lane(chip, port);
@@ -606,6 +602,13 @@ static int mv88e6xxx_port_set_cmode(struct mv88e6xxx_chip *chip, int port,
 			if (err)
 				return err;
 		}
+
+		/* Need to wait until serdes is stable before we set cmode */
+		usleep_range(30000, 40000);
+
+		err = mv88e6xxx_port_write(chip, port, MV88E6XXX_PORT_STS, reg);
+		if (err)
+			return err;
 	}
 
 	return 0;
