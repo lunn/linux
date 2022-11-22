@@ -204,7 +204,13 @@ static void mv88e639x_sgmii_pcs_pre_config(struct phylink_pcs *pcs,
 {
 	struct mv88e639x_pcs *mpcs = sgmii_pcs_to_mv88e639x_pcs(pcs);
 
-	mv88e639x_sgmii_pcs_control_pwr(mpcs, false);
+	mv88e639x_sgmii_pcs_control_pwr(mpcs, true);
+
+	/* Need to wait until serdes is stable before we set cmode,
+	 * which phylink will arrange to have happen next.
+	 */
+	usleep_range(30000, 40000);
+
 }
 
 static int mv88e6390_erratum_3_14(struct mv88e639x_pcs *mpcs)
@@ -243,8 +249,6 @@ static int mv88e639x_sgmii_pcs_post_config(struct phylink_pcs *pcs,
 {
 	struct mv88e639x_pcs *mpcs = sgmii_pcs_to_mv88e639x_pcs(pcs);
 	int err;
-
-	mv88e639x_sgmii_pcs_control_pwr(mpcs, true);
 
 	if (mpcs->erratum_3_14) {
 		err = mv88e6390_erratum_3_14(mpcs);
