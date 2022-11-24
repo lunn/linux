@@ -29,8 +29,10 @@ enum {
 	SWMII_SPEED_10 = 0,
 	SWMII_SPEED_100,
 	SWMII_SPEED_1000,
+	SWMII_SPEED_UNKNOWN,
 	SWMII_DUPLEX_HALF = 0,
 	SWMII_DUPLEX_FULL,
+	SWMII_DUPLEX_UNKNOWN,
 };
 
 /*
@@ -51,6 +53,11 @@ static const struct swmii_regs speed[] = {
 		.lpagb = LPA_1000FULL | LPA_1000HALF,
 		.estat = ESTATUS_1000_TFULL | ESTATUS_1000_THALF,
 	},
+	[SWMII_SPEED_UNKNOWN] = {
+		.bmsr  = BMSR_ESTATEN | BMSR_100FULL | BMSR_100HALF |
+			 BMSR_10FULL | BMSR_10HALF,
+		.estat = ESTATUS_1000_TFULL | ESTATUS_1000_THALF,
+	},
 };
 
 static const struct swmii_regs duplex[] = {
@@ -65,6 +72,11 @@ static const struct swmii_regs duplex[] = {
 		.lpa   = LPA_10FULL | LPA_100FULL,
 		.lpagb = LPA_1000FULL,
 		.estat = ESTATUS_1000_TFULL,
+	},
+	[SWMII_DUPLEX_UNKNOWN] = {
+		.bmsr  = BMSR_ESTATEN | BMSR_100FULL | BMSR_100HALF |
+			 BMSR_10FULL | BMSR_10HALF,
+		.estat = ESTATUS_1000_TFULL | ESTATUS_1000_THALF,
 	},
 };
 
@@ -87,8 +99,9 @@ static int swphy_decode_speed(int speed)
  * @state: software phy status
  *
  * This checks that we can represent the state stored in @state can be
- * represented in the emulated MII registers.  Returns 0 if it can,
- * otherwise returns -EINVAL.
+ * represented in the emulated MII registers. Invalid speed is allowed
+ * when the link is down, but the speed must be valid when the link is
+ * up. Returns 0 if it can, otherwise returns -EINVAL.
  */
 int swphy_validate_state(const struct fixed_phy_status *state)
 {
@@ -123,11 +136,14 @@ int swphy_read_reg(int reg, const struct fixed_phy_status *state)
 	if (reg > MII_REGS_NUM)
 		return -1;
 
-	speed_index = swphy_decode_speed(state->speed);
-	if (WARN_ON(speed_index < 0))
-		return 0;
-
-	duplex_index = state->duplex ? SWMII_DUPLEX_FULL : SWMII_DUPLEX_HALF;
+	if (state->link) {
+		speed_index = swphy_decode_speed(state->speed);
+		duplex_index = state->duplex ? SWMII_DUPLEX_FULL :
+			SWMII_DUPLEX_HALF;
+	} else {
+		speed_index = SWMII_SPEED_UNKNOWN;
+		duplex_index = SWMII_DUPLEX_UNKNOWN;
+	}
 
 	bmsr |= speed[speed_index].bmsr & duplex[duplex_index].bmsr;
 	estat |= speed[speed_index].estat & duplex[duplex_index].estat;
