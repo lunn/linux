@@ -390,10 +390,6 @@ enum {
 	QCA8K_CPU_PORT6,
 };
 
-struct qca8k_mgmt_eth_data {
-	struct dsa_inband inband;
-};
-
 struct qca8k_mib_eth_data {
 	struct completion rw_done;
 	struct mutex mutex; /* Process one command at time */
@@ -457,7 +453,7 @@ struct qca8k_priv {
 	struct device *dev;
 	struct gpio_desc *reset_gpio;
 	struct net_device *mgmt_conduit; /* Track if mdio/mib Ethernet is available */
-	struct qca8k_mgmt_eth_data mgmt_eth_data;
+	struct dsa_inband inband;
 	struct qca8k_mib_eth_data mib_eth_data;
 	struct qca8k_mdio_cache mdio_cache;
 	struct qca8k_pcs pcs_port_0;
