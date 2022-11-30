@@ -3604,6 +3604,11 @@ static void mv88e6xxx_port_disable(struct dsa_switch *ds, int port)
 	struct mv88e6xxx_chip *chip = ds->priv;
 
 	mv88e6xxx_reg_lock(chip);
+
+	if (chip->info->ops->port_set_cmode)
+		chip->info->ops->port_set_cmode(chip, port,
+						PHY_INTERFACE_MODE_NA);
+
 	if (mv88e6xxx_serdes_power(chip, port, false))
 		dev_err(chip->dev, "failed to power off SERDES\n");
 	mv88e6xxx_reg_unlock(chip);
