@@ -3498,6 +3498,19 @@ static int mv88e6xxx_change_mtu(struct dsa_switch *ds, int port, int new_mtu)
 	return ret;
 }
 
+static void mv88e6xxx_port_disable(struct dsa_switch *ds, int port)
+{
+	struct mv88e6xxx_chip *chip = ds->priv;
+
+	mv88e6xxx_reg_lock(chip);
+
+	if (chip->info->ops->port_set_cmode)
+		chip->info->ops->port_set_cmode(chip, port,
+						PHY_INTERFACE_MODE_NA);
+
+	mv88e6xxx_reg_unlock(chip);
+}
+
 static int mv88e6xxx_set_ageing_time(struct dsa_switch *ds,
 				     unsigned int ageing_time)
 {
@@ -6915,6 +6928,7 @@ static const struct dsa_switch_ops mv88e6xxx_switch_ops = {
 	.teardown		= mv88e6xxx_teardown,
 	.port_setup		= mv88e6xxx_port_setup,
 	.port_teardown		= mv88e6xxx_port_teardown,
+	.port_disable		= mv88e6xxx_port_disable,
 	.phylink_get_caps	= mv88e6xxx_get_caps,
 	.phylink_mac_select_pcs	= mv88e6xxx_mac_select_pcs,
 	.phylink_mac_prepare	= mv88e6xxx_mac_prepare,
