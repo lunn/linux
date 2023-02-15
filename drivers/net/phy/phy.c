@@ -903,6 +903,25 @@ int phy_config_aneg(struct phy_device *phydev)
 EXPORT_SYMBOL(phy_config_aneg);
 
 /**
+ * phy_update_eee_active - Update phydev->eee_active statue
+ * @phydev: the phy_device struct
+ *
+ * Description: Read from the PHY is EEE is active. Use the
+ * information to set eee_active in phydev, which the MAC can then use
+ * to enable EEE in the MAC.
+ */
+static void phy_update_eee_active(struct phy_device *phydev)
+{
+	int err;
+
+	err = genphy_c45_eee_is_active(phydev, NULL, NULL, NULL);
+	if (err < 0)
+		phydev->eee_active = false;
+	else
+		phydev->eee_active = err;
+}
+
+/**
  * phy_check_link_status - check link status and set state accordingly
  * @phydev: the phy_device struct
  *
@@ -928,9 +947,11 @@ static int phy_check_link_status(struct phy_device *phydev)
 	if (phydev->link && phydev->state != PHY_RUNNING) {
 		phy_check_downshift(phydev);
 		phydev->state = PHY_RUNNING;
+		phy_update_eee_active(phydev);
 		phy_link_up(phydev);
 	} else if (!phydev->link && phydev->state != PHY_NOLINK) {
 		phydev->state = PHY_NOLINK;
+		phydev->eee_active = false;
 		phy_link_down(phydev);
 	}
 
