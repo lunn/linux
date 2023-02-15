@@ -1272,55 +1272,63 @@ static void bcmgenet_get_ethtool_stats(struct net_device *dev,
 	}
 }
 
-void bcmgenet_eee_enable_set(struct net_device *dev, bool enable,
-			     bool tx_lpi_enabled)
+void bcmgenet_eee_enable_set(struct net_device *dev, bool tx_lpi_enabled)
 {
 	struct bcmgenet_priv *priv = netdev_priv(dev);
-	u32 off = priv->hw_params->tbuf_offset + TBUF_ENERGY_CTRL;
+	u32 off;
 	u32 reg;
 
-	if (enable && !priv->clk_eee_enabled) {
+	off = priv->hw_params->tbuf_offset + TBUF_ENERGY_CTRL;
+
+	if (!priv->clk_eee_enabled) {
 		clk_prepare_enable(priv->clk_eee);
 		priv->clk_eee_enabled = true;
 	}
 
-	reg = bcmgenet_umac_readl(priv, UMAC_EEE_CTRL);
-	if (enable)
+	if (tx_lpi_enabled) {
+		if (!priv->clk_eee_enabled) {
+			clk_prepare_enable(priv->clk_eee);
+			priv->clk_eee_enabled = true;
+		}
+
+		reg = bcmgenet_umac_readl(priv, UMAC_EEE_CTRL);
 		reg |= EEE_EN;
-	else
-		reg &= ~EEE_EN;
-	bcmgenet_umac_writel(priv, reg, UMAC_EEE_CTRL);
+		bcmgenet_umac_writel(priv, reg, UMAC_EEE_CTRL);
 
-	/* Enable EEE and switch to a 27Mhz clock automatically */
-	reg = bcmgenet_readl(priv->base + off);
-	if (tx_lpi_enabled)
+		/* Enable EEE and switch to a 27Mhz clock automatically */
+		reg = bcmgenet_readl(priv->base + off);
 		reg |= TBUF_EEE_EN | TBUF_PM_EN;
-	else
-		reg &= ~(TBUF_EEE_EN | TBUF_PM_EN);
-	bcmgenet_writel(reg, priv->base + off);
+		bcmgenet_writel(reg, priv->base + off);
 
-	/* Do the same for thing for RBUF */
-	reg = bcmgenet_rbuf_readl(priv, RBUF_ENERGY_CTRL);
-	if (enable)
+		/* Do the same for thing for RBUF */
+		reg = bcmgenet_rbuf_readl(priv, RBUF_ENERGY_CTRL);
 		reg |= RBUF_EEE_EN | RBUF_PM_EN;
-	else
+		bcmgenet_rbuf_writel(priv, reg, RBUF_ENERGY_CTRL);
+	} else {
+		reg = bcmgenet_umac_readl(priv, UMAC_EEE_CTRL);
+		reg &= ~EEE_EN;
+		bcmgenet_umac_writel(priv, reg, UMAC_EEE_CTRL);
+
+		/* Disable EEE */
+		reg = bcmgenet_readl(priv->base + off);
+		reg &= ~(TBUF_EEE_EN | TBUF_PM_EN);
+		bcmgenet_writel(reg, priv->base + off);
+
+		/* Do the same for thing for RBUF */
+		reg = bcmgenet_rbuf_readl(priv, RBUF_ENERGY_CTRL);
 		reg &= ~(RBUF_EEE_EN | RBUF_PM_EN);
-	bcmgenet_rbuf_writel(priv, reg, RBUF_ENERGY_CTRL);
+		bcmgenet_rbuf_writel(priv, reg, RBUF_ENERGY_CTRL);
 
-	if (!enable && priv->clk_eee_enabled) {
-		clk_disable_unprepare(priv->clk_eee);
-		priv->clk_eee_enabled = false;
+		if (priv->clk_eee_enabled) {
+			clk_disable_unprepare(priv->clk_eee);
+			priv->clk_eee_enabled = false;
+		}
 	}
-
-	priv->eee.eee_enabled = enable;
-	priv->eee.eee_active = enable;
-	priv->eee.tx_lpi_enabled = tx_lpi_enabled;
 }
 
 static int bcmgenet_get_eee(struct net_device *dev, struct ethtool_eee *e)
 {
 	struct bcmgenet_priv *priv = netdev_priv(dev);
-	struct ethtool_eee *p = &priv->eee;
 
 	if (GENET_IS_V1(priv))
 		return -EOPNOTSUPP;
@@ -1328,9 +1336,6 @@ static int bcmgenet_get_eee(struct net_device *dev, struct ethtool_eee *e)
 	if (!dev->phydev)
 		return -ENODEV;
 
-	e->eee_enabled = p->eee_enabled;
-	e->eee_active = p->eee_active;
-	e->tx_lpi_enabled = p->tx_lpi_enabled;
 	e->tx_lpi_timer = bcmgenet_umac_readl(priv, UMAC_EEE_LPI_TIMER);
 
 	return phy_ethtool_get_eee(dev->phydev, e);
@@ -1339,7 +1344,6 @@ static int bcmgenet_get_eee(struct net_device *dev, struct ethtool_eee *e)
 static int bcmgenet_set_eee(struct net_device *dev, struct ethtool_eee *e)
 {
 	struct bcmgenet_priv *priv = netdev_priv(dev);
-	struct ethtool_eee *p = &priv->eee;
 
 	if (GENET_IS_V1(priv))
 		return -EOPNOTSUPP;
@@ -1347,15 +1351,7 @@ static int bcmgenet_set_eee(struct net_device *dev, struct ethtool_eee *e)
 	if (!dev->phydev)
 		return -ENODEV;
 
-	p->eee_enabled = e->eee_enabled;
-
-	if (!p->eee_enabled) {
-		bcmgenet_eee_enable_set(dev, false, false);
-	} else {
-		p->eee_active = phy_init_eee(dev->phydev, false) >= 0;
-		bcmgenet_umac_writel(priv, e->tx_lpi_timer, UMAC_EEE_LPI_TIMER);
-		bcmgenet_eee_enable_set(dev, p->eee_active, e->tx_lpi_enabled);
-	}
+	bcmgenet_umac_writel(priv, e->tx_lpi_timer, UMAC_EEE_LPI_TIMER);
 
 	return phy_ethtool_set_eee(dev->phydev, e);
 }
@@ -3356,6 +3352,8 @@ static void bcmgenet_netif_start(struct net_device *dev)
 
 	/* Monitor link interrupts now */
 	bcmgenet_link_intr_enable(priv);
+
+	phy_support_eee(dev->phydev);
 
 	phy_start(dev->phydev);
 }
