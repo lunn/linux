@@ -100,6 +100,7 @@ void bcmgenet_mii_setup(struct net_device *dev)
 
 	if (phydev->link) {
 		bcmgenet_mac_config(dev);
+		bcmgenet_eee_enable_set(dev, phydev->eee_active);
 	} else {
 		reg = bcmgenet_ext_readl(priv, EXT_RGMII_OOB_CTRL);
 		reg &= ~RGMII_LINK;
