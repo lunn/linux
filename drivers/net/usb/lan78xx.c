@@ -1690,7 +1690,6 @@ static int lan78xx_get_eee(struct net_device *net, struct ethtool_eee *edata)
 
 	ret = lan78xx_read_reg(dev, MAC_CR, &buf);
 	if (buf & MAC_CR_EEE_EN_) {
-		edata->eee_enabled = true;
 		edata->eee_active = !!(edata->advertised &
 				       edata->lp_advertised);
 		edata->tx_lpi_enabled = true;
@@ -1698,7 +1697,6 @@ static int lan78xx_get_eee(struct net_device *net, struct ethtool_eee *edata)
 		ret = lan78xx_read_reg(dev, EEE_TX_LPI_REQ_DLY, &buf);
 		edata->tx_lpi_timer = buf;
 	} else {
-		edata->eee_enabled = false;
 		edata->eee_active = false;
 		edata->tx_lpi_enabled = false;
 		edata->tx_lpi_timer = 0;
