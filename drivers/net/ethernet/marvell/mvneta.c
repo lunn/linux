@@ -536,8 +536,6 @@ struct mvneta_port {
 	struct mvneta_bm_pool *pool_short;
 	int bm_win_id;
 
-	bool eee_enabled;
-	bool eee_active;
 	bool tx_lpi_enabled;
 
 	u64 ethtool_stats[ARRAY_SIZE(mvneta_statistics)];
@@ -4170,7 +4168,6 @@ static void mvneta_mac_link_down(struct phylink_config *config,
 		mvreg_write(pp, MVNETA_GMAC_AUTONEG_CONFIG, val);
 	}
 
-	pp->eee_active = false;
 	mvneta_set_eee(pp, false);
 }
 
@@ -4221,9 +4218,8 @@ static void mvneta_mac_link_up(struct phylink_config *config,
 
 	mvneta_port_up(pp);
 
-	if (phy && pp->eee_enabled) {
-		pp->eee_active = phy_init_eee(phy, false) >= 0;
-		mvneta_set_eee(pp, pp->eee_active && pp->tx_lpi_enabled);
+	if (phy) {
+		mvneta_set_eee(pp, phy->eee_active && pp->tx_lpi_enabled);
 	}
 }
 
@@ -5028,8 +5024,6 @@ static int mvneta_ethtool_get_eee(struct net_device *dev,
 
 	lpi_ctl0 = mvreg_read(pp, MVNETA_LPI_CTRL_0);
 
-	eee->eee_enabled = pp->eee_enabled;
-	eee->eee_active = pp->eee_active;
 	eee->tx_lpi_enabled = pp->tx_lpi_enabled;
 	eee->tx_lpi_timer = (lpi_ctl0) >> 8; // * scale;
 
@@ -5053,7 +5047,6 @@ static int mvneta_ethtool_set_eee(struct net_device *dev,
 	lpi_ctl0 |= eee->tx_lpi_timer << 8;
 	mvreg_write(pp, MVNETA_LPI_CTRL_0, lpi_ctl0);
 
-	pp->eee_enabled = eee->eee_enabled;
 	pp->tx_lpi_enabled = eee->tx_lpi_enabled;
 
 	mvneta_set_eee(pp, eee->tx_lpi_enabled && eee->eee_enabled);
