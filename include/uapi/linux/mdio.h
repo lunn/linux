@@ -121,6 +121,7 @@
 /* Status register 1. */
 #define MDIO_STAT1_LPOWERABLE		0x0002	/* Low-power ability */
 #define MDIO_STAT1_LSTATUS		BMSR_LSTATUS
+#define MDIO_STAT1_CLKSTOP_CAPABLE	0x0040	/* Clock stop capable */
 #define MDIO_STAT1_FAULT		0x0080	/* Fault */
 #define MDIO_AN_STAT1_LPABLE		0x0001	/* Link partner AN ability */
 #define MDIO_AN_STAT1_ABLE		BMSR_ANEGCAPABLE

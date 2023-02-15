@@ -1574,6 +1574,25 @@ int phy_get_eee_err(struct phy_device *phydev)
 EXPORT_SYMBOL(phy_get_eee_err);
 
 /**
+ * phy_eee_clk_stop_enable - Clock should stop during LIP
+ * @phydev: target phy_device struct
+ *
+ * Description: Program the PHY to stop the clock when EEE is
+ * signalling LPI
+ */
+int phy_eee_clk_stop_enable(struct phy_device *phydev)
+{
+	int ret;
+
+	mutex_lock(&phydev->lock);
+	ret = genphy_c45_eee_clk_stop_enable(phydev);
+	mutex_unlock(&phydev->lock);
+
+	return ret;
+}
+EXPORT_SYMBOL_GPL(phy_eee_clk_stop_enable);
+
+/**
  * phy_ethtool_get_eee - get EEE supported and status
  * @phydev: target phy_device struct
  * @data: ethtool_eee data
