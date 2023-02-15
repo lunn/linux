@@ -1387,6 +1387,30 @@ int genphy_c45_eee_is_active(struct phy_device *phydev, unsigned long *adv,
 EXPORT_SYMBOL(genphy_c45_eee_is_active);
 
 /**
+ * genphy_c45_eee_clk_stop_enable - Clock should stop during LPI signalling
+ * @phydev: target phy_device struct
+ *
+ * Description: Program the MMD register 3.0 setting the "Clock stop enable"
+ * bit.
+ */
+int genphy_c45_eee_clk_stop_enable(struct phy_device *phydev)
+{
+	int ret;
+
+	/* IEEE 802.3:2018 - 45.2.3.2.6 Clock stop capable (3.1.6) */
+	ret = phy_read_mmd(phydev, MDIO_MMD_PCS, MDIO_STAT1);
+	if (ret < 0)
+		return ret;
+
+	if (ret & MDIO_STAT1_CLKSTOP_CAPABLE)
+		/* IEEE 802.3-2018 45.2.3.1.4 Clock stop enable (3.0.10) */
+		return phy_set_bits_mmd(phydev, MDIO_MMD_PCS, MDIO_CTRL1,
+					MDIO_PCS_CTRL1_CLKSTOP_EN);
+	return 0;
+}
+EXPORT_SYMBOL_GPL(genphy_c45_eee_clk_stop_enable);
+
+/**
  * genphy_c45_ethtool_get_eee - get EEE supported and status
  * @phydev: target phy_device struct
  * @data: ethtool_eee data
