@@ -2218,10 +2218,7 @@ EXPORT_SYMBOL(b53_eee_enable_set);
  */
 int b53_eee_init(struct dsa_switch *ds, int port, struct phy_device *phy)
 {
-	int ret;
-
-	ret = phy_init_eee(phy, false);
-	if (ret)
+	if (!phy->eee_active)
 		return 0;
 
 	b53_eee_enable_set(ds, port, true);
