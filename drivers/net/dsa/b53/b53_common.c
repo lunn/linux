@@ -2179,6 +2179,7 @@ EXPORT_SYMBOL(b53_eee_init);
 
 int b53_get_mac_eee(struct dsa_switch *ds, int port, struct ethtool_eee *e)
 {
+	struct dsa_port *dp = dsa_to_port(ds, port);
 	struct b53_device *dev = ds->priv;
 	struct ethtool_eee *p = &dev->ports[port].eee;
 	u16 reg;
@@ -2190,12 +2191,15 @@ int b53_get_mac_eee(struct dsa_switch *ds, int port, struct ethtool_eee *e)
 	e->eee_enabled = p->eee_enabled;
 	e->eee_active = !!(reg & BIT(port));
 
+	if (dp->slave->phydev)
+		return phy_ethtool_get_eee(dp->slave->phydev, e);
 	return 0;
 }
 EXPORT_SYMBOL(b53_get_mac_eee);
 
 int b53_set_mac_eee(struct dsa_switch *ds, int port, struct ethtool_eee *e)
 {
+	struct dsa_port *dp = dsa_to_port(ds, port);
 	struct b53_device *dev = ds->priv;
 	struct ethtool_eee *p = &dev->ports[port].eee;
 
@@ -2205,6 +2209,8 @@ int b53_set_mac_eee(struct dsa_switch *ds, int port, struct ethtool_eee *e)
 	p->eee_enabled = e->eee_enabled;
 	b53_eee_enable_set(ds, port, e->eee_enabled);
 
+	if (dp->slave->phydev)
+		return phy_ethtool_set_eee(dp->slave->phydev, e);
 	return 0;
 }
 EXPORT_SYMBOL(b53_set_mac_eee);
