@@ -424,9 +424,9 @@ void mac_link_down(struct phylink_config *config, unsigned int mode,
  * be allowed when considering the implementation of this method.
  *
  * If in-band negotiation mode is disabled, allow the link to come up. If
- * @phy is non-%NULL, configure Energy Efficient Ethernet by calling
- * phy_init_eee() and perform appropriate MAC configuration for EEE.
- * Interface type selection must be done in mac_config().
+ * @phy is non-%NULL, configure Energy Efficient Ethernet in the MAC if
+ * phy->eee_active is true. Interface type selection must be done in
+ * mac_config().
  */
 void mac_link_up(struct phylink_config *config, struct phy_device *phy,
 		 unsigned int mode, phy_interface_t interface,
