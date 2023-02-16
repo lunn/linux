@@ -1518,40 +1518,6 @@ void phy_mac_interrupt(struct phy_device *phydev)
 EXPORT_SYMBOL(phy_mac_interrupt);
 
 /**
- * phy_init_eee - init and check the EEE feature
- * @phydev: target phy_device struct
- * @clk_stop_enable: PHY may stop the clock during LPI
- *
- * Description: it checks if the Energy-Efficient Ethernet (EEE)
- * is supported by looking at the MMD registers 3.20 and 7.60/61
- * and it programs the MMD register 3.0 setting the "Clock stop enable"
- * bit if required.
- */
-int phy_init_eee(struct phy_device *phydev, bool clk_stop_enable)
-{
-	int ret;
-
-	if (!phydev->drv)
-		return -EIO;
-
-	ret = genphy_c45_eee_is_active(phydev, NULL, NULL, NULL);
-	if (ret < 0)
-		return ret;
-	if (!ret)
-		return -EPROTONOSUPPORT;
-
-	if (clk_stop_enable)
-		/* Configure the PHY to stop receiving xMII
-		 * clock while it is signaling LPI.
-		 */
-		ret = phy_set_bits_mmd(phydev, MDIO_MMD_PCS, MDIO_CTRL1,
-				       MDIO_PCS_CTRL1_CLKSTOP_EN);
-
-	return ret < 0 ? ret : 0;
-}
-EXPORT_SYMBOL(phy_init_eee);
-
-/**
  * phy_get_eee_err - report the EEE wake error count
  * @phydev: target phy_device struct
  *
