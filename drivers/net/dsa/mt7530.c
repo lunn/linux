@@ -3124,10 +3124,13 @@ static int mt753x_get_mac_eee(struct dsa_switch *ds, int port,
 {
 	struct mt7530_priv *priv = ds->priv;
 	u32 eeecr = mt7530_read(priv, MT7530_PMEEECR_P(port));
+	struct dsa_port *dp = dsa_to_port(ds, port);
 
 	e->tx_lpi_enabled = !(eeecr & LPI_MODE_EN);
 	e->tx_lpi_timer = GET_LPI_THRESH(eeecr);
 
+	if (dp->slave->phydev)
+		return phy_ethtool_get_eee(dp->slave->phydev, e);
 	return 0;
 }
 
@@ -3136,6 +3139,7 @@ static int mt753x_set_mac_eee(struct dsa_switch *ds, int port,
 {
 	struct mt7530_priv *priv = ds->priv;
 	u32 set, mask = LPI_THRESH_MASK | LPI_MODE_EN;
+	struct dsa_port *dp = dsa_to_port(ds, port);
 
 	if (e->tx_lpi_timer > 0xFFF)
 		return -EINVAL;
@@ -3146,6 +3150,8 @@ static int mt753x_set_mac_eee(struct dsa_switch *ds, int port,
 		set |= LPI_MODE_EN;
 	mt7530_rmw(priv, MT7530_PMEEECR_P(port), mask, set);
 
+	if (dp->slave->phydev)
+		return phy_ethtool_set_eee(dp->slave->phydev, e);
 	return 0;
 }
 
