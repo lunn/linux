@@ -1696,7 +1696,8 @@ static void axienet_mac_link_up(struct phylink_config *config,
 				struct phy_device *phy,
 				unsigned int mode, phy_interface_t interface,
 				int speed, int duplex,
-				bool tx_pause, bool rx_pause)
+				bool tx_pause, bool rx_pause,
+				bool eee_active)
 {
 	struct net_device *ndev = to_net_dev(config->dev);
 	struct axienet_local *lp = netdev_priv(ndev);

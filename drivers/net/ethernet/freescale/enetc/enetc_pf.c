@@ -1017,7 +1017,8 @@ static void enetc_force_rgmii_mac(struct enetc_si *si, int speed, int duplex)
 static void enetc_pl_mac_link_up(struct phylink_config *config,
 				 struct phy_device *phy, unsigned int mode,
 				 phy_interface_t interface, int speed,
-				 int duplex, bool tx_pause, bool rx_pause)
+				 int duplex, bool tx_pause, bool rx_pause,
+				 bool eee_active)
 {
 	struct enetc_pf *pf = phylink_to_enetc_pf(config);
 	u32 pause_off_thresh = 0, pause_on_thresh = 0;

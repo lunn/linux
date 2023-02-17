@@ -894,7 +894,8 @@ struct dsa_switch_ops {
 				       phy_interface_t interface,
 				       struct phy_device *phydev,
 				       int speed, int duplex,
-				       bool tx_pause, bool rx_pause);
+				       bool tx_pause, bool rx_pause,
+				       bool eee_active);
 	void	(*phylink_fixed_state)(struct dsa_switch *ds, int port,
 				       struct phylink_link_state *state);
 	/*

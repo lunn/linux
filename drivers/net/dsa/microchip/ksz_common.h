@@ -353,7 +353,8 @@ struct ksz_dev_ops {
 				    unsigned int mode,
 				    phy_interface_t interface,
 				    struct phy_device *phydev, int speed,
-				    int duplex, bool tx_pause, bool rx_pause);
+				    int duplex, bool tx_pause, bool rx_pause,
+				    bool eee_active);
 	void (*setup_rgmii_delay)(struct ksz_device *dev, int port);
 	int (*tc_cbs_set_cinc)(struct ksz_device *dev, int port, u32 val);
 	void (*config_cpu_port)(struct dsa_switch *ds);

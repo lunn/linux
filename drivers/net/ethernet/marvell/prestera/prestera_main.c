@@ -265,7 +265,8 @@ static void prestera_mac_link_up(struct phylink_config *config,
 				 struct phy_device *phy,
 				 unsigned int mode, phy_interface_t interface,
 				 int speed, int duplex,
-				 bool tx_pause, bool rx_pause)
+				 bool tx_pause, bool rx_pause,
+				 bool eee_active)
 {
 }
 

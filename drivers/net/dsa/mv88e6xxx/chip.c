@@ -932,7 +932,8 @@ static void mv88e6xxx_mac_link_up(struct dsa_switch *ds, int port,
 				  unsigned int mode, phy_interface_t interface,
 				  struct phy_device *phydev,
 				  int speed, int duplex,
-				  bool tx_pause, bool rx_pause)
+				  bool tx_pause, bool rx_pause,
+				  bool eee_active)
 {
 	struct mv88e6xxx_chip *chip = ds->priv;
 	const struct mv88e6xxx_ops *ops;

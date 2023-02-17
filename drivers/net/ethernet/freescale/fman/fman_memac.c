@@ -712,7 +712,8 @@ static void memac_mac_config(struct phylink_config *config, unsigned int mode,
 
 static void memac_link_up(struct phylink_config *config, struct phy_device *phy,
 			  unsigned int mode, phy_interface_t interface,
-			  int speed, int duplex, bool tx_pause, bool rx_pause)
+			  int speed, int duplex, bool tx_pause, bool rx_pause,
+			  bool eee_active)
 {
 	struct mac_device *mac_dev = fman_config_to_mac(config);
 	struct fman_mac *memac = mac_dev->fman_mac;

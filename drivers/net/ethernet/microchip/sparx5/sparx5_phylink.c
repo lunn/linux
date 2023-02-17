@@ -47,7 +47,8 @@ static void sparx5_phylink_mac_link_up(struct phylink_config *config,
 				       unsigned int mode,
 				       phy_interface_t interface,
 				       int speed, int duplex,
-				       bool tx_pause, bool rx_pause)
+				       bool tx_pause, bool rx_pause,
+				       bool eee_active)
 {
 	struct sparx5_port *port = netdev_priv(to_net_dev(config->dev));
 	struct sparx5_port_config conf;

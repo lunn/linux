@@ -2827,7 +2827,8 @@ static void mt753x_phylink_mac_link_up(struct dsa_switch *ds, int port,
 				       phy_interface_t interface,
 				       struct phy_device *phydev,
 				       int speed, int duplex,
-				       bool tx_pause, bool rx_pause)
+				       bool tx_pause, bool rx_pause,
+				       bool eee_active)
 {
 	struct mt7530_priv *priv = ds->priv;
 	u32 mcr;
@@ -2912,7 +2913,8 @@ mt7531_cpu_port_config(struct dsa_switch *ds, int port)
 	mt753x_phylink_pcs_link_up(&priv->pcs[port].pcs, MLO_AN_FIXED,
 				   interface, speed, DUPLEX_FULL);
 	mt753x_phylink_mac_link_up(ds, port, MLO_AN_FIXED, interface, NULL,
-				   speed, DUPLEX_FULL, true, true);
+				   speed, DUPLEX_FULL, true, true,
+				   false);
 
 	return 0;
 }

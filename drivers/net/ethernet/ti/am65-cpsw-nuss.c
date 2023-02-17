@@ -1520,7 +1520,8 @@ static void am65_cpsw_nuss_mac_link_down(struct phylink_config *config, unsigned
 
 static void am65_cpsw_nuss_mac_link_up(struct phylink_config *config, struct phy_device *phy,
 				       unsigned int mode, phy_interface_t interface, int speed,
-				       int duplex, bool tx_pause, bool rx_pause)
+				       int duplex, bool tx_pause, bool rx_pause,
+				       bool eee_active)
 {
 	struct am65_cpsw_slave_data *slave = container_of(config, struct am65_cpsw_slave_data,
 							  phylink_config);

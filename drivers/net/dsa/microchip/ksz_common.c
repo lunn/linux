@@ -225,7 +225,7 @@ static void ksz9477_phylink_mac_link_up(struct ksz_device *dev, int port,
 					phy_interface_t interface,
 					struct phy_device *phydev, int speed,
 					int duplex, bool tx_pause,
-					bool rx_pause);
+					bool rx_pause, bool eee_active);
 
 static const struct ksz_dev_ops ksz9477_dev_ops = {
 	.setup = ksz9477_setup,
@@ -2945,7 +2945,7 @@ static void ksz9477_phylink_mac_link_up(struct ksz_device *dev, int port,
 					phy_interface_t interface,
 					struct phy_device *phydev, int speed,
 					int duplex, bool tx_pause,
-					bool rx_pause)
+					bool rx_pause, bool eee_active)
 {
 	struct ksz_port *p;
 
@@ -2966,14 +2966,16 @@ static void ksz_phylink_mac_link_up(struct dsa_switch *ds, int port,
 				    unsigned int mode,
 				    phy_interface_t interface,
 				    struct phy_device *phydev, int speed,
-				    int duplex, bool tx_pause, bool rx_pause)
+				    int duplex, bool tx_pause, bool rx_pause,
+				    bool eee_active)
 {
 	struct ksz_device *dev = ds->priv;
 
 	if (dev->dev_ops->phylink_mac_link_up)
 		dev->dev_ops->phylink_mac_link_up(dev, port, mode, interface,
 						  phydev, speed, duplex,
-						  tx_pause, rx_pause);
+						  tx_pause, rx_pause,
+						  eee_active);
 }
 
 static int ksz_switch_detect(struct ksz_device *dev)

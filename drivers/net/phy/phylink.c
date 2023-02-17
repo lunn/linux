@@ -1144,6 +1144,7 @@ static void phylink_mac_pcs_get_state(struct phylink *pl,
 		state->speed = SPEED_UNKNOWN;
 		state->duplex = DUPLEX_UNKNOWN;
 		state->pause = MLO_PAUSE_NONE;
+		state->eee_active = false;
 	} else {
 		state->speed =  pl->link_config.speed;
 		state->duplex = pl->link_config.duplex;
@@ -1225,10 +1226,12 @@ static void phylink_link_up(struct phylink *pl,
 	struct net_device *ndev = pl->netdev;
 	int speed, duplex;
 	bool rx_pause;
+	bool eee_active;
 
 	speed = link_state.speed;
 	duplex = link_state.duplex;
 	rx_pause = !!(link_state.pause & MLO_PAUSE_RX);
+	eee_active = link_state.eee_active;
 
 	switch (link_state.rate_matching) {
 	case RATE_MATCH_PAUSE:
@@ -1259,7 +1262,8 @@ static void phylink_link_up(struct phylink *pl,
 
 	pl->mac_ops->mac_link_up(pl->config, pl->phydev, pl->cur_link_an_mode,
 				 pl->cur_interface, speed, duplex,
-				 !!(link_state.pause & MLO_PAUSE_TX), rx_pause);
+				 !!(link_state.pause & MLO_PAUSE_TX), rx_pause,
+				 eee_active);
 
 	if (ndev)
 		netif_carrier_on(ndev);
@@ -1531,6 +1535,7 @@ struct phylink *phylink_create(struct phylink_config *config,
 	pl->link_config.pause = MLO_PAUSE_AN;
 	pl->link_config.speed = SPEED_UNKNOWN;
 	pl->link_config.duplex = DUPLEX_UNKNOWN;
+	pl->link_config.eee_active = false;
 	pl->link_config.an_enabled = true;
 	pl->mac_ops = mac_ops;
 	__set_bit(PHYLINK_DISABLE_STOPPED, &pl->phylink_disable_state);
@@ -1596,6 +1601,7 @@ static void phylink_phy_change(struct phy_device *phydev, bool up)
 	mutex_lock(&pl->state_mutex);
 	pl->phy_state.speed = phydev->speed;
 	pl->phy_state.duplex = phydev->duplex;
+	pl->phy_state.eee_active = phydev->eee_active;
 	pl->phy_state.rate_matching = phydev->rate_matching;
 	pl->phy_state.pause = MLO_PAUSE_NONE;
 	if (tx_pause)
@@ -1608,12 +1614,13 @@ static void phylink_phy_change(struct phy_device *phydev, bool up)
 
 	phylink_run_resolve(pl);
 
-	phylink_dbg(pl, "phy link %s %s/%s/%s/%s/%s\n", up ? "up" : "down",
+	phylink_dbg(pl, "phy link %s %s/%s/%s/%s/%s/%s\n", up ? "up" : "down",
 		    phy_modes(phydev->interface),
 		    phy_speed_to_str(phydev->speed),
 		    phy_duplex_to_str(phydev->duplex),
 		    phy_rate_matching_to_str(phydev->rate_matching),
-		    phylink_pause_to_str(pl->phy_state.pause));
+		    phylink_pause_to_str(pl->phy_state.pause),
+		    phy_eee_active_to_str(phydev->eee_active));
 }
 
 static int phylink_bringup_phy(struct phylink *pl, struct phy_device *phy,
@@ -1687,6 +1694,7 @@ static int phylink_bringup_phy(struct phylink *pl, struct phy_device *phy,
 	pl->phy_state.pause = MLO_PAUSE_NONE;
 	pl->phy_state.speed = SPEED_UNKNOWN;
 	pl->phy_state.duplex = DUPLEX_UNKNOWN;
+	pl->phy_state.eee_active = false;
 	pl->phy_state.rate_matching = RATE_MATCH_NONE;
 	linkmode_copy(pl->supported, supported);
 	linkmode_copy(pl->link_config.advertising, config.advertising);
@@ -2931,6 +2939,7 @@ static int phylink_sfp_config_phy(struct phylink *pl, u8 mode,
 	config.interface = PHY_INTERFACE_MODE_NA;
 	config.speed = SPEED_UNKNOWN;
 	config.duplex = DUPLEX_UNKNOWN;
+	config.eee_active = false;
 	config.pause = MLO_PAUSE_AN;
 	config.an_enabled = pl->link_config.an_enabled;
 
@@ -3000,6 +3009,7 @@ static int phylink_sfp_config_optical(struct phylink *pl)
 	linkmode_copy(config.advertising, pl->sfp_support);
 	config.speed = SPEED_UNKNOWN;
 	config.duplex = DUPLEX_UNKNOWN;
+	config.eee_active = false;
 	config.pause = MLO_PAUSE_AN;
 	config.an_enabled = true;
 

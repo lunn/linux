@@ -1052,7 +1052,8 @@ static enum dsa_tag_protocol rtl8366_get_tag_protocol(struct dsa_switch *ds,
 static void
 rtl8366rb_mac_link_up(struct dsa_switch *ds, int port, unsigned int mode,
 		      phy_interface_t interface, struct phy_device *phydev,
-		      int speed, int duplex, bool tx_pause, bool rx_pause)
+		      int speed, int duplex, bool tx_pause, bool rx_pause,
+		      bool eee_active)
 {
 	struct realtek_priv *priv = ds->priv;
 	int ret;

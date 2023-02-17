@@ -88,6 +88,7 @@ static inline bool phylink_autoneg_inband(unsigned int mode)
  * @speed: link speed, one of the SPEED_* constants.
  * @duplex: link duplex mode, one of DUPLEX_* constants.
  * @pause: link pause state, described by MLO_PAUSE_* constants.
+ * @eee_active: true if EEE should be active
  * @rate_matching: rate matching being performed, one of the RATE_MATCH_*
  *   constants. If rate matching is taking place, then the speed/duplex of
  *   the medium link mode (@speed and @duplex) and the speed/duplex of the phy
@@ -107,6 +108,7 @@ struct phylink_link_state {
 	unsigned int link:1;
 	unsigned int an_enabled:1;
 	unsigned int an_complete:1;
+	unsigned int eee_active:1;
 };
 
 enum phylink_op_type {
@@ -177,7 +179,7 @@ struct phylink_mac_ops {
 	void (*mac_link_up)(struct phylink_config *config,
 			    struct phy_device *phy, unsigned int mode,
 			    phy_interface_t interface, int speed, int duplex,
-			    bool tx_pause, bool rx_pause);
+			    bool tx_pause, bool rx_pause, bool eee_active);
 };
 
 #if 0 /* For kernel-doc purposes only. */
@@ -410,27 +412,28 @@ void mac_link_down(struct phylink_config *config, unsigned int mode,
  * @duplex: link duplex
  * @tx_pause: link transmit pause enablement status
  * @rx_pause: link receive pause enablement status
+ * @eee_active: EEE should be enabled
  *
  * Configure the MAC for an established link.
  *
- * @speed, @duplex, @tx_pause and @rx_pause indicate the finalised link
- * settings, and should be used to configure the MAC block appropriately
- * where these settings are not automatically conveyed from the PCS block,
- * or if in-band negotiation (as defined by phylink_autoneg_inband(@mode))
- * is disabled.
+ * @speed, @duplex, @tx_pause, @rx_pause and @eee_active indicate the
+ * finalised link settings, and should be used to configure the MAC block
+ * appropriately where these settings are not automatically conveyed from
+ * the PCS block, or if in-band negotiation (as defined by
+ * phylink_autoneg_inband(@mode)) is disabled.
  *
  * Note that when 802.3z in-band negotiation is in use, it is possible
  * that the user wishes to override the pause settings, and this should
  * be allowed when considering the implementation of this method.
  *
  * If in-band negotiation mode is disabled, allow the link to come up. If
- * @phy is non-%NULL, configure Energy Efficient Ethernet by calling
- * phy_init_eee() and perform appropriate MAC configuration for EEE.
+ * eee_active is true enable the LPI timer for Energy Efficient Ethernet.
  * Interface type selection must be done in mac_config().
  */
 void mac_link_up(struct phylink_config *config, struct phy_device *phy,
 		 unsigned int mode, phy_interface_t interface,
-		 int speed, int duplex, bool tx_pause, bool rx_pause);
+		 int speed, int duplex, bool tx_pause, bool rx_pause,
+	         bool eee_active);
 #endif
 
 struct phylink_pcs_ops;

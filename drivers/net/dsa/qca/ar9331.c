@@ -560,7 +560,8 @@ static void ar9331_sw_phylink_mac_link_up(struct dsa_switch *ds, int port,
 					  phy_interface_t interface,
 					  struct phy_device *phydev,
 					  int speed, int duplex,
-					  bool tx_pause, bool rx_pause)
+					  bool tx_pause, bool rx_pause,
+					  bool eee_active)
 {
 	struct ar9331_sw_priv *priv = (struct ar9331_sw_priv *)ds->priv;
 	struct ar9331_sw_port *p = &priv->port[port];

@@ -1736,7 +1736,8 @@ static void gswip_phylink_mac_link_up(struct dsa_switch *ds, int port,
 				      phy_interface_t interface,
 				      struct phy_device *phydev,
 				      int speed, int duplex,
-				      bool tx_pause, bool rx_pause)
+				      bool tx_pause, bool rx_pause,
+				      bool eee_active)
 {
 	struct gswip_priv *priv = ds->priv;
 

@@ -1111,7 +1111,7 @@ static void rtl8365mb_phylink_mac_link_up(struct dsa_switch *ds, int port,
 					  phy_interface_t interface,
 					  struct phy_device *phydev, int speed,
 					  int duplex, bool tx_pause,
-					  bool rx_pause)
+					  bool rx_pause, bool eee_active)
 {
 	struct realtek_priv *priv = ds->priv;
 	struct rtl8365mb_port *p;

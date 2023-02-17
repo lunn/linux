@@ -251,7 +251,8 @@ static void a5psw_phylink_mac_link_up(struct dsa_switch *ds, int port,
 				      unsigned int mode,
 				      phy_interface_t interface,
 				      struct phy_device *phydev, int speed,
-				      int duplex, bool tx_pause, bool rx_pause)
+				      int duplex, bool tx_pause, bool rx_pause,
+				      bool eee_active)
 {
 	u32 cmd_cfg = A5PSW_CMD_CFG_RX_ENA | A5PSW_CMD_CFG_TX_ENA |
 		      A5PSW_CMD_CFG_TX_CRC_APPEND;

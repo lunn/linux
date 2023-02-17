@@ -1307,7 +1307,7 @@ static void lan9303_phylink_mac_link_up(struct dsa_switch *ds, int port,
 					phy_interface_t interface,
 					struct phy_device *phydev, int speed,
 					int duplex, bool tx_pause,
-					bool rx_pause)
+					bool rx_pause, bool eee_active)
 {
 	struct lan9303 *chip = ds->priv;
 	u32 ctl;

@@ -48,7 +48,8 @@ static void lan966x_phylink_mac_link_up(struct phylink_config *config,
 					unsigned int mode,
 					phy_interface_t interface,
 					int speed, int duplex,
-					bool tx_pause, bool rx_pause)
+					bool tx_pause, bool rx_pause,
+					bool eee_active)
 {
 	struct lan966x_port *port = netdev_priv(to_net_dev(config->dev));
 	struct lan966x_port_config *port_config = &port->config;

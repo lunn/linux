@@ -188,7 +188,8 @@ static void dpaa2_mac_link_up(struct phylink_config *config,
 			      struct phy_device *phy,
 			      unsigned int mode, phy_interface_t interface,
 			      int speed, int duplex,
-			      bool tx_pause, bool rx_pause)
+			      bool tx_pause, bool rx_pause,
+			      bool eee_active)
 {
 	struct dpaa2_mac *mac = phylink_to_dpaa2_mac(config);
 	struct dpmac_link_state *dpmac_state = &mac->state;

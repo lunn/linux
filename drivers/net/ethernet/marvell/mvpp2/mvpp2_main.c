@@ -6503,7 +6503,8 @@ static void mvpp2_mac_link_up(struct phylink_config *config,
 			      struct phy_device *phy,
 			      unsigned int mode, phy_interface_t interface,
 			      int speed, int duplex,
-			      bool tx_pause, bool rx_pause)
+			      bool tx_pause, bool rx_pause,
+			      bool eee_active)
 {
 	struct mvpp2_port *port = mvpp2_phylink_to_port(config);
 	u32 val;
@@ -6641,7 +6642,7 @@ static void mvpp2_acpi_start(struct mvpp2_port *port)
 			 port->phy_interface);
 	mvpp2_mac_link_up(&port->phylink_config, NULL,
 			  MLO_AN_INBAND, port->phy_interface,
-			  SPEED_UNKNOWN, DUPLEX_UNKNOWN, false, false);
+			  SPEED_UNKNOWN, DUPLEX_UNKNOWN, false, false, false);
 }
 
 /* In order to ensure backward compatibility for ACPI, check if the port
