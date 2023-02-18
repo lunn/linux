@@ -1455,6 +1455,8 @@ EXPORT_SYMBOL(genphy_c45_ethtool_get_eee);
  *
  * Description: it reportes the Supported/Advertisement/LP Advertisement
  * capabilities.
+ * Returns either error code, 0 if there was no change, or positive if
+ * there was a change which triggered auto-neg.
  */
 int genphy_c45_ethtool_set_eee(struct phy_device *phydev,
 			       struct ethtool_eee *data)
@@ -1488,9 +1490,12 @@ int genphy_c45_ethtool_set_eee(struct phy_device *phydev,
 	ret = genphy_c45_an_config_eee_aneg(phydev);
 	if (ret < 0)
 		return ret;
-	if (ret > 0)
-		return phy_restart_aneg(phydev);
-
+	if (ret > 0) {
+		ret = phy_restart_aneg(phydev);
+		if (ret < 0)
+			return ret;
+		return 1;
+	}
 	return 0;
 }
 EXPORT_SYMBOL(genphy_c45_ethtool_set_eee);
