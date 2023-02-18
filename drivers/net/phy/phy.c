@@ -921,7 +921,7 @@ static int phy_check_link_status(struct phy_device *phydev)
 		if (err < 0)
 			phydev->eee_active = false;
 		else
-			phydev->eee_active = err;
+			phydev->eee_active = (err & phydev->tx_lpi_enabled);
 		phy_link_up(phydev);
 	} else if (!phydev->link && phydev->state != PHY_NOLINK) {
 		phydev->state = PHY_NOLINK;
@@ -1595,11 +1595,20 @@ int phy_ethtool_set_eee(struct phy_device *phydev, struct ethtool_eee *data)
 
 	mutex_lock(&phydev->lock);
 	ret = genphy_c45_ethtool_set_eee(phydev, data);
-	if (!ret)
+	if (ret >= 0) {
+		if (ret == 0) {
+			/* auto-neg not triggered */
+			if (phydev->tx_lpi_enabled != data->tx_lpi_enabled) {
+				phydev->tx_lpi_enabled = data->tx_lpi_enabled;
+				if (phydev->link)
+					phy_link_up(phydev);
+			}
+		}
 		phydev->tx_lpi_enabled = data->tx_lpi_enabled;
+	}
 	mutex_unlock(&phydev->lock);
 
-	return ret;
+	return (ret < 0 ? ret : 0);
 }
 EXPORT_SYMBOL(phy_ethtool_set_eee);
 
