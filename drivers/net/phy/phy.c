@@ -1561,7 +1561,7 @@ EXPORT_SYMBOL(phy_get_eee_err);
  * @data: ethtool_eee data
  *
  * Description: it reportes the Supported/Advertisement/LP Advertisement
- * capabilities.
+ * capabilities, etc.
  */
 int phy_ethtool_get_eee(struct phy_device *phydev, struct ethtool_eee *data)
 {
@@ -1572,6 +1572,7 @@ int phy_ethtool_get_eee(struct phy_device *phydev, struct ethtool_eee *data)
 
 	mutex_lock(&phydev->lock);
 	ret = genphy_c45_ethtool_get_eee(phydev, data);
+	data->tx_lpi_enabled = phydev->tx_lpi_enabled;
 	mutex_unlock(&phydev->lock);
 
 	return ret;
@@ -1594,6 +1595,8 @@ int phy_ethtool_set_eee(struct phy_device *phydev, struct ethtool_eee *data)
 
 	mutex_lock(&phydev->lock);
 	ret = genphy_c45_ethtool_set_eee(phydev, data);
+	if (!ret)
+		phydev->tx_lpi_enabled = data->tx_lpi_enabled;
 	mutex_unlock(&phydev->lock);
 
 	return ret;
