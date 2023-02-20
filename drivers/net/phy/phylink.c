@@ -1647,6 +1647,9 @@ static int phylink_bringup_phy(struct phylink *pl, struct phy_device *phy,
 	 */
 	phy_support_asym_pause(phy);
 
+	if (pl->config->mac_capabilities & MAC_EEE)
+		phy_support_eee(phy);
+
 	memset(&config, 0, sizeof(config));
 	linkmode_copy(supported, phy->supported);
 	linkmode_copy(config.advertising, phy->advertising);
