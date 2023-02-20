@@ -286,6 +286,9 @@ static int sxgbe_init_phy(struct net_device *ndev)
 		return -ENODEV;
 	}
 
+	if (priv->hw_cap.eee)
+		phy_support_eee(phydev);
+
 	netdev_dbg(ndev, "%s: attached to PHY (UID 0x%x) Link = %d\n",
 		   __func__, phydev->phy_id, phydev->link);
 

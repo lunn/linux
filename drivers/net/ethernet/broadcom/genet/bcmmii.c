@@ -376,6 +376,8 @@ int bcmgenet_mii_probe(struct net_device *dev)
 		}
 	}
 
+	phy_support_eee(dev->phydev);
+
 	/* Configure port multiplexer based on what the probed PHY device since
 	 * reading the 'max-speed' property determines the maximum supported
 	 * PHY speed which is needed for bcmgenet_mii_config() to configure
