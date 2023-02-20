@@ -1543,6 +1543,8 @@ static int lan743x_phy_open(struct lan743x_adapter *adapter)
 	phy->fc_request_control = (FLOW_CTRL_RX | FLOW_CTRL_TX);
 	phy->fc_autoneg = phydev->autoneg;
 
+	phy_support_eee(phydev);
+
 	phy_start(phydev);
 	phy_start_aneg(phydev);
 	phy_attached_info(phydev);

@@ -1696,6 +1696,9 @@ int dsa_port_phylink_create(struct dsa_port *dp)
 	if (ds->ops->phylink_get_caps)
 		ds->ops->phylink_get_caps(ds, dp->index, &dp->pl_config);
 
+	if (ds->ops->set_mac_eee && ds->ops->get_mac_eee)
+		dp->pl_config.mac_capabilities |= MAC_EEE;
+
 	pl = phylink_create(&dp->pl_config, of_fwnode_handle(dp->dn),
 			    mode, &dsa_port_phylink_mac_ops);
 	if (IS_ERR(pl)) {
