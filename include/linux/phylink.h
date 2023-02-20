@@ -74,6 +74,9 @@ enum {
 	MAC_100000FD	= BIT(16),
 	MAC_200000FD	= BIT(17),
 	MAC_400000FD	= BIT(18),
+	/* MAC_EEE indicates that the MAC is Energy Efficient capable
+	   and that the PHY should negotiate its use, if possible */
+	MAC_EEE		= BIT(31),
 };
 
 static inline bool phylink_autoneg_inband(unsigned int mode)
