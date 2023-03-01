@@ -3008,6 +3008,48 @@ phy_led_hw_control_get_device(struct led_classdev *led_cdev)
 	return NULL;
 }
 
+static int phy_led_hw_control_get(struct led_classdev *led_cdev,
+				  unsigned long *rules)
+{
+	struct phy_led *phyled = to_phy_led(led_cdev);
+	struct phy_device *phydev = phyled->phydev;
+	int err;
+
+	mutex_lock(&phydev->lock);
+	err = phydev->drv->led_hw_control_get(phydev, phyled->index, rules);
+	mutex_unlock(&phydev->lock);
+
+	return err;
+}
+
+static int phy_led_hw_control_set(struct led_classdev *led_cdev,
+				  unsigned long rules)
+{
+	struct phy_led *phyled = to_phy_led(led_cdev);
+	struct phy_device *phydev = phyled->phydev;
+	int err;
+
+	mutex_lock(&phydev->lock);
+	err = phydev->drv->led_hw_control_set(phydev, phyled->index, rules);
+	mutex_unlock(&phydev->lock);
+
+	return err;
+}
+
+static int phy_led_hw_is_supported(struct led_classdev *led_cdev,
+				   unsigned long rules)
+{
+	struct phy_led *phyled = to_phy_led(led_cdev);
+	struct phy_device *phydev = phyled->phydev;
+	int err;
+
+	mutex_lock(&phydev->lock);
+	err = phydev->drv->led_hw_is_supported(phydev, phyled->index, rules);
+	mutex_unlock(&phydev->lock);
+
+	return err;
+}
+
 static int of_phy_led(struct phy_device *phydev,
 		      struct device_node *led)
 {
@@ -3034,6 +3076,18 @@ static int of_phy_led(struct phy_device *phydev,
 	if (phydev->drv->led_blink_set)
 		cdev->blink_set = phy_led_blink_set;
 #ifdef CONFIG_LEDS_TRIGGERS
+	if (phydev->drv->led_hw_is_supported &&
+	    phydev->drv->led_hw_control_set &&
+	    phydev->drv->led_hw_control_get) {
+		cdev->hw_control_is_supported = phy_led_hw_is_supported;
+		cdev->hw_control_set = phy_led_hw_control_set;
+		cdev->hw_control_get = phy_led_hw_control_get;
+		cdev->hw_control_trigger = "netdev";
+		cdev->trigger_supported_flags_mask = (BIT(TRIGGER_NETDEV_TX) |
+						      BIT(TRIGGER_NETDEV_RX) |
+						      BIT(TRIGGER_NETDEV_LINK));
+	}
+
 	cdev->hw_control_get_device = phy_led_hw_control_get_device;
 #endif
 	cdev->max_brightness = 1;
