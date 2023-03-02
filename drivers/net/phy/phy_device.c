@@ -2997,6 +2997,17 @@ static int phy_led_blink_set(struct led_classdev *led_cdev,
 	return err;
 }
 
+static struct device *
+phy_led_hw_control_get_device(struct led_classdev *led_cdev)
+{
+	struct phy_led *phyled = to_phy_led(led_cdev);
+	struct phy_device *phydev = phyled->phydev;
+
+	if (phydev->attached_dev)
+		return &phydev->attached_dev->dev;
+	return NULL;
+}
+
 static int of_phy_led(struct phy_device *phydev,
 		      struct device_node *led)
 {
@@ -3022,6 +3033,9 @@ static int of_phy_led(struct phy_device *phydev,
 		cdev->brightness_set_blocking = phy_led_set_brightness;
 	if (phydev->drv->led_blink_set)
 		cdev->blink_set = phy_led_blink_set;
+#ifdef CONFIG_LEDS_TRIGGERS
+	cdev->hw_control_get_device = phy_led_hw_control_get_device;
+#endif
 	cdev->max_brightness = 1;
 	init_data.devicename = dev_name(&phydev->mdio.dev);
 	init_data.fwnode = of_fwnode_handle(led);
