@@ -2841,6 +2841,8 @@ static int m88e1318_led_brightness_set(struct phy_device *phydev,
 {
 	u16 reg;
 
+	phydev_info(phydev, "%s: %d: %d\n", __func__, index, value);
+
 	reg = phy_read_paged(phydev, MII_MARVELL_LED_PAGE,
 			     MII_88E1318S_PHY_LED_FUNC);
 	if (reg < 0)
@@ -2869,6 +2871,9 @@ static int m88e1318_led_blink_set(struct phy_device *phydev, u32 index,
 				  unsigned long *delay_off)
 {
 	u16 reg;
+
+	phydev_info(phydev, "%s: %d: %ld %ld\n",
+		    __func__, index, *delay_on, *delay_off);
 
 	reg = phy_read_paged(phydev, MII_MARVELL_LED_PAGE,
 			     MII_88E1318S_PHY_LED_FUNC);
@@ -3044,6 +3049,8 @@ static int m88e1318_led_hw_is_supported(struct phy_device *phydev, u8 index,
 {
 	int mode, ret;
 
+	phydev_info(phydev, "%s: %d: %lx\n", __func__, index, rules);
+
 	switch (index) {
 	case 0:
 	case 1:
@@ -3054,6 +3061,8 @@ static int m88e1318_led_hw_is_supported(struct phy_device *phydev, u8 index,
 		ret = -EINVAL;
 	}
 
+	phydev_info(phydev, "%s: %d: = %d\n", __func__, index, ret);
+
 	return ret;
 }
 
@@ -3061,6 +3070,8 @@ static int m88e1318_led_hw_control_set(struct phy_device *phydev, u8 index,
 				       unsigned long rules)
 {
 	int mode, ret, reg;
+
+	phydev_info(phydev, "%s: %d: %lx\n", __func__, index, rules);
 
 	switch (index) {
 	case 0:
@@ -3086,7 +3097,7 @@ static int m88e1318_led_hw_control_set(struct phy_device *phydev, u8 index,
 static int m88e1318_led_hw_control_get(struct phy_device *phydev, u8 index,
 				       unsigned long *rules)
 {
-	int mode, reg;
+	int mode, reg, ret;
 
 	if (index > 2)
 		return -EINVAL;
@@ -3095,7 +3106,10 @@ static int m88e1318_led_hw_control_get(struct phy_device *phydev, u8 index,
 			     MII_88E1318S_PHY_LED_FUNC);
 	mode = (reg >> (4 * index)) & 0xf;
 
-	return marvell_get_led_rules(index, rules, mode);
+	ret = marvell_get_led_rules(index, rules, mode);
+	phydev_info(phydev, "%s: %d: %d %lx\n", __func__, index, mode, *rules);
+
+	return ret;
 }
 
 static int marvell_probe(struct phy_device *phydev)
