@@ -360,11 +360,22 @@ static int netdev_trig_notify(struct notifier_block *nb,
 		netdev_notifier_info_to_dev((struct netdev_notifier_info *)dv);
 	struct led_netdev_data *trigger_data =
 		container_of(nb, struct led_netdev_data, notifier);
+	struct led_classdev *led_cdev = trigger_data->led_cdev;
 
 	if (evt != NETDEV_UP && evt != NETDEV_DOWN && evt != NETDEV_CHANGE
 	    && evt != NETDEV_REGISTER && evt != NETDEV_UNREGISTER
 	    && evt != NETDEV_CHANGENAME)
 		return NOTIFY_DONE;
+
+	if ((evt == NETDEV_UP || evt == NETDEV_REGISTER) &&
+	    strcmp(dev->name, trigger_data->device_name)) {
+		struct device * dev = led_cdev->hw_control_get_device(led_cdev);
+
+		if (dev) {
+			const char *name = dev_name(dev);
+			set_device_name(trigger_data, name, strlen(name) + 1);
+		}
+	}
 
 	if (!(dev == trigger_data->net_dev ||
 	      (evt == NETDEV_CHANGENAME && !strcmp(dev->name, trigger_data->device_name)) ||
@@ -489,7 +500,7 @@ static int netdev_trig_activate(struct led_classdev *led_cdev)
 		if (dev) {
 			const char *name = dev_name(dev);
 
-			set_device_name(trigger_data, name, strlen(name));
+			set_device_name(trigger_data, name, strlen(name) + 1);
 		}
 	}
 
