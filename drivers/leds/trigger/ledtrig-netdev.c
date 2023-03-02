@@ -453,6 +453,7 @@ static void netdev_trig_work(struct work_struct *work)
 static int netdev_trig_activate(struct led_classdev *led_cdev)
 {
 	struct led_netdev_data *trigger_data;
+	struct device *dev;
 	int rc;
 
 	trigger_data = kzalloc(sizeof(struct led_netdev_data), GFP_KERNEL);
@@ -482,6 +483,15 @@ static int netdev_trig_activate(struct led_classdev *led_cdev)
 		trigger_data->hw_control = true;
 
 	led_set_trigger_data(led_cdev, trigger_data);
+
+	if (led_cdev->hw_control_get_device) {
+		dev = led_cdev->hw_control_get_device(led_cdev);
+		if (dev) {
+			const char *name = dev_name(dev);
+
+			set_device_name(trigger_data, name, strlen(name));
+		}
+	}
 
 	rc = register_netdevice_notifier(&trigger_data->notifier);
 	if (rc)
