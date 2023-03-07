@@ -471,6 +471,13 @@ static int netdev_trig_activate(struct led_classdev *led_cdev)
 	atomic_set(&trigger_data->interval, msecs_to_jiffies(50));
 	trigger_data->last_activity = 0;
 
+	/* Check if hw control is active by default on the LED.
+	 * Init already enabled mode in hw control.
+	 */
+	if (led_trigger_can_hw_control(led_cdev) &&
+	    !led_cdev->hw_control_get(led_cdev, &trigger_data->mode))
+		trigger_data->hw_control = true;
+
 	led_set_trigger_data(led_cdev, trigger_data);
 
 	rc = register_netdevice_notifier(&trigger_data->notifier);
