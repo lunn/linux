@@ -3233,9 +3233,10 @@ static int phy_probe(struct device *dev)
 	phydev->state = PHY_READY;
 
 	/* Get the LEDs from the device tree, and instantiate standard
-	 * LEDs for them.
+	 * LEDs for them, if the phy driver supports it.
 	 */
-	of_phy_leds(phydev);
+	if (phydev->drv->led_brightness_set)
+		of_phy_leds(phydev);
 
 out:
 	/* Assert the reset signal */
