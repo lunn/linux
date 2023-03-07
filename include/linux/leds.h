@@ -157,6 +157,8 @@ struct led_classdev {
 
 	/* Unique trigger name supported by LED set in hw control mode */
 	const char		*hw_control_trigger;
+	/* Mask of the different supported trigger mode in hw control mode */
+	unsigned long		trigger_supported_flags_mask;
 	/*
 	 * Activate hardware control, LED driver will use the provided flags
 	 * from the supported trigger and setup the LED to be driven by hardware
@@ -174,6 +176,12 @@ struct led_classdev {
 	 */
 	int			(*hw_control_get)(struct led_classdev *led_cdev,
 						  unsigned long *flags);
+	/*
+	 * Check if the LED driver supports the requested mode provided by the
+	 * defined supported trigger to setup the LED to hw control mode.
+	 */
+	int			(*hw_control_is_supported)(struct led_classdev *led_cdev,
+							   unsigned long flags);
 #endif
 
 #ifdef CONFIG_LEDS_BRIGHTNESS_HW_CHANGED
