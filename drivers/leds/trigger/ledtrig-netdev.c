@@ -124,6 +124,11 @@ static ssize_t device_name_store(struct device *dev,
 
 	mutex_lock(&trigger_data->lock);
 
+	if (trigger_data->hw_control) {
+		size = -EINVAL;
+		goto out;
+	}
+
 	if (trigger_data->net_dev) {
 		dev_put(trigger_data->net_dev);
 		trigger_data->net_dev = NULL;
@@ -145,6 +150,8 @@ static ssize_t device_name_store(struct device *dev,
 	trigger_data->last_activity = 0;
 
 	set_baseline_state(trigger_data);
+
+out:
 	mutex_unlock(&trigger_data->lock);
 
 	return size;
@@ -248,6 +255,13 @@ static ssize_t interval_store(struct device *dev,
 	unsigned long value;
 	int ret;
 
+	mutex_lock(&trigger_data->lock);
+
+	if (trigger_data->hw_control) {
+		size = -EINVAL;
+		goto out;
+	}
+
 	ret = kstrtoul(buf, 0, &value);
 	if (ret)
 		return ret;
@@ -259,6 +273,9 @@ static ssize_t interval_store(struct device *dev,
 		atomic_set(&trigger_data->interval, msecs_to_jiffies(value));
 		set_baseline_state(trigger_data);	/* resets timer */
 	}
+
+out:
+	mutex_unlock(&trigger_data->lock);
 
 	return size;
 }
