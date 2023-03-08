@@ -68,6 +68,13 @@ static void set_baseline_state(struct led_netdev_data *trigger_data)
 	int current_brightness;
 	struct led_classdev *led_cdev = trigger_data->led_cdev;
 
+	/* Already validated, hw control is possible with the requested mode */
+	if (trigger_data->hw_control) {
+		led_cdev->hw_control_set(led_cdev, trigger_data->mode);
+
+		return;
+	}
+
 	current_brightness = led_cdev->brightness;
 	if (current_brightness)
 		led_cdev->blink_brightness = current_brightness;
@@ -95,6 +102,51 @@ static void set_baseline_state(struct led_netdev_data *trigger_data)
 static int validate_requested_mode(struct led_netdev_data *trigger_data,
 				   unsigned long mode, bool *can_use_hw_control)
 {
+	unsigned int interval = atomic_read(&trigger_data->interval);
+	unsigned long hw_supported_mode, hw_mode = 0, sw_mode = 0;
+	struct led_classdev *led_cdev = trigger_data->led_cdev;
+	unsigned long default_interval = msecs_to_jiffies(50);
+	bool force_sw = false;
+	int i, ret;
+
+	hw_supported_mode = led_cdev->trigger_supported_flags_mask;
+
+	/* Check if trigger can use hw control */
+	if (!led_trigger_can_hw_control(led_cdev))
+		force_sw = true;
+
+	/* Compose a list of mode that can run in hw or sw */
+	for (i = 0; i < __TRIGGER_NETDEV_MAX; i++) {
+		/* Skip checking mode not active */
+		if (!test_bit(i, &mode))
+			continue;
+
+		/* net_dev is not supported and must be empty for hw control.
+		 * interval must be set to the default value. Any different
+		 * value is rejected if in hw control.
+		 */
+		if (interval == default_interval && !trigger_data->net_dev &&
+		    !force_sw && test_bit(i, &hw_supported_mode))
+			set_bit(i, &hw_mode);
+		else
+			set_bit(i, &sw_mode);
+	}
+
+	/* We can't run modes handled by both sw and hw */
+	if (sw_mode && hw_mode)
+		return -EINVAL;
+
+	/* Exit early if we are using software fallback */
+	if (sw_mode)
+		return 0;
+
+	/* Check if the requested mode is supported */
+	ret = led_cdev->hw_control_is_supported(led_cdev, hw_mode);
+	if (ret)
+		return ret;
+
+	*can_use_hw_control = true;
+
 	return 0;
 }
 
