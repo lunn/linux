@@ -91,6 +91,12 @@ static void set_baseline_state(struct led_netdev_data *trigger_data)
 	}
 }
 
+static int validate_requested_mode(struct led_netdev_data *trigger_data,
+				   unsigned long mode)
+{
+	return 0;
+}
+
 static ssize_t device_name_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
@@ -168,7 +174,7 @@ static ssize_t netdev_led_attr_store(struct device *dev, const char *buf,
 				     size_t size, enum led_trigger_netdev_modes attr)
 {
 	struct led_netdev_data *trigger_data = led_trigger_get_drvdata(dev);
-	unsigned long state;
+	unsigned long state, new_mode = trigger_data->mode;
 	int ret;
 	int bit;
 
@@ -186,12 +192,18 @@ static ssize_t netdev_led_attr_store(struct device *dev, const char *buf,
 		return -EINVAL;
 	}
 
+	if (state)
+		set_bit(bit, &new_mode);
+	else
+		clear_bit(bit, &new_mode);
+
+	ret = validate_requested_mode(trigger_data, new_mode);
+	if (ret)
+		return ret;
+
 	cancel_delayed_work_sync(&trigger_data->work);
 
-	if (state)
-		set_bit(bit, &trigger_data->mode);
-	else
-		clear_bit(bit, &trigger_data->mode);
+	trigger_data->mode = new_mode;
 
 	set_baseline_state(trigger_data);
 
