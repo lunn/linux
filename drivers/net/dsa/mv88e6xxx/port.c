@@ -617,7 +617,14 @@ static int mv88e6xxx_port_set_cmode(struct mv88e6xxx_chip *chip, int port,
 int mv88e6390x_port_set_cmode(struct mv88e6xxx_chip *chip, int port,
 			      phy_interface_t mode)
 {
-	if (port != 9 && port != 10)
+	/* Ports 9 and 10 can change there cmode. Ports 2-4 and 5-7
+	 * can logically change there cmode if ports 9/10 don't need
+	 * all there SERDES interfaces, allowing the lower ports to
+	 * make use of a SERDES, and can then auto media select between
+	 * PHY and SERDES/SFP.
+	 */
+
+	if (port == 0 || port == 1 || port == 8)
 		return -EOPNOTSUPP;
 
 	return mv88e6xxx_port_set_cmode(chip, port, mode, false);
