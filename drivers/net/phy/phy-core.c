@@ -77,6 +77,17 @@ const char *phy_duplex_to_str(unsigned int duplex)
 EXPORT_SYMBOL_GPL(phy_duplex_to_str);
 
 /**
+ * phy_eee_active_to_str - Return string describing eee_active
+ *
+ * @eee_active: EEE active setting to describe
+ */
+const char *phy_eee_active_to_str(bool eee_active)
+{
+	return eee_active ? "EEE Active" : "EEE Inactive";
+}
+EXPORT_SYMBOL_GPL(phy_eee_active_to_str);
+
+/**
  * phy_rate_matching_to_str - Return a string describing the rate matching
  *
  * @rate_matching: Type of rate matching to describe
