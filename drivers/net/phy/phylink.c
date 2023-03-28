@@ -1594,10 +1594,13 @@ static void phylink_phy_change(struct phy_device *phydev, bool up)
 {
 	struct phylink *pl = phydev->phylink;
 	bool tx_pause, rx_pause;
+	bool eee_changed;
 
 	phy_get_pause(phydev, &tx_pause, &rx_pause);
 
 	mutex_lock(&pl->state_mutex);
+	eee_changed = (pl->phy_state.link == up);
+
 	pl->phy_state.speed = phydev->speed;
 	pl->phy_state.duplex = phydev->duplex;
 	pl->phy_state.eee_active = phydev->eee_active;
@@ -1609,9 +1612,14 @@ static void phylink_phy_change(struct phy_device *phydev, bool up)
 		pl->phy_state.pause |= MLO_PAUSE_RX;
 	pl->phy_state.interface = phydev->interface;
 	pl->phy_state.link = up;
+
+	if (eee_changed && pl->mac_ops->mac_set_eee)
+		pl->mac_ops->mac_set_eee(pl->config, pl->phy_state.eee_active);
+
 	mutex_unlock(&pl->state_mutex);
 
-	phylink_run_resolve(pl);
+	if (!eee_changed)
+		phylink_run_resolve(pl);
 
 	phylink_dbg(pl, "phy link %s %s/%s/%s/%s/%s/%s\n", up ? "up" : "down",
 		    phy_modes(phydev->interface),
