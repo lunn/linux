@@ -290,7 +290,8 @@ static int marvell_c22_pcs_setup_irq(struct marvell_c22_pcs *mpcs,
 	if (irq) {
 		err = request_threaded_irq(irq, NULL,
 					   marvell_c22_pcs_handle_irq,
-					   IRQF_ONESHOT, mpcs->name, mpcs);
+					   IRQF_ONESHOT | IRQF_SHARED,
+					   mpcs->name, mpcs);
 		if (err)
 			return err;
 	}

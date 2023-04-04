@@ -145,7 +145,8 @@ static int mv88e6185_pcs_init(struct mv88e6xxx_chip *chip, int port)
 			 "mv88e6xxx-%s-serdes-%d", dev_name(dev), port);
 
 		err = request_threaded_irq(irq, NULL, mv88e6185_pcs_handle_irq,
-					   IRQF_ONESHOT, mpcs->name, mpcs);
+					   IRQF_ONESHOT | IRQF_SHARED,
+					   mpcs->name, mpcs);
 		if (err) {
 			kfree(mpcs);
 			return err;
