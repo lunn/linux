@@ -108,7 +108,8 @@ static int mv88e639x_pcs_setup_irq(struct mv88e639x_pcs *mpcs,
 	mpcs->irq = irq;
 
 	return request_threaded_irq(irq, NULL, mv88e639x_pcs_handle_irq,
-				    IRQF_ONESHOT, mpcs->name, mpcs);
+				    IRQF_ONESHOT | IRQF_SHARED,
+				    mpcs->name, mpcs);
 }
 
 static void mv88e639x_pcs_teardown(struct mv88e6xxx_chip *chip, int port)
