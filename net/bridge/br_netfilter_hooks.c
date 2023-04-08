@@ -20,6 +20,7 @@
 #include <linux/if_ether.h>
 #include <linux/if_vlan.h>
 #include <linux/if_pppox.h>
+#include <linux/jump_label.h>
 #include <linux/ppp_defs.h>
 #include <linux/netfilter_bridge.h>
 #include <uapi/linux/netfilter_bridge.h>
@@ -1056,6 +1057,25 @@ int brnf_sysctl_call_tables(struct ctl_table *ctl, int write,
 
 	if (write && *(int *)(ctl->data))
 		*(int *)(ctl->data) = 1;
+
+	return ret;
+}
+
+static
+int brnf_sysctl_call_iptables(struct ctl_table *ctl, int write,
+			      void *buffer, size_t *lenp, loff_t *ppos)
+{
+	int ret;
+
+	ret = brnf_sysctl_call_tables(ctl, write, buffer, lenp, ppos);
+
+	if (write) {
+		if (*(int *)(ctl->data))
+			static_branch_enable(&nf_br_call_iptable_enabled);
+		else
+			static_branch_disable(&nf_br_call_iptable_enabled);
+	}
+
 	return ret;
 }
 
@@ -1070,7 +1090,7 @@ static struct ctl_table brnf_table[] = {
 		.procname	= "bridge-nf-call-iptables",
 		.maxlen		= sizeof(int),
 		.mode		= 0644,
-		.proc_handler	= brnf_sysctl_call_tables,
+		.proc_handler	= brnf_sysctl_call_iptables,
 	},
 	{
 		.procname	= "bridge-nf-call-ip6tables",
@@ -1107,6 +1127,8 @@ static inline void br_netfilter_sysctl_default(struct brnf_net *brnf)
 	brnf->filter_vlan_tagged = 0;
 	brnf->filter_pppoe_tagged = 0;
 	brnf->pass_vlan_indev = 0;
+
+	static_branch_enable(&nf_br_call_iptable_enabled);
 }
 
 static int br_netfilter_sysctl_init_net(struct net *net)

@@ -1895,6 +1895,7 @@ struct nf_br_ops {
 extern const struct nf_br_ops __rcu *nf_br_ops;
 
 /* br_netfilter.c */
+DECLARE_STATIC_KEY_FALSE(nf_br_call_iptable_enabled);
 #if IS_ENABLED(CONFIG_BRIDGE_NETFILTER)
 int br_nf_core_init(void);
 void br_nf_core_fini(void);
