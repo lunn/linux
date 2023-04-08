@@ -12,12 +12,16 @@
 #include <linux/netdevice.h>
 #include <linux/etherdevice.h>
 #include <linux/init.h>
+#include <linux/jump_label.h>
 #include <linux/llc.h>
 #include <net/llc.h>
 #include <net/stp.h>
 #include <net/switchdev.h>
 
 #include "br_private.h"
+
+DEFINE_STATIC_KEY_FALSE(nf_br_call_iptable_enabled);
+EXPORT_SYMBOL_GPL(nf_br_call_iptable_enabled);
 
 /*
  * Handle changes in state of network devices enslaved to a bridge.
