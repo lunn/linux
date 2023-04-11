@@ -470,6 +470,13 @@ config IDEAPAD_LAPTOP
 	  This is a driver for Lenovo IdeaPad netbooks contains drivers for
 	  rfkill switch, hotkey, fan control and backlight control.
 
+config SCU
+	tristate "SCU driver"
+	depends on DMI
+	help
+	  This driver enables suuport for SPI Sytem control units (SCU) and
+	  defines internal hardware layout
+
 config SENSORS_HDAPS
 	tristate "Thinkpad Hard Drive Active Protection System (hdaps)"
 	depends on INPUT
