@@ -37,6 +37,7 @@
 #include <linux/version.h>
 #include <linux/platform_data/pca953x.h>
 #include <linux/platform_data/b53.h>
+#include <linux/platform_data/mv88e6xxx.h>
 #include <linux/sysfs.h>
 #include <linux/spi/spi.h>
 #include <linux/proc_fs.h>
@@ -133,7 +134,8 @@ struct scu_platform_data {
 	int num_i2c_board_info;
 	struct spi_board_info *spi_board_info;
 	int num_spi_board_info;
-	struct dsa_chip_data *dsa_data;
+	struct dsa_mv88e6xxx_pdata *dsa_pdata;
+	const struct mdio_board_info *dsa_bdinfo;
 	void (*init)(struct scu_data *);
 	void (*remove)(struct scu_data *);
 };
@@ -1318,55 +1320,68 @@ const char * const ichx_gpiolib_names[128] = {
 	[20] = "switch_reset",		/* GPO3 */
 };
 
+static struct gpiod_lookup_table scu_switch_gpiod_table = {
+	.dev_id = "gpio-0:00",
+	.table = {
+		/* Not used, the driver does not support interrupts */
+		GPIO_LOOKUP_IDX("gpio_ich", 0, "switch_irq", 0, 0),
+		GPIO_LOOKUP_IDX("gpio_ich", 20, "reset", 0,
+				GPIO_ACTIVE_LOW),
+		{ },
+	}
+};
 
-static struct gpiod_lookup_table switch_mdio_table = {
+static struct gpiod_lookup_table mdio_gpiod_table = {
 	.dev_id = "mdio-gpio.0",
 	.table = {
-		GPIO_LOOKUP_IDX("gpio_ich", 17,
-				NULL, MDIO_GPIO_MDC, GPIO_OPEN_SOURCE),
-		GPIO_LOOKUP_IDX("gpio_ich", 2,
-				NULL, MDIO_GPIO_MDIO, GPIO_OPEN_SOURCE),
-		GPIO_LOOKUP_IDX("gpio_ich", 21,
-				NULL, MDIO_GPIO_MDO, GPIO_ACTIVE_LOW | GPIO_TRANSITORY),
+		GPIO_LOOKUP_IDX("gpio_ich", 17, NULL, MDIO_GPIO_MDC,
+				GPIO_ACTIVE_HIGH),
+		GPIO_LOOKUP_IDX("gpio_ich", 2, NULL, MDIO_GPIO_MDIO,
+				GPIO_OPEN_SOURCE),
+		GPIO_LOOKUP_IDX("gpio_ich", 21, NULL, MDIO_GPIO_MDO,
+				GPIO_ACTIVE_LOW),
 		{} /* Terminating entry */
 	},
 };
 
+static const struct mdio_gpio_platform_data mdio_gpio_pdata = {
+	.phy_mask = ~0,
+	.phy_ignore_ta_mask = ~0,
+};
 
 static void pch_gpio_setup(struct scu_data *data)
 {
 	struct gpio_chip *chip = scu_find_chip_by_name("gpio_ich");
-	struct mdio_gpio_platform_data pdata = { };
+	int irq;
 
 	scu_pca953x_pdata[0].irq_base = -1;
 	data->pdata->i2c_board_info[0].irq = 0;
-	if (chip) {
-		int irq = gpio_to_irq(chip->base + 1);	/* GPI1 */
 
-		if (irq > 0) {
-			scu_pca953x_pdata[0].irq_base = 0;
-			data->pdata->i2c_board_info[0].irq = irq;
-		}
-		gpiod_add_lookup_table(&switch_mdio_table);
-		
-//		pdata.mdc = chip->base + 17;	/* GPO1 */
-//		pdata.mdo = chip->base + 21;	/* GPO2 */
-//		pdata.mdo_active_low = true;
-//		pdata.mdio = chip->base + 2;	/* GPI2 */
+	if (!chip) {
+		dev_err(data->dev, "GPIO chip gpio_ich missing\n");
+		return;
+	}
 
-		data->mdio_dev = platform_device_register_data(&platform_bus,
-							       "mdio-gpio", 0,
-							       &pdata,
-							       sizeof(pdata));
+	irq = gpio_to_irq(chip->base + 1);	/* GPI1 */
+	if (irq > 0) {
+		scu_pca953x_pdata[0].irq_base = 0;
+		data->pdata->i2c_board_info[0].irq = irq;
+	}
 
-		if (IS_ERR(data->mdio_dev)) {
-			dev_err(data->dev, "Failed to register MDIO device\n");
-			data->mdio_dev = NULL;
-		}
-		/* generic: 0, 3 (input), 16, 20 (output) */
-		scu_gpio_common_setup(chip->base, 22, 0x110009, 0x00000b,
-				      0x100000, 0x0);
-		dev_err(data->dev, "DSA registered: %p\n", data->mdio_dev);
+	/* generic: 3 (input), 16, */
+	scu_gpio_common_setup(chip->base, 16, 0x10008, 0x000008,
+			      0x0, 0x0);
+	gpiod_add_lookup_table(&mdio_gpiod_table);
+
+	data->mdio_dev = platform_device_register_data(&platform_bus,
+						       "mdio-gpio", 0,
+						       &mdio_gpio_pdata,
+						       sizeof(mdio_gpio_pdata));
+
+	if (IS_ERR(data->mdio_dev)) {
+		dev_err(data->dev, "Failed to register MDIO device\n");
+		data->mdio_dev = NULL;
+		return;
 	}
 }
 
@@ -1380,64 +1395,82 @@ static void pch_gpio_teardown(struct scu_data *data)
 	}
 }
 
-static struct dsa_chip_data switch_chip_data = {
-	.eeprom_len	= 0x200,
-	.port_names[0]	= "cpu",
-	.port_names[1]	= "port1",
-	.port_names[2]	= "port2",
-	.port_names[3]	= "port8",
-	.port_names[4]	= "host2esb",
-	.port_names[5]	= 0,	/* unused */
+static struct dsa_mv88e6xxx_pdata dsa_mv88e6xxx_pdata_scu3 = {
+	.cd = {
+		.port_names[0] = "cpu",
+		.port_names[1] = "port1",
+		.port_names[2] = "port2",
+		.port_names[3] = "port8",
+		.port_names[4] = "host2esb",
+		.port_names[5] = NULL,
+	},
+	.compatible = "marvell,mv88e6085",
+	.enabled_ports = BIT(0) | BIT(1) | BIT(2) | BIT(3) | BIT(4),
+	.eeprom_len = 0x200,
 };
 
-static struct dsa_chip_data switch_chip_data_scu4 = {
-	.eeprom_len	= 0x200,
-	.port_names[0]	= "cpu",
-	.port_names[1]	= "eth_cu_100_1",
-	.port_names[2]	= 0,	/* unused */
-	.port_names[3]	= "eth_cu_1000_2",
-	.port_names[4]	= "eth_cu_1000_1",
-	.port_names[5]	= 0,	/* unused */
+static struct dsa_mv88e6xxx_pdata dsa_mv88e6xxx_pdata_scu4 = {
+	.cd = {
+		.port_names[0] = "cpu",
+		.port_names[1] = "eth_cu_100_1",
+		.port_names[2] = NULL,
+		.port_names[3] = "eth_cu_1000_2",
+		.port_names[4] = "eth_cu_1000_1",
+		.port_names[5] = NULL,
+	},
+	.compatible = "marvell,mv88e6085",
+	.enabled_ports = BIT(0) | BIT(1) | BIT(3) | BIT(4),
+	.eeprom_len = 0x200,
 };
 
-static struct dsa_chip_data switch_chip_data_scu4_copper = {
-        .eeprom_len     = 0x200,
-        .port_names[0]  = "cpu",
-        .port_names[1]  = "eth_cu_100_1",
-        .port_names[2]  = 0,    /* unused */
-        .port_names[3]  = "eth_cu_1000_8",
-        .port_names[4]  = "eth_cu_1000_ext",
-        .port_names[5]  = 0,    /* unused */
+static const struct mdio_board_info bdinfo_scu3 = {
+	.bus_id = "gpio-0",
+	.modalias = "mv88e6085",
+	.mdio_addr = 0,
+	.platform_data = &dsa_mv88e6xxx_pdata_scu3,
+};
+
+static const struct mdio_board_info bdinfo_scu4 = {
+	.bus_id = "gpio-0",
+	.modalias = "mv88e6085",
+	.mdio_addr = 0,
+	.platform_data = &dsa_mv88e6xxx_pdata_scu4,
 };
 
 static void scu_setup_ethernet_switch(struct scu_data *data)
 {
-	if (data->pdata->dsa_data) {
-		struct dsa_platform_data switch_data = {
-			.nr_chips = 1,
-			.chip = data->pdata->dsa_data,
-		};
-			
-		dev_err(data->dev, "Adding DSA switch\n");
+	const struct mdio_board_info *dsa_bdinfo = data->pdata->dsa_bdinfo;
+	struct dsa_mv88e6xxx_pdata *dsa_pdata = data->pdata->dsa_pdata;
+	struct device *dev = data->dev;
+	int err;
 
-		switch_data.netdev = &data->netdev->dev;
-		data->pdata->dsa_data->host_dev = &data->mdio_dev->dev;
-		data->dsa_dev = platform_device_register_data(&platform_bus, "dsa",
-						      0, &switch_data,
-						      sizeof(switch_data));
+	if (!dsa_bdinfo || !dsa_pdata)
+		return;
 
-		if (IS_ERR(data->dsa_dev)) {
-			dev_err(data->dev, "Failed to register DSA device\n");
-			data->dsa_dev = NULL;
-		}
+	dsa_pdata->netdev = dev_get_by_name(&init_net, "eth0");
+	if (!dsa_pdata->netdev) {
+		dev_err(dev, "Error finding Ethernet device\n");
+		return;
 	}
+
+	/* This table allows the switch to find its reset GPIO. */
+	gpiod_add_lookup_table(&scu_switch_gpiod_table);
+
+	err = mdiobus_register_board_info(dsa_bdinfo, 1);
+	if (err) {
+		dev_err(dev, "Error setting up MDIO board info\n");
+		goto out;
+	}
+	return;
+
+out:
+	dev_put(dsa_pdata->netdev);
 }
 
 static void scu3_init(struct scu_data *data)
 {
+	scu_setup_ethernet_switch(data);
 	pch_gpio_setup(data);
-	if (data->mdio_dev)
-		scu_setup_ethernet_switch(data);
 }
 
 static void scu3_remove(struct scu_data *data)
@@ -1474,8 +1507,6 @@ static struct spi_board_info scu1_spi_info[] = {
 	 .platform_data = &b53_switch_pdata,
 	},
 };
-
-
 
 static struct spi_board_info scu2_spi_info[] = {
 	{
@@ -1526,7 +1557,8 @@ static struct scu_platform_data scu_platform_data[] = {
 		.eeprom_len = SCU_EEPROM_LEN_GEN3,
 		.i2c_board_info = scu_i2c_info_scu3,
 		.num_i2c_board_info = ARRAY_SIZE(scu_i2c_info_scu3),
-		.dsa_data = &switch_chip_data,
+		.dsa_pdata = &dsa_mv88e6xxx_pdata_scu3,
+		.dsa_bdinfo = &bdinfo_scu3,
 		.init = scu3_init,
 		.remove = scu3_remove,
 	},
@@ -1539,7 +1571,8 @@ static struct scu_platform_data scu_platform_data[] = {
 		.eeprom_len = SCU_EEPROM_LEN_GEN3,
 		.i2c_board_info = scu_i2c_info_scu4,
 		.num_i2c_board_info = ARRAY_SIZE(scu_i2c_info_scu4),
-		.dsa_data = &switch_chip_data_scu4,
+		.dsa_pdata = &dsa_mv88e6xxx_pdata_scu4,
+		.dsa_bdinfo = &bdinfo_scu4,
 		.init = scu3_init,
 		.remove = scu3_remove,
 	},
@@ -1553,7 +1586,8 @@ static struct scu_platform_data scu_platform_data[] = {
                 .eeprom_len = SCU_EEPROM_LEN_GEN3,
                 .i2c_board_info = scu_i2c_info_scu4,
                 .num_i2c_board_info = ARRAY_SIZE(scu_i2c_info_scu4),
-                .dsa_data = &switch_chip_data_scu4_copper,
+		.dsa_pdata = &dsa_mv88e6xxx_pdata_scu4,
+		.dsa_bdinfo = &bdinfo_scu4,
                 .init = scu3_init,
                 .remove = scu3_remove,
         },
@@ -1563,7 +1597,7 @@ static struct scu_platform_data scu_platform_data[] = {
 		.eeprom_len = SCU_EEPROM_LEN_GEN3,
 		.i2c_board_info = scu_i2c_info_scu3,
 		.num_i2c_board_info = ARRAY_SIZE(scu_i2c_info_scu3),
-		.dsa_data = &switch_chip_data,
+		.dsa_bdinfo = &bdinfo_scu3,
 		.init = scu3_init,
 		.remove = scu3_remove,
 	},
@@ -1832,7 +1866,6 @@ static int scu_probe(struct platform_device *pdev)
 	struct proc_dir_entry *rave_board_type;
 	struct device *dev = &pdev->dev;
 	struct i2c_adapter *adapter;
-	struct net_device *ndev;
 	struct scu_data *data;
 	int i, ret;
 
@@ -1848,59 +1881,54 @@ static int scu_probe(struct platform_device *pdev)
 
 	mutex_init(&data->write_lock);
 
-	/* look for ethernet device attached to 'e1000e' driver */
-	rtnl_lock();
-	for_each_netdev(&init_net, ndev) {
-		if (ndev->dev.parent && ndev->dev.parent->driver &&
-		    !strcmp(ndev->dev.parent->driver->name, "e1000e")) {
-			data->netdev = ndev;
-			break;
-		}
-	}
-	rtnl_unlock();
-
-	if (!data->netdev)
-		return -EPROBE_DEFER;
-
 	/*
 	 * The adapter driver should have been loaded by now.
 	 * If not, try again later.
 	 */
 	adapter = scu_find_i2c_adapter("i2c-kempld");
 	if (!adapter) {
-		ret = -EPROBE_DEFER;
-		goto error_put_net;
+		dev_info(dev, "Defering probe, i2c-kempld missing\n");
+		return -EPROBE_DEFER;
 	}
 	data->adapter = adapter;
 
 	data->rave_proc_dir = proc_mkdir("rave", NULL);
 	if (!data->rave_proc_dir) {
 		ret = -ENODEV;
+		dev_err(dev, "Error creating proc directory\n");
 		goto error_put;
 	}
 	rave_board_type = proc_create_data("board_type", 0, data->rave_proc_dir,
 					   &scu_proc_ops, data);
 	if (rave_board_type == NULL) {
 		ret = -ENODEV;
+		dev_err(dev, "Error creating proc board_type\n");
 		goto error_remove;
 	}
 
 	ret = scu_instantiate_i2c(data, 0, scu_i2c_info_common,
 				  ARRAY_SIZE(scu_i2c_info_common));
-	if (ret)
+	if (ret) {
+		dev_err(dev, "Error instantiateding i2c devices\n");
 		goto error_i2c_client;
+	}
 
-	/*XXX Here is we have export eeprom cells as part of EEPROM/NVMEM or inside of populate_unit_info */
+	/*XXX Here is we have export eeprom cells as part of
+	 * EEPROM/NVMEM or inside of populate_unit_info */
         nvmem_np = nvmem_device_find("Nameplate eeprom", nvmem_match);
 	if (nvmem_np) {
 		populate_unit_info(nvmem_np, data);
+	} else {
+		dev_info(dev, "Failed to find nameplate eeprom\n");
 	}
-	
+
 	pca_leds_register(dev, data);
 
 	ret = sysfs_create_group(&dev->kobj, &scu_base_group);
-	if (ret)
+	if (ret) {
+		dev_err(dev, "Failed to create sysfs group\n");
 		goto error_group;
+	}
 
 	return 0;
 
@@ -1913,8 +1941,6 @@ error_remove:
 	proc_remove(data->rave_proc_dir);
 error_put:
 	put_device(&adapter->dev);
-error_put_net:
-	dev_put(data->netdev);
 	return ret;
 }
 
