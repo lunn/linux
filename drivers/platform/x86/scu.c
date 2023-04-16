@@ -90,7 +90,7 @@
 #define SCU4_SD_ERROR_6_GPIO	SCU_EXT_GPIO(3, 1)
 
 struct __packed eeprom_data {
-	unsigned short length;			/* 0 - 1 */
+	__le16 length;				/* 0 - 1 */
 	unsigned char checksum;			/* 2 */
 	unsigned char have_gsm_modem;		/* 3 */
 	unsigned char have_cdma_modem;		/* 4 */
@@ -1679,7 +1679,8 @@ static void scu_populate_unit_info(struct nvmem_device *nvmem,
 	data->eeprom_accessible = true;
 
 	/* Special case - eeprom not programmed */
-	if (data->eeprom.length == 0xffff && data->eeprom.checksum == 0xff) {
+	if (data->eeprom.length == cpu_to_le16(0xffff) &&
+	    data->eeprom.checksum == 0xff) {
 		/* Assume it is SCU3, but report different board type */
 		memset(&data->eeprom, '\0', sizeof(data->eeprom));
 		data->eeprom.length = cpu_to_le16(SCU_EEPROM_LEN_EEPROM);
