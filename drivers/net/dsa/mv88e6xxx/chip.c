@@ -3043,7 +3043,7 @@ static void mv88e6xxx_hardware_reset(struct mv88e6xxx_chip *chip)
 		gpiod_set_value_cansleep(gpiod, 1);
 		usleep_range(10000, 20000);
 		gpiod_set_value_cansleep(gpiod, 0);
-		usleep_range(10000, 20000);
+		msleep(200);
 
 		if (chip->info->ops->hardware_reset_post) {
 			err = chip->info->ops->hardware_reset_post(chip);
@@ -7098,7 +7098,7 @@ static int mv88e6xxx_probe(struct mdio_device *mdiodev)
 		goto out;
 	}
 	if (chip->reset)
-		usleep_range(10000, 20000);
+		msleep(200);
 
 	/* Detect if the device is configured in single chip addressing mode,
 	 * otherwise continue with address specific smi init/detection.
