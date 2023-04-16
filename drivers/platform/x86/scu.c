@@ -182,7 +182,7 @@ struct scu_data {
 
 /* sysfs */
 
-unsigned char scu_get_checksum(unsigned char *ptr, int len)
+static unsigned char scu_get_checksum(unsigned char *ptr, int len)
 {
 	unsigned char checksum = 0;
 	int i;
@@ -1153,44 +1153,44 @@ static void scu_gpio_common_teardown(unsigned int gpio_base, int ngpio, u32 mask
 	}
 }
 
-void scu_pca9538_ext0_teardown(struct i2c_client *client,
-			       unsigned int gpio_base, unsigned int ngpio,
-			       void *context)
+static void scu_pca9538_ext0_teardown(struct i2c_client *client,
+				      unsigned int gpio_base, unsigned int ngpio,
+				      void *context)
 {
 	scu_gpio_common_teardown(gpio_base, ngpio, 0xff);
 }
 
-void scu_pca9538_ext1_teardown(struct i2c_client *client,
-			       unsigned int gpio_base, unsigned int ngpio,
-			       void *context)
+static void scu_pca9538_ext1_teardown(struct i2c_client *client,
+				      unsigned int gpio_base, unsigned int ngpio,
+				      void *context)
 {
 	scu_gpio_common_teardown(gpio_base, ngpio, 0xf0);
 }
 
-void scu_pca9538_ext2_teardown(struct i2c_client *client,
-			       unsigned int gpio_base, unsigned int ngpio,
-			       void *context)
+static void scu_pca9538_ext2_teardown(struct i2c_client *client,
+				      unsigned int gpio_base, unsigned int ngpio,
+				      void *context)
 {
 	scu_gpio_common_teardown(gpio_base, ngpio, 0xc0);
 }
 
-void scu_pca9538_ext3_teardown(struct i2c_client *client,
-			       unsigned int gpio_base, unsigned int ngpio,
-			       void *context)
+static void scu_pca9538_ext3_teardown(struct i2c_client *client,
+				      unsigned int gpio_base, unsigned int ngpio,
+				      void *context)
 {
 	scu_gpio_common_teardown(gpio_base, ngpio, 0xc0);
 }
 
-void scu_pca9557_teardown(struct i2c_client *client,
-			  unsigned int gpio_base, unsigned int ngpio,
-			  void *context)
+static void scu_pca9557_teardown(struct i2c_client *client,
+				 unsigned int gpio_base, unsigned int ngpio,
+				 void *context)
 {
 	scu_gpio_common_teardown(gpio_base, ngpio, 0x3f);
 }
 
-void scu_pca9554_teardown(struct i2c_client *client,
-			  unsigned int gpio_base, unsigned int ngpio,
-			  void *context)
+static void scu_pca9554_teardown(struct i2c_client *client,
+				 unsigned int gpio_base, unsigned int ngpio,
+				 void *context)
 {
 	scu_gpio_common_teardown(gpio_base, ngpio, 0x3f);
 }
@@ -1318,7 +1318,7 @@ static struct i2c_board_info scu_i2c_info_scu4[] = {
 };
 
 /* SCU specific gpio pin names. Only works if module is built into kernel. */
-const char * const ichx_gpiolib_names[128] = {
+static const char * const ichx_gpiolib_names[128] = {
 	[0] = "switch_interrupt",	/* GPI0 */
 	[3] = "ac_loss_detect",		/* GPI3 */
 	[16] = "debug_out",		/* GPO0 */
@@ -1805,7 +1805,7 @@ static struct i2c_adapter *scu_find_i2c_adapter(char *name)
 	return adap;
 }
 
-const char *scu_modules[] = {
+static const char *scu_modules[] = {
 	"kempld-core",
 	"i2c-kempld",
 	"spi-sc18is602",
@@ -1860,7 +1860,7 @@ static const struct proc_ops scu_proc_ops = {
 	.proc_release = single_release,
 };
 
-int scu_nvmem_match(struct device *dev, const void *data)
+static int scu_nvmem_match(struct device *dev, const void *data)
 {
 	if (strstr(dev_name(dev), data))
 		return 1;
