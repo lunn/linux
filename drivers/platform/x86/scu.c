@@ -3,38 +3,38 @@
  * SCU board driver
  *
  * Copyright (c) 2012, 2014 Guenter Roeck <linux@roeck-us.net>
-  */
-#include <linux/kernel.h>
+ */
+#include <asm/byteorder.h>
+#include <linux/dmi.h>
+#include <linux/err.h>
+#include <linux/gpio.h>
+#include <linux/gpio/consumer.h>
+#include <linux/gpio/driver.h>
+#include <linux/gpio/machine.h>
+#include <linux/i2c.h>
 #include <linux/init.h>
-#include <linux/types.h>
-#include <linux/string.h>
+#include <linux/kernel.h>
+#include <linux/leds.h>
+#include <linux/mdio-gpio.h>
 #include <linux/module.h>
 #include <linux/mutex.h>
-#include <linux/leds.h>
-#include <linux/platform_data/mdio-gpio.h>
-#include <linux/platform_device.h>
-#include <linux/gpio/machine.h>
-#include <linux/mdio-gpio.h>
-#include <linux/gpio.h>
-#include <linux/gpio/driver.h>
-#include <linux/gpio/consumer.h>
-#include <linux/err.h>
-#include <linux/dmi.h>
-#include <linux/i2c.h>
-#include <linux/version.h>
-#include <linux/platform_data/pca953x.h>
-#include <linux/platform_data/b53.h>
-#include <linux/platform_data/mv88e6xxx.h>
-#include <linux/sysfs.h>
-#include <linux/spi/spi.h>
-#include <linux/proc_fs.h>
-#include <linux/seq_file.h>
 #include <linux/netdevice.h>
-#include <linux/rtnetlink.h>
 #include <linux/nvmem-consumer.h>
+#include <linux/platform_data/b53.h>
+#include <linux/platform_data/mdio-gpio.h>
+#include <linux/platform_data/mv88e6xxx.h>
+#include <linux/platform_data/pca953x.h>
+#include <linux/platform_device.h>
+#include <linux/proc_fs.h>
+#include <linux/processor.h>
+#include <linux/rtnetlink.h>
+#include <linux/seq_file.h>
+#include <linux/spi/spi.h>
+#include <linux/string.h>
+#include <linux/sysfs.h>
+#include <linux/types.h>
+#include <linux/version.h>
 #include <net/dsa.h>
-#include <asm/processor.h>
-#include <asm/byteorder.h>
 
 #define SCU_EXT_GPIO_BASE(x)	(0 + (x) * 8)
 #define SCU_EXT_GPIO(chip, x)	(SCU_EXT_GPIO_BASE(chip) + (x))
@@ -123,8 +123,8 @@ struct scu_platform_data {
 	int num_spi_board_info;
 	struct dsa_mv88e6xxx_pdata *dsa_pdata;
 	const struct mdio_board_info *dsa_bdinfo;
-	void (*init)(struct scu_data *);
-	void (*remove)(struct scu_data *);
+	void (*init)(struct scu_data *data);
+	void (*remove)(struct scu_data *data);
 };
 
 struct scu_data {
@@ -244,7 +244,7 @@ static ssize_t scu_object_store(struct scu_data *data, int offset,
 	if (!data->have_write_magic)
 		return -EACCES;
 
-	strlcpy(buffer, in, sizeof(buffer));
+	strscpy(buffer, in, sizeof(buffer));
 	/* do not copy newline from input string */
 	cp = strchr(buffer, '\n');
 	if (cp)
@@ -254,7 +254,7 @@ static ssize_t scu_object_store(struct scu_data *data, int offset,
 		len = sizeof(buffer);
 
 	mutex_lock(&data->write_lock);
-	strncpy(out, buffer, len);
+	strscpy(out, buffer, len);
 
 	/* Write entire eeprom if it was marked invalid */
 	if (!data->eeprom_valid) {
@@ -1034,7 +1034,7 @@ static const char *pca9554_gpio_names[8] = {
 	"pca9554:sdr_assembly_2",
 };
 
-static int scu_gpio_common_setup(unsigned gpio_base, unsigned int ngpio,
+static int scu_gpio_common_setup(unsigned int gpio_base, unsigned int ngpio,
 				 u32 mask, u32 is_input, u32 is_active,
 				 u32 active_low)
 {
@@ -1105,14 +1105,14 @@ static int pca9538_ext2_setup_scu4(struct i2c_client *client,
 				   unsigned int gpio_base, unsigned int ngpio,
 				   void *context)
 {
-    return scu_gpio_common_setup(gpio_base, ngpio, 0xc0, 0x00, 0x00, 0xc0);
+	return scu_gpio_common_setup(gpio_base, ngpio, 0xc0, 0x00, 0x00, 0xc0);
 }
 
 static int pca9538_ext3_setup_scu4(struct i2c_client *client,
 				   unsigned int gpio_base, unsigned int ngpio,
 				   void *context)
 {
-    return scu_gpio_common_setup(gpio_base, ngpio, 0xc0, 0x00, 0x00, 0xc0);
+	return scu_gpio_common_setup(gpio_base, ngpio, 0xc0, 0x00, 0x00, 0xc0);
 }
 
 static int pca9557_setup_scu4(struct i2c_client *client,
@@ -1137,6 +1137,7 @@ static void scu_gpio_common_teardown(unsigned int gpio_base, int ngpio,
 	for (i = 0; i < ngpio; i++) {
 		if (mask & (1 << i)) {
 			struct gpio_desc *desc = gpio_to_desc(gpio_base + i);
+
 			gpiod_unexport(desc);
 			gpio_free(gpio_base + i);
 		}
@@ -1263,9 +1264,9 @@ static struct i2c_board_info scu_i2c_info_common[] = {
 /*
  * NOTE
  * Due to the nature of how the IRQ is set for the pca9538 IO
- *  expander @ 0x70 it must be the fist element in the following
- *  arrays, as it it is modified without knowing that there
- *  are multiple board types.
+ * expander @ 0x70 it must be the fist element in the following
+ * arrays, as it is modified without knowing that there
+ * are multiple board types.
  */
 
 static struct i2c_board_info scu_i2c_info_scu2[] = {
@@ -1306,10 +1307,10 @@ static struct i2c_board_info scu_i2c_info_scu4[] = {
 	  .platform_data = &scu_pca953x_pdata[8],},
 };
 
-#define SCU_GPIO_SW_INT 	0
-#define SCU_GPIO_IRQ 		1
-#define SCU_GPIO_AC_LOS 	3
-#define SCU_GPIO_DBG_OUT 	16
+#define SCU_GPIO_SW_INT		0
+#define SCU_GPIO_IRQ		1
+#define SCU_GPIO_AC_LOS		3
+#define SCU_GPIO_DBG_OUT	16
 #define SCU_GPIO_SW_RST		20
 
 /* SCU specific gpio pin names. Only works if module is built into kernel. */
@@ -1625,20 +1626,20 @@ static struct scu_platform_data scu_platform_data[] = {
 		.remove = scu3_remove,
 	},
 
-        [scu4c] = {
-                .board_type = "SCU4 Copper x86",
-                .lru_part_number = SCU_LRU_PARTNUM_GEN4_COPPER,
-                .board_part_number = SCU_ZII_BOARD_PARTNUM,
-                .board_dash_number = SCU_ZII_BOARD_DASHNUM_SCU4_COPPER,
-                .version = scu4,
-                .eeprom_len = SCU_EEPROM_LEN_GEN3,
-                .i2c_board_info = scu_i2c_info_scu4,
-                .num_i2c_board_info = ARRAY_SIZE(scu_i2c_info_scu4),
+	[scu4c] = {
+		.board_type = "SCU4 Copper x86",
+		.lru_part_number = SCU_LRU_PARTNUM_GEN4_COPPER,
+		.board_part_number = SCU_ZII_BOARD_PARTNUM,
+		.board_dash_number = SCU_ZII_BOARD_DASHNUM_SCU4_COPPER,
+		.version = scu4,
+		.eeprom_len = SCU_EEPROM_LEN_GEN3,
+		.i2c_board_info = scu_i2c_info_scu4,
+		.num_i2c_board_info = ARRAY_SIZE(scu_i2c_info_scu4),
 		.dsa_pdata = &dsa_mv88e6xxx_pdata_scu4,
 		.dsa_bdinfo = &bdinfo_scu4,
-                .init = scu3_init,
-                .remove = scu3_remove,
-        },
+		.init = scu3_init,
+		.remove = scu3_remove,
+	},
 	[unknown] = {
 		.board_type = "UNKNOWN",
 		.version = unknown,
@@ -1728,12 +1729,14 @@ static void populate_unit_info(struct nvmem_device *nvmem,
 	}
 
 	/* Check if we have an SCU2 with a Zii mainboard and update
-	 * the struct if yes */
+	 * the struct if yes
+	 */
 	if (pdata->version == scu2 &&
 	    strnstr(data->eeprom.board_part_number,
 		    SCU_ZII_BOARD_PARTNUM,
 		    strlen(SCU_ZII_BOARD_PARTNUM)) != NULL) {
 		struct scu_platform_data *newSCU2pdata = &scu_platform_data[scu3];
+
 		newSCU2pdata->board_type = "SCU2 x86";
 		newSCU2pdata->lru_part_number = SCU_LRU_PARTNUM_GEN2,
 			newSCU2pdata->version = scu2,
@@ -1873,9 +1876,8 @@ static const struct proc_ops scu_proc_ops = {
 
 int nvmem_match(struct device *dev, const void *data)
 {
-	if (strstr(dev_name(dev), data)) {
+	if (strstr(dev_name(dev), data))
 		return 1;
-	}
 	return 0;
 }
 
@@ -1933,13 +1935,13 @@ static int scu_probe(struct platform_device *pdev)
 	}
 
 	/*XXX Here is we have export eeprom cells as part of
-	 * EEPROM/NVMEM or inside of populate_unit_info */
-        nvmem_np = nvmem_device_find("Nameplate eeprom", nvmem_match);
-	if (nvmem_np) {
+	 * EEPROM/NVMEM or inside of populate_unit_info
+	 */
+	nvmem_np = nvmem_device_find("Nameplate eeprom", nvmem_match);
+	if (nvmem_np)
 		populate_unit_info(nvmem_np, data);
-	} else {
+	else
 		dev_info(dev, "Failed to find nameplate eeprom\n");
-	}
 
 	pca_leds_register(dev, data);
 
