@@ -907,8 +907,8 @@ static struct gpio_led_platform_data pca_gpio_led_info3_scu4 = {
 	.num_leds = ARRAY_SIZE(pca_gpio_leds3_scu4),
 };
 
-static void pca_leds_register(struct device *parent,
-			      struct scu_data *data)
+static void scu_pca_leds_register(struct device *parent,
+				  struct scu_data *data)
 {
 	data->leds_pdev[0] =
 		platform_device_register_data(parent, "leds-gpio", 1,
@@ -937,7 +937,7 @@ static void pca_leds_register(struct device *parent,
 	}
 }
 
-static void pca_leds_unregister(struct scu_data *data)
+static void scu_pca_leds_unregister(struct scu_data *data)
 {
 	int i;
 
@@ -1071,71 +1071,72 @@ static int scu_gpio_common_setup(unsigned int gpio_base, unsigned int ngpio,
 	return 0;
 }
 
-static int pca9538_ext0_setup(struct i2c_client *client,
-			      unsigned int gpio_base, unsigned int ngpio,
-			      void *context)
+static int scu_pca9538_ext0_setup(struct i2c_client *client,
+				  unsigned int gpio_base, unsigned int ngpio,
+				  void *context)
 {
 	scu_gpio_common_setup(gpio_base, ngpio, 0xff, 0x33, 0xcc, 0x00);
 	return 0;
 }
 
-static int pca9538_ext1_setup(struct i2c_client *client,
-			      unsigned int gpio_base, unsigned int ngpio,
-			      void *context)
+static int scu_pca9538_ext1_setup(struct i2c_client *client,
+				  unsigned int gpio_base, unsigned int ngpio,
+				  void *context)
 {
 	scu_gpio_common_setup(gpio_base, ngpio, 0xf0, 0x00, 0x00, 0x00);
 	return 0;
 }
 
-static int pca9538_ext2_setup(struct i2c_client *client,
-			      unsigned int gpio_base, unsigned int ngpio,
-			      void *context)
+static int scu_pca9538_ext2_setup(struct i2c_client *client,
+				  unsigned int gpio_base, unsigned int ngpio,
+				  void *context)
 {
 	scu_gpio_common_setup(gpio_base, ngpio, 0xc0, 0x80, 0x40, 0x00);
 	return 0;
 }
 
-static int pca9538_ext3_setup(struct i2c_client *client,
-			      unsigned int gpio_base, unsigned int ngpio,
-			      void *context)
+static int scu_pca9538_ext3_setup(struct i2c_client *client,
+				  unsigned int gpio_base, unsigned int ngpio,
+				  void *context)
 {
 	scu_gpio_common_setup(gpio_base, ngpio, 0xc0, 0x80, 0x40, 0x00);
 	return 0;
 }
 
-static int pca9557_setup(struct i2c_client *client,
-			 unsigned int gpio_base, unsigned int ngpio,
-			 void *context)
+static int scu_pca9557_setup(struct i2c_client *client,
+			     unsigned int gpio_base, unsigned int ngpio,
+			     void *context)
 {
 	scu_gpio_common_setup(gpio_base, ngpio, 0x3f, 0x3f, 0x00, 0x3f);
 	return 0;
 }
 
 /* SCU4 Specific */
-static int pca9538_ext2_setup_scu4(struct i2c_client *client,
-				   unsigned int gpio_base,
-				   unsigned int ngpio, void *context)
+static int scu_pca9538_ext2_setup_scu4(struct i2c_client *client,
+				       unsigned int gpio_base,
+				       unsigned int ngpio, void *context)
 {
 	return scu_gpio_common_setup(gpio_base, ngpio, 0xc0, 0x00, 0x00, 0xc0);
 }
 
-static int pca9538_ext3_setup_scu4(struct i2c_client *client,
-				   unsigned int gpio_base, unsigned int ngpio,
-				   void *context)
+static int scu_pca9538_ext3_setup_scu4(struct i2c_client *client,
+				       unsigned int gpio_base,
+				       unsigned int ngpio,
+				       void *context)
 {
 	return scu_gpio_common_setup(gpio_base, ngpio, 0xc0, 0x00, 0x00, 0xc0);
 }
 
-static int pca9557_setup_scu4(struct i2c_client *client,
-			      unsigned int gpio_base,
-			      unsigned int ngpio, void *context)
+static int scu_pca9557_setup_scu4(struct i2c_client *client,
+				  unsigned int gpio_base,
+				  unsigned int ngpio, void *context)
 {
 	return scu_gpio_common_setup(gpio_base, ngpio, 0x7f, 0x3f, 0x00, 0x3f);
 }
 
-static int pca9554_setup(struct i2c_client *client,
-			 unsigned int gpio_base, unsigned int ngpio,
-			 void *context)
+static int scu_pca9554_setup(struct i2c_client *client,
+			     unsigned int gpio_base, unsigned int ngpio,
+			     void *context)
 {
 	return scu_gpio_common_setup(gpio_base, ngpio, 0xff, 0xff, 0x00, 0x00);
 }
@@ -1152,44 +1153,44 @@ static void scu_gpio_common_teardown(unsigned int gpio_base, int ngpio, u32 mask
 	}
 }
 
-void pca9538_ext0_teardown(struct i2c_client *client,
-				 unsigned int gpio_base, unsigned int ngpio,
-				 void *context)
+void scu_pca9538_ext0_teardown(struct i2c_client *client,
+			       unsigned int gpio_base, unsigned int ngpio,
+			       void *context)
 {
 	scu_gpio_common_teardown(gpio_base, ngpio, 0xff);
 }
 
-void pca9538_ext1_teardown(struct i2c_client *client,
-				 unsigned int gpio_base, unsigned int ngpio,
-				 void *context)
+void scu_pca9538_ext1_teardown(struct i2c_client *client,
+			       unsigned int gpio_base, unsigned int ngpio,
+			       void *context)
 {
 	scu_gpio_common_teardown(gpio_base, ngpio, 0xf0);
 }
 
-void pca9538_ext2_teardown(struct i2c_client *client,
-				 unsigned int gpio_base, unsigned int ngpio,
-				 void *context)
+void scu_pca9538_ext2_teardown(struct i2c_client *client,
+			       unsigned int gpio_base, unsigned int ngpio,
+			       void *context)
 {
 	scu_gpio_common_teardown(gpio_base, ngpio, 0xc0);
 }
 
-void pca9538_ext3_teardown(struct i2c_client *client,
-				 unsigned int gpio_base, unsigned int ngpio,
-				 void *context)
+void scu_pca9538_ext3_teardown(struct i2c_client *client,
+			       unsigned int gpio_base, unsigned int ngpio,
+			       void *context)
 {
 	scu_gpio_common_teardown(gpio_base, ngpio, 0xc0);
 }
 
-void pca9557_teardown(struct i2c_client *client,
-			    unsigned int gpio_base, unsigned int ngpio,
-			    void *context)
+void scu_pca9557_teardown(struct i2c_client *client,
+			  unsigned int gpio_base, unsigned int ngpio,
+			  void *context)
 {
 	scu_gpio_common_teardown(gpio_base, ngpio, 0x3f);
 }
 
-void pca9554_teardown(struct i2c_client *client,
-			    unsigned int gpio_base, unsigned int ngpio,
-			    void *context)
+void scu_pca9554_teardown(struct i2c_client *client,
+			  unsigned int gpio_base, unsigned int ngpio,
+			  void *context)
 {
 	scu_gpio_common_teardown(gpio_base, ngpio, 0x3f);
 }
@@ -1208,55 +1209,55 @@ static struct pca953x_platform_data scu_pca953x_pdata[] = {
 	/* SCU 1/2/3 */
 	[0] = {.gpio_base = SCU_EXT_GPIO_BASE(0),
 		.irq_base = -1,
-		.setup = pca9538_ext0_setup,
-		.teardown = pca9538_ext0_teardown,
+		.setup = scu_pca9538_ext0_setup,
+		.teardown = scu_pca9538_ext0_teardown,
 		.names = pca9538_ext0_gpio_names},
 	[1] = {.gpio_base = SCU_EXT_GPIO_BASE(1),
 		.irq_base = -1,
-		.setup = pca9538_ext1_setup,
-		.teardown = pca9538_ext1_teardown,
+		.setup = scu_pca9538_ext1_setup,
+		.teardown = scu_pca9538_ext1_teardown,
 		.names = pca9538_ext1_gpio_names},
 	[2] = {.gpio_base = SCU_EXT_GPIO_BASE(2),
 		.irq_base = -1,
-		.setup = pca9538_ext2_setup,
-		.teardown = pca9538_ext2_teardown,
+		.setup = scu_pca9538_ext2_setup,
+		.teardown = scu_pca9538_ext2_teardown,
 		.names = pca9538_ext2_gpio_names},
 	[3] = {.gpio_base = SCU_EXT_GPIO_BASE(3),
 		.irq_base = -1,
-		.setup = pca9538_ext3_setup,
-		.teardown = pca9538_ext3_teardown,
+		.setup = scu_pca9538_ext3_setup,
+		.teardown = scu_pca9538_ext3_teardown,
 		.names = pca9538_ext3_gpio_names},
 	[4] = {.gpio_base = SCU_EXT_GPIO_BASE(4),
 		.irq_base = -1,
-		.setup = pca9557_setup,
-		.teardown = pca9557_teardown,
+		.setup = scu_pca9557_setup,
+		.teardown = scu_pca9557_teardown,
 		.names = pca9557_gpio_names},
 
 	/* SCU4 Specific */
 	[5] = {.gpio_base = SCU_EXT_GPIO_BASE(2),
 		.irq_base = -1,
-		.setup = pca9538_ext2_setup_scu4,
-		.teardown = pca9538_ext2_teardown,
+		.setup = scu_pca9538_ext2_setup_scu4,
+		.teardown = scu_pca9538_ext2_teardown,
 		.names = pca9538_ext2_gpio_names_scu4},
 	[6] = {.gpio_base = SCU_EXT_GPIO_BASE(3),
 		.irq_base = -1,
-		.setup = pca9538_ext3_setup_scu4,
-		.teardown = pca9538_ext3_teardown,
+		.setup = scu_pca9538_ext3_setup_scu4,
+		.teardown = scu_pca9538_ext3_teardown,
 		.names = pca9538_ext3_gpio_names_scu4},
 	[7] = {.gpio_base = SCU_EXT_GPIO_BASE(4),
 		.irq_base = -1,
-		.setup = pca9557_setup_scu4,
-		.teardown = pca9557_teardown,
+		.setup = scu_pca9557_setup_scu4,
+		.teardown = scu_pca9557_teardown,
 		.names = pca9557_gpio_names_scu4},
 	[8] = {.gpio_base = SCU_EXT_GPIO_BASE(5),
 		.irq_base = -1,
-		.setup = pca9554_setup,
-		.teardown = pca9554_teardown,
+		.setup = scu_pca9554_setup,
+		.teardown = scu_pca9554_teardown,
 		.names = pca9554_gpio_names},
 };
 
-static void populate_unit_info(struct nvmem_device *nvmem,
-			       void *context);
+static void scu_populate_unit_info(struct nvmem_device *nvmem,
+				   void *context);
 
 static struct i2c_board_info scu_i2c_info_common[] = {
 	/* On Main Board */
@@ -1353,7 +1354,7 @@ static const struct mdio_gpio_platform_data mdio_gpio_pdata = {
 	.phy_ignore_ta_mask = ~0,
 };
 
-static void pch_gpio_setup(struct scu_data *data)
+static void scu_pch_gpio_setup(struct scu_data *data)
 {
 	struct gpio_chip *chip = scu_find_chip_by_name("gpio_ich");
 	int irq;
@@ -1389,7 +1390,7 @@ static void pch_gpio_setup(struct scu_data *data)
 	}
 }
 
-static void pch_gpio_teardown(struct scu_data *data)
+static void scu_pch_gpio_teardown(struct scu_data *data)
 {
 	struct gpio_chip *chip = scu_find_chip_by_name("gpio_ich");
 
@@ -1474,12 +1475,12 @@ out:
 static void scu3_init(struct scu_data *data)
 {
 	scu_setup_ethernet_switch(data);
-	pch_gpio_setup(data);
+	scu_pch_gpio_setup(data);
 }
 
 static void scu3_remove(struct scu_data *data)
 {
-	pch_gpio_teardown(data);
+	scu_pch_gpio_teardown(data);
 	platform_device_unregister(data->dsa_dev);
 }
 
@@ -1657,8 +1658,8 @@ static int scu_instantiate_spi(struct scu_data *data,
  * struct memory_accessor. It then calls part_number_proc, serial_number_proc,
  * and dom_proc to populate the procfs entries for each specific field.
  */
-static void populate_unit_info(struct nvmem_device *nvmem,
-			       void *context)
+static void scu_populate_unit_info(struct nvmem_device *nvmem,
+				   void *context)
 {
 	const struct scu_platform_data *pdata = &scu_platform_data[unknown];
 	struct scu_data *data = context;
@@ -1838,7 +1839,7 @@ static void scu_request_modules(bool wait)
 	}
 }
 
-static int proc_board_type_show(struct seq_file *m, void *v)
+static int scu_proc_board_type_show(struct seq_file *m, void *v)
 {
 	struct scu_data *data = (struct scu_data *)m->private;
 
@@ -1849,7 +1850,7 @@ static int proc_board_type_show(struct seq_file *m, void *v)
 
 static int scu_proc_open(struct inode *inode, struct file *file)
 {
-	return single_open(file, proc_board_type_show, pde_data(inode));
+	return single_open(file, scu_proc_board_type_show, pde_data(inode));
 }
 
 static const struct proc_ops scu_proc_ops = {
@@ -1859,7 +1860,7 @@ static const struct proc_ops scu_proc_ops = {
 	.proc_release = single_release,
 };
 
-int nvmem_match(struct device *dev, const void *data)
+int scu_nvmem_match(struct device *dev, const void *data)
 {
 	if (strstr(dev_name(dev), data))
 		return 1;
@@ -1922,13 +1923,13 @@ static int scu_probe(struct platform_device *pdev)
 	/*XXX Here is we have export eeprom cells as part of
 	 * EEPROM/NVMEM or inside of populate_unit_info
 	 */
-	nvmem_np = nvmem_device_find("Nameplate eeprom", nvmem_match);
+	nvmem_np = nvmem_device_find("Nameplate eeprom", scu_nvmem_match);
 	if (nvmem_np)
-		populate_unit_info(nvmem_np, data);
+		scu_populate_unit_info(nvmem_np, data);
 	else
 		dev_info(dev, "Failed to find nameplate eeprom\n");
 
-	pca_leds_register(dev, data);
+	scu_pca_leds_register(dev, data);
 
 	ret = sysfs_create_group(&dev->kobj, &scu_base_group);
 	if (ret) {
@@ -1939,7 +1940,7 @@ static int scu_probe(struct platform_device *pdev)
 	return 0;
 
 error_group:
-	pca_leds_unregister(data);
+	scu_pca_leds_unregister(data);
 error_i2c_client:
 	for (i = 0; i < ARRAY_SIZE(data->client) && data->client[i]; i++)
 		i2c_unregister_device(data->client[i]);
@@ -1963,7 +1964,7 @@ static int __exit scu_remove(struct platform_device *pdev)
 	if (data->pdata && data->pdata->remove)
 		data->pdata->remove(data);
 
-	pca_leds_unregister(data);
+	scu_pca_leds_unregister(data);
 
 	for (i = 0; i < ARRAY_SIZE(data->spidev); i++)
 		spi_unregister_device(data->spidev[i]);
