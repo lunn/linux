@@ -40,14 +40,23 @@ static int mdio_gpio_get_data(struct device *dev,
 	if (IS_ERR(bitbang->mdc))
 		return PTR_ERR(bitbang->mdc);
 
+	gpiod_set_consumer_name(bitbang->mdc, "MDC");
+
 	bitbang->mdio = devm_gpiod_get_index(dev, NULL, MDIO_GPIO_MDIO,
 					     GPIOD_IN);
 	if (IS_ERR(bitbang->mdio))
 		return PTR_ERR(bitbang->mdio);
 
+	gpiod_set_consumer_name(bitbang->mdio, "MDIO");
+
 	bitbang->mdo = devm_gpiod_get_index_optional(dev, NULL, MDIO_GPIO_MDO,
 						     GPIOD_OUT_LOW);
-	return PTR_ERR_OR_ZERO(bitbang->mdo);
+	if (IS_ERR(bitbang->mdo))
+		return PTR_ERR(bitbang->mdo);
+
+	gpiod_set_consumer_name(bitbang->mdo, "MDO");
+
+	return 0;
 }
 
 static void mdio_dir(struct mdiobb_ctrl *ctrl, int dir)
