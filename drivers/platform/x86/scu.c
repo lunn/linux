@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * SCU board driver
  *
@@ -10,7 +11,7 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
@@ -27,6 +28,7 @@
 #include <linux/leds.h>
 #include <linux/platform_data/mdio-gpio.h>
 #include <linux/platform_device.h>
+#include <linux/processor.h>
 #include <linux/gpio/machine.h>
 #include <linux/mdio-gpio.h>
 #include <linux/gpio.h>
@@ -46,7 +48,6 @@
 #include <linux/rtnetlink.h>
 #include <linux/nvmem-consumer.h>
 #include <net/dsa.h>
-#include <asm/processor.h>
 #include <asm/byteorder.h>
 
 #define SCU_EXT_GPIO_BASE(x)	(0 + (x) * 8)
@@ -136,8 +137,8 @@ struct scu_platform_data {
 	int num_spi_board_info;
 	struct dsa_mv88e6xxx_pdata *dsa_pdata;
 	const struct mdio_board_info *dsa_bdinfo;
-	void (*init)(struct scu_data *);
-	void (*remove)(struct scu_data *);
+	void (*init)(struct scu_data *data);
+	void (*remove)(struct scu_data *data);
 };
 
 struct scu_data {
@@ -665,32 +666,32 @@ static struct bin_attribute scu_eeprom_test_scratchpad_file = {
 
 static struct gpio_led pca_gpio_leds1[] = {
 	{			/* bit 0 */
-	 .name = "scu_status:g:RD",
-	 .gpio = SCU_RD_LED_GPIO,
-	 .active_low = 1,
-	 .default_trigger = "heartbeat",
-	 .default_state = LEDS_GPIO_DEFSTATE_OFF,
-	 },
+		.name = "scu_status:g:RD",
+		.gpio = SCU_RD_LED_GPIO,
+		.active_low = 1,
+		.default_trigger = "heartbeat",
+		.default_state = LEDS_GPIO_DEFSTATE_OFF,
+	},
 	{			/* bit 1 */
-	 .name = "scu_status:a:WLess",
-	 .gpio = SCU_WLES_LED_GPIO,
-	 .active_low = 1,
-	 .default_trigger = "none",
-	 .default_state = LEDS_GPIO_DEFSTATE_OFF,
-	 },
+		.name = "scu_status:a:WLess",
+		.gpio = SCU_WLES_LED_GPIO,
+		.active_low = 1,
+		.default_trigger = "none",
+		.default_state = LEDS_GPIO_DEFSTATE_OFF,
+	},
 	{			/* bit 2 */
-	 .name = "scu_status:r:LDFail",
-	 .gpio = SCU_LD_FAIL_LED_GPIO,
-	 .active_low = 1,
-	 .default_trigger = "none",
-	 .default_state = LEDS_GPIO_DEFSTATE_OFF,
-	 },
+		.name = "scu_status:r:LDFail",
+		.gpio = SCU_LD_FAIL_LED_GPIO,
+		.active_low = 1,
+		.default_trigger = "none",
+		.default_state = LEDS_GPIO_DEFSTATE_OFF,
+	},
 	{			/* bit 3 */
-	 .name = "scu_status:a:SW",
-	 .gpio = SCU_SW_LED_GPIO,
-	 .active_low = 1,
-	 .default_trigger = "none",
-	 .default_state = LEDS_GPIO_DEFSTATE_OFF,
+		.name = "scu_status:a:SW",
+		.gpio = SCU_SW_LED_GPIO,
+		.active_low = 1,
+		.default_trigger = "none",
+		.default_state = LEDS_GPIO_DEFSTATE_OFF,
 	}
 };
 
@@ -701,46 +702,46 @@ static struct gpio_led_platform_data pca_gpio_led_info1 = {
 
 static struct gpio_led pca_gpio_leds2[] = {
 	{			/* bit 0 */
-	 .name = "SD1:g:active",
-	 .gpio = SCU_SD_ACTIVE_1_GPIO,
-	 .active_low = 1,
-	 .default_trigger = "none",
-	 .default_state = LEDS_GPIO_DEFSTATE_OFF,
-	 },
+		.name = "SD1:g:active",
+		.gpio = SCU_SD_ACTIVE_1_GPIO,
+		.active_low = 1,
+		.default_trigger = "none",
+		.default_state = LEDS_GPIO_DEFSTATE_OFF,
+	},
 	{			/* bit 1 */
-	 .name = "SD1:a:error",
-	 .gpio = SCU_SD_ERROR_1_GPIO,
-	 .active_low = 1,
-	 .default_trigger = "none",
-	 .default_state = LEDS_GPIO_DEFSTATE_OFF,
-	 },
+		.name = "SD1:a:error",
+		.gpio = SCU_SD_ERROR_1_GPIO,
+		.active_low = 1,
+		.default_trigger = "none",
+		.default_state = LEDS_GPIO_DEFSTATE_OFF,
+	},
 	{			/* bit 2 */
-	 .name = "SD2:g:active",
-	 .gpio = SCU_SD_ACTIVE_2_GPIO,
-	 .active_low = 1,
-	 .default_trigger = "none",
-	 .default_state = LEDS_GPIO_DEFSTATE_OFF,
-	 },
+		.name = "SD2:g:active",
+		.gpio = SCU_SD_ACTIVE_2_GPIO,
+		.active_low = 1,
+		.default_trigger = "none",
+		.default_state = LEDS_GPIO_DEFSTATE_OFF,
+	},
 	{			/* bit 3 */
-	 .name = "SD2:a:error",
-	 .gpio = SCU_SD_ERROR_2_GPIO,
-	 .active_low = 1,
-	 .default_trigger = "none",
-	 .default_state = LEDS_GPIO_DEFSTATE_OFF,
-	 },
+		.name = "SD2:a:error",
+		.gpio = SCU_SD_ERROR_2_GPIO,
+		.active_low = 1,
+		.default_trigger = "none",
+		.default_state = LEDS_GPIO_DEFSTATE_OFF,
+	},
 	{			/* bit 4 */
-	 .name = "SD3:g:active",
-	 .gpio = SCU_SD_ACTIVE_3_GPIO,
-	 .active_low = 1,
-	 .default_trigger = "none",
-	 .default_state = LEDS_GPIO_DEFSTATE_OFF,
-	 },
+		.name = "SD3:g:active",
+		.gpio = SCU_SD_ACTIVE_3_GPIO,
+		.active_low = 1,
+		.default_trigger = "none",
+		.default_state = LEDS_GPIO_DEFSTATE_OFF,
+	},
 	{			/* bit 5 */
-	 .name = "SD3:a:error",
-	 .gpio = SCU_SD_ERROR_3_GPIO,
-	 .active_low = 1,
-	 .default_trigger = "none",
-	 .default_state = LEDS_GPIO_DEFSTATE_OFF,
+		.name = "SD3:a:error",
+		.gpio = SCU_SD_ERROR_3_GPIO,
+		.active_low = 1,
+		.default_trigger = "none",
+		.default_state = LEDS_GPIO_DEFSTATE_OFF,
 	}
 };
 
@@ -751,46 +752,46 @@ static struct gpio_led_platform_data pca_gpio_led_info2 = {
 
 static struct gpio_led pca_gpio_leds3[] = {
 	{			/* bit 0 */
-	 .name = "SD4:g:active",
-	 .gpio = SCU_SD_ACTIVE_4_GPIO,
-	 .active_low = 1,
-	 .default_trigger = "none",
-	 .default_state = LEDS_GPIO_DEFSTATE_OFF,
-	 },
+		.name = "SD4:g:active",
+		.gpio = SCU_SD_ACTIVE_4_GPIO,
+		.active_low = 1,
+		.default_trigger = "none",
+		.default_state = LEDS_GPIO_DEFSTATE_OFF,
+	},
 	{			/* bit 1 */
-	 .name = "SD4:a:error",
-	 .gpio = SCU_SD_ERROR_4_GPIO,
-	 .active_low = 1,
-	 .default_trigger = "none",
-	 .default_state = LEDS_GPIO_DEFSTATE_OFF,
-	 },
+		.name = "SD4:a:error",
+		.gpio = SCU_SD_ERROR_4_GPIO,
+		.active_low = 1,
+		.default_trigger = "none",
+		.default_state = LEDS_GPIO_DEFSTATE_OFF,
+	},
 	{			/* bit 2 */
-	 .name = "SD5:g:active",
-	 .gpio = SCU_SD_ACTIVE_5_GPIO,
-	 .active_low = 1,
-	 .default_trigger = "none",
-	 .default_state = LEDS_GPIO_DEFSTATE_OFF,
-	 },
+		.name = "SD5:g:active",
+		.gpio = SCU_SD_ACTIVE_5_GPIO,
+		.active_low = 1,
+		.default_trigger = "none",
+		.default_state = LEDS_GPIO_DEFSTATE_OFF,
+	},
 	{			/* bit 3 */
-	 .name = "SD5:a:error",
-	 .gpio = SCU_SD_ERROR_5_GPIO,
-	 .active_low = 1,
-	 .default_trigger = "none",
-	 .default_state = LEDS_GPIO_DEFSTATE_OFF,
-	 },
+		.name = "SD5:a:error",
+		.gpio = SCU_SD_ERROR_5_GPIO,
+		.active_low = 1,
+		.default_trigger = "none",
+		.default_state = LEDS_GPIO_DEFSTATE_OFF,
+	},
 	{			/* bit 4 */
-	 .name = "SD6:g:active",
-	 .gpio = SCU_SD_ACTIVE_6_GPIO,
-	 .active_low = 1,
-	 .default_trigger = "none",
-	 .default_state = LEDS_GPIO_DEFSTATE_OFF,
-	 },
+		.name = "SD6:g:active",
+		.gpio = SCU_SD_ACTIVE_6_GPIO,
+		.active_low = 1,
+		.default_trigger = "none",
+		.default_state = LEDS_GPIO_DEFSTATE_OFF,
+	},
 	{			/* bit 5 */
-	 .name = "SD6:a:error",
-	 .gpio = SCU_SD_ERROR_6_GPIO,
-	 .active_low = 1,
-	 .default_trigger = "none",
-	 .default_state = LEDS_GPIO_DEFSTATE_OFF,
+		.name = "SD6:a:error",
+		.gpio = SCU_SD_ERROR_6_GPIO,
+		.active_low = 1,
+		.default_trigger = "none",
+		.default_state = LEDS_GPIO_DEFSTATE_OFF,
 	}
 };
 
@@ -801,55 +802,54 @@ static struct gpio_led_platform_data pca_gpio_led_info3 = {
 
 /* SCU4 LEDs
  *
- * NOTE: The following is the mapping from the schematic, but
- *        it appers the layout does not match the schematic.
- *       Use the GPIO defines at the top of this file for the
- *        real GPIO mappings.
+ * NOTE: The following is the mapping from the schematic, but it
+ * appers the layout does not match the schematic.  Use the GPIO
+ * defines at the top of this file for the real GPIO mappings.
  */
 
 static struct gpio_led pca_gpio_leds2_scu4[] = {
 	{			/* bit 0 */
-	 .name = "SD1:g:active",
-	 .gpio = SCU4_SD_ACTIVE_1_GPIO,
-	 .active_low = 1,
-	 .default_trigger = "none",
-	 .default_state = LEDS_GPIO_DEFSTATE_OFF,
-	 },
+		.name = "SD1:g:active",
+		.gpio = SCU4_SD_ACTIVE_1_GPIO,
+		.active_low = 1,
+		.default_trigger = "none",
+		.default_state = LEDS_GPIO_DEFSTATE_OFF,
+	},
 	{			/* bit 1 */
-	 .name = "SD1:a:error",
-	 .gpio = SCU4_SD_ERROR_1_GPIO,
-	 .active_low = 1,
-	 .default_trigger = "none",
-	 .default_state = LEDS_GPIO_DEFSTATE_OFF,
-	 },
+		.name = "SD1:a:error",
+		.gpio = SCU4_SD_ERROR_1_GPIO,
+		.active_low = 1,
+		.default_trigger = "none",
+		.default_state = LEDS_GPIO_DEFSTATE_OFF,
+	},
 	{			/* bit 2 */
-	 .name = "SD2:g:active",
-	 .gpio = SCU4_SD_ACTIVE_2_GPIO,
-	 .active_low = 1,
-	 .default_trigger = "none",
-	 .default_state = LEDS_GPIO_DEFSTATE_OFF,
-	 },
+		.name = "SD2:g:active",
+		.gpio = SCU4_SD_ACTIVE_2_GPIO,
+		.active_low = 1,
+		.default_trigger = "none",
+		.default_state = LEDS_GPIO_DEFSTATE_OFF,
+	},
 	{			/* bit 3 */
-	 .name = "SD2:a:error",
-	 .gpio = SCU4_SD_ERROR_2_GPIO,
-	 .active_low = 1,
-	 .default_trigger = "none",
-	 .default_state = LEDS_GPIO_DEFSTATE_OFF,
-	 },
+		.name = "SD2:a:error",
+		.gpio = SCU4_SD_ERROR_2_GPIO,
+		.active_low = 1,
+		.default_trigger = "none",
+		.default_state = LEDS_GPIO_DEFSTATE_OFF,
+	},
 	{			/* bit 4 */
-	 .name = "SD3:g:active",
-	 .gpio = SCU4_SD_ACTIVE_3_GPIO,
-	 .active_low = 1,
-	 .default_trigger = "none",
-	 .default_state = LEDS_GPIO_DEFSTATE_OFF,
-	 },
+		.name = "SD3:g:active",
+		.gpio = SCU4_SD_ACTIVE_3_GPIO,
+		.active_low = 1,
+		.default_trigger = "none",
+		.default_state = LEDS_GPIO_DEFSTATE_OFF,
+	},
 	{			/* bit 5 */
-	 .name = "SD3:a:error",
-	 .gpio = SCU4_SD_ERROR_3_GPIO,
-	 .active_low = 1,
-	 .default_trigger = "none",
-	 .default_state = LEDS_GPIO_DEFSTATE_OFF,
-	 }
+		.name = "SD3:a:error",
+		.gpio = SCU4_SD_ERROR_3_GPIO,
+		.active_low = 1,
+		.default_trigger = "none",
+		.default_state = LEDS_GPIO_DEFSTATE_OFF,
+	}
 };
 
 static struct gpio_led_platform_data pca_gpio_led_info2_scu4 = {
@@ -859,47 +859,47 @@ static struct gpio_led_platform_data pca_gpio_led_info2_scu4 = {
 
 static struct gpio_led pca_gpio_leds3_scu4[] = {
 	{			/* bit 0 */
-	 .name = "SD4:g:active",
-	 .gpio = SCU4_SD_ACTIVE_4_GPIO,
-	 .active_low = 1,
-	 .default_trigger = "none",
-	 .default_state = LEDS_GPIO_DEFSTATE_OFF,
-	 },
+		.name = "SD4:g:active",
+		.gpio = SCU4_SD_ACTIVE_4_GPIO,
+		.active_low = 1,
+		.default_trigger = "none",
+		.default_state = LEDS_GPIO_DEFSTATE_OFF,
+	},
 	{			/* bit 1 */
-	 .name = "SD4:a:error",
-	 .gpio = SCU4_SD_ERROR_4_GPIO,
-	 .active_low = 1,
-	 .default_trigger = "none",
-	 .default_state = LEDS_GPIO_DEFSTATE_OFF,
-	 },
+		.name = "SD4:a:error",
+		.gpio = SCU4_SD_ERROR_4_GPIO,
+		.active_low = 1,
+		.default_trigger = "none",
+		.default_state = LEDS_GPIO_DEFSTATE_OFF,
+	},
 	{			/* bit 2 */
-	 .name = "SD5:g:active",
-	 .gpio = SCU4_SD_ACTIVE_5_GPIO,
-	 .active_low = 1,
-	 .default_trigger = "none",
-	 .default_state = LEDS_GPIO_DEFSTATE_OFF,
-	 },
+		.name = "SD5:g:active",
+		.gpio = SCU4_SD_ACTIVE_5_GPIO,
+		.active_low = 1,
+		.default_trigger = "none",
+		.default_state = LEDS_GPIO_DEFSTATE_OFF,
+	},
 	{			/* bit 3 */
-	 .name = "SD5:a:error",
-	 .gpio = SCU4_SD_ERROR_5_GPIO,
-	 .active_low = 1,
-	 .default_trigger = "none",
-	 .default_state = LEDS_GPIO_DEFSTATE_OFF,
-	 },
+		.name = "SD5:a:error",
+		.gpio = SCU4_SD_ERROR_5_GPIO,
+		.active_low = 1,
+		.default_trigger = "none",
+		.default_state = LEDS_GPIO_DEFSTATE_OFF,
+	},
 	{			/* bit 4 */
-	 .name = "SD6:g:active",
-	 .gpio = SCU4_SD_ACTIVE_6_GPIO,
-	 .active_low = 1,
-	 .default_trigger = "none",
-	 .default_state = LEDS_GPIO_DEFSTATE_OFF,
-	 },
+		.name = "SD6:g:active",
+		.gpio = SCU4_SD_ACTIVE_6_GPIO,
+		.active_low = 1,
+		.default_trigger = "none",
+		.default_state = LEDS_GPIO_DEFSTATE_OFF,
+	},
 	{			/* bit 5 */
-	 .name = "SD6:a:error",
-	 .gpio = SCU4_SD_ERROR_6_GPIO,
-	 .active_low = 1,
-	 .default_trigger = "none",
-	 .default_state = LEDS_GPIO_DEFSTATE_OFF,
-	 }
+		.name = "SD6:a:error",
+		.gpio = SCU4_SD_ERROR_6_GPIO,
+		.active_low = 1,
+		.default_trigger = "none",
+		.default_state = LEDS_GPIO_DEFSTATE_OFF,
+	}
 };
 
 static struct gpio_led_platform_data pca_gpio_led_info3_scu4 = {
@@ -908,7 +908,7 @@ static struct gpio_led_platform_data pca_gpio_led_info3_scu4 = {
 };
 
 static void pca_leds_register(struct device *parent,
-				  struct scu_data *data)
+			      struct scu_data *data)
 {
 	data->leds_pdev[0] =
 		platform_device_register_data(parent, "leds-gpio", 1,
@@ -1113,25 +1113,29 @@ static int pca9557_setup(struct i2c_client *client,
 
 /* SCU4 Specific */
 static int pca9538_ext2_setup_scu4(struct i2c_client *client,
-			      unsigned int gpio_base, unsigned int ngpio, void *context)
+				   unsigned int gpio_base,
+				   unsigned int ngpio, void *context)
 {
-    return scu_gpio_common_setup(gpio_base, ngpio, 0xc0, 0x00, 0x00, 0xc0);
+	return scu_gpio_common_setup(gpio_base, ngpio, 0xc0, 0x00, 0x00, 0xc0);
 }
 
 static int pca9538_ext3_setup_scu4(struct i2c_client *client,
-			      unsigned int gpio_base, unsigned int ngpio, void *context)
+				   unsigned int gpio_base, unsigned int ngpio,
+				   void *context)
 {
-    return scu_gpio_common_setup(gpio_base, ngpio, 0xc0, 0x00, 0x00, 0xc0);
+	return scu_gpio_common_setup(gpio_base, ngpio, 0xc0, 0x00, 0x00, 0xc0);
 }
 
 static int pca9557_setup_scu4(struct i2c_client *client,
-			 unsigned int gpio_base, unsigned int ngpio, void *context)
+			      unsigned int gpio_base,
+			      unsigned int ngpio, void *context)
 {
 	return scu_gpio_common_setup(gpio_base, ngpio, 0x7f, 0x3f, 0x00, 0x3f);
 }
 
 static int pca9554_setup(struct i2c_client *client,
-			 unsigned int gpio_base, unsigned int ngpio, void *context)
+			 unsigned int gpio_base, unsigned int ngpio,
+			 void *context)
 {
 	return scu_gpio_common_setup(gpio_base, ngpio, 0xff, 0xff, 0x00, 0x00);
 }
@@ -1203,30 +1207,30 @@ static struct gpio_chip *scu_find_chip_by_name(const char *name)
 static struct pca953x_platform_data scu_pca953x_pdata[] = {
 	/* SCU 1/2/3 */
 	[0] = {.gpio_base = SCU_EXT_GPIO_BASE(0),
-	       .irq_base = -1,
-	       .setup = pca9538_ext0_setup,
-	       .teardown = pca9538_ext0_teardown,
-	       .names = pca9538_ext0_gpio_names},
+		.irq_base = -1,
+		.setup = pca9538_ext0_setup,
+		.teardown = pca9538_ext0_teardown,
+		.names = pca9538_ext0_gpio_names},
 	[1] = {.gpio_base = SCU_EXT_GPIO_BASE(1),
-	       .irq_base = -1,
-	       .setup = pca9538_ext1_setup,
-	       .teardown = pca9538_ext1_teardown,
-	       .names = pca9538_ext1_gpio_names},
+		.irq_base = -1,
+		.setup = pca9538_ext1_setup,
+		.teardown = pca9538_ext1_teardown,
+		.names = pca9538_ext1_gpio_names},
 	[2] = {.gpio_base = SCU_EXT_GPIO_BASE(2),
-	       .irq_base = -1,
-	       .setup = pca9538_ext2_setup,
-	       .teardown = pca9538_ext2_teardown,
-	       .names = pca9538_ext2_gpio_names},
+		.irq_base = -1,
+		.setup = pca9538_ext2_setup,
+		.teardown = pca9538_ext2_teardown,
+		.names = pca9538_ext2_gpio_names},
 	[3] = {.gpio_base = SCU_EXT_GPIO_BASE(3),
-	       .irq_base = -1,
-	       .setup = pca9538_ext3_setup,
-	       .teardown = pca9538_ext3_teardown,
-	       .names = pca9538_ext3_gpio_names},
+		.irq_base = -1,
+		.setup = pca9538_ext3_setup,
+		.teardown = pca9538_ext3_teardown,
+		.names = pca9538_ext3_gpio_names},
 	[4] = {.gpio_base = SCU_EXT_GPIO_BASE(4),
-	       .irq_base = -1,
-	       .setup = pca9557_setup,
-	       .teardown = pca9557_teardown,
-	       .names = pca9557_gpio_names},
+		.irq_base = -1,
+		.setup = pca9557_setup,
+		.teardown = pca9557_teardown,
+		.names = pca9557_gpio_names},
 
 	/* SCU4 Specific */
 	[5] = {.gpio_base = SCU_EXT_GPIO_BASE(2),
@@ -1240,10 +1244,10 @@ static struct pca953x_platform_data scu_pca953x_pdata[] = {
 		.teardown = pca9538_ext3_teardown,
 		.names = pca9538_ext3_gpio_names_scu4},
 	[7] = {.gpio_base = SCU_EXT_GPIO_BASE(4),
-	       .irq_base = -1,
-	       .setup = pca9557_setup_scu4,
-	       .teardown = pca9557_teardown,
-	       .names = pca9557_gpio_names_scu4},
+		.irq_base = -1,
+		.setup = pca9557_setup_scu4,
+		.teardown = pca9557_teardown,
+		.names = pca9557_gpio_names_scu4},
 	[8] = {.gpio_base = SCU_EXT_GPIO_BASE(5),
 		.irq_base = -1,
 		.setup = pca9554_setup,
@@ -1256,60 +1260,60 @@ static void populate_unit_info(struct nvmem_device *nvmem,
 
 static struct i2c_board_info scu_i2c_info_common[] = {
 	/* On Main Board */
-	{ I2C_BOARD_INFO("scu_pic", 0x20)},			/* SCU PIC */
+	{ I2C_BOARD_INFO("scu_pic", 0x20)},	/* SCU PIC */
 	{ I2C_BOARD_INFO("24c08", 0x54),
-		.dev_name = "Nameplate eeprom"},		/* Nameplate EEPROM */
-	{ I2C_BOARD_INFO("24c04", 0x52),			/* Bit Eeprom */
-		.dev_name = "Bit eeprom"},			/* Bit Eeprom */
-	{ I2C_BOARD_INFO("ds1682", 0x6b)},			/* Elapsed Time Counter */
-	{ I2C_BOARD_INFO("pca9538", 0x71),			/* LEDs + Output Discretes */
-		.platform_data = &scu_pca953x_pdata[1],},
+	  .dev_name = "Nameplate eeprom"},	/* Nameplate EEPROM */
+	{ I2C_BOARD_INFO("24c04", 0x52),	/* Bit Eeprom */
+	  .dev_name = "Bit eeprom"},		/* Bit Eeprom */
+	{ I2C_BOARD_INFO("ds1682", 0x6b)},	/* Elapsed Time Counter */
+	{ I2C_BOARD_INFO("pca9538", 0x71),	/* LEDs + Output Discretes */
+	  .platform_data = &scu_pca953x_pdata[1],},
 };
 
 /*
  * NOTE
  * Due to the nature of how the IRQ is set for the pca9538 IO
- *  expander @ 0x70 it must be the fist element in the following
- *  arrays, as it it is modified without knowing that there
- *  are multiple board types.
+ * expander @ 0x70 it must be the fist element in the following
+ * arrays, as it is modified without knowing that there
+ * are multiple board types.
  */
 
 static struct i2c_board_info scu_i2c_info_scu2[] = {
-	{ I2C_BOARD_INFO("pca9538", 0x70),			/* Input Discretes */
-		.platform_data = &scu_pca953x_pdata[0],},
+	{ I2C_BOARD_INFO("pca9538", 0x70),	/* Input Discretes */
+	  .platform_data = &scu_pca953x_pdata[0],},
 	{ I2C_BOARD_INFO("pca9538", 0x72),
-		.platform_data = &scu_pca953x_pdata[2],},
+	  .platform_data = &scu_pca953x_pdata[2],},
 	{ I2C_BOARD_INFO("pca9538", 0x73),
-		.platform_data = &scu_pca953x_pdata[3],},
+	  .platform_data = &scu_pca953x_pdata[3],},
 	{ I2C_BOARD_INFO("sc18is602", 0x28)},
 };
 
 static struct i2c_board_info scu_i2c_info_scu3[] = {
-	{ I2C_BOARD_INFO("pca9538", 0x70),			/* Input Discretes */
-		.platform_data = &scu_pca953x_pdata[0],},
+	{ I2C_BOARD_INFO("pca9538", 0x70),	/* Input Discretes */
+	  .platform_data = &scu_pca953x_pdata[0],},
 	{ I2C_BOARD_INFO("pca9538", 0x72),
-		.platform_data = &scu_pca953x_pdata[2],},
+	  .platform_data = &scu_pca953x_pdata[2],},
 	{ I2C_BOARD_INFO("pca9538", 0x73),
-		.platform_data = &scu_pca953x_pdata[3],},
+	  .platform_data = &scu_pca953x_pdata[3],},
 	{ I2C_BOARD_INFO("pca9557", 0x1b),
-		.platform_data = &scu_pca953x_pdata[4],},
+	  .platform_data = &scu_pca953x_pdata[4],},
 };
 
 
 static struct i2c_board_info scu_i2c_info_scu4[] = {
 	/* On Main Board */
-	{ I2C_BOARD_INFO("pca9538", 0x70),			/* Input Discretes */
-		.platform_data = &scu_pca953x_pdata[0],},
+	{ I2C_BOARD_INFO("pca9538", 0x70),	/* Input Discretes */
+	  .platform_data = &scu_pca953x_pdata[0],},
 
 	/* On SDR */
-	{ I2C_BOARD_INFO("pca9538", 0x72),			/* SD Card LEDS 1-3 and Hubs 1-2 Reset */
-		.platform_data = &scu_pca953x_pdata[5],},
-	{ I2C_BOARD_INFO("pca9538", 0x73),			/* SD Card LEDS 4-6 and Hubs 3-4 Reset */
-		.platform_data = &scu_pca953x_pdata[6],},
-	{ I2C_BOARD_INFO("pca9538", 0x1C),			/* SD Card Detect 1-6 */
-		.platform_data = &scu_pca953x_pdata[7],},
-	{ I2C_BOARD_INFO("pca9554", 0x23),			/* SDR Copper and Assemly Rev */
-		.platform_data = &scu_pca953x_pdata[8],},
+	{ I2C_BOARD_INFO("pca9538", 0x72),	/* SD Card LEDS 1-3 and Hubs 1-2 Reset */
+	  .platform_data = &scu_pca953x_pdata[5],},
+	{ I2C_BOARD_INFO("pca9538", 0x73),	/* SD Card LEDS 4-6 and Hubs 3-4 Reset */
+	  .platform_data = &scu_pca953x_pdata[6],},
+	{ I2C_BOARD_INFO("pca9538", 0x1C),	/* SD Card Detect 1-6 */
+	  .platform_data = &scu_pca953x_pdata[7],},
+	{ I2C_BOARD_INFO("pca9554", 0x23),	/* SDR Copper and Assemly Rev */
+	  .platform_data = &scu_pca953x_pdata[8],},
 };
 
 /* SCU specific gpio pin names. Only works if module is built into kernel. */
@@ -1482,11 +1486,11 @@ static void scu3_remove(struct scu_data *data)
 static struct b53_platform_data b53_switch_pdata = {
 	.enabled_ports	= 0x1f,
 	.cd = {
-		.port_names[0]  = "netaux1",
-		.port_names[1]  = "netaux2",
-		.port_names[2]  = "netcploop",
-		.port_names[3]  = "netseatloop",
-		.port_names[4]  = "cpu",
+		.port_names[0]	= "netaux1",
+		.port_names[1]	= "netaux2",
+		.port_names[2]	= "netcploop",
+		.port_names[3]	= "netseatloop",
+		.port_names[4]	= "cpu",
 		/* netdev is filled at runtime */
 	},
 };
@@ -1499,29 +1503,29 @@ static void scu_b53_switch_init(struct scu_data *data)
 
 static struct spi_board_info scu1_spi_info[] = {
 	{
-	 .modalias = "b53-switch",
-	 .bus_num = 0,
-	 .chip_select = 0,
-	 .max_speed_hz = 2000000,
-	 .mode = SPI_MODE_3,
-	 .platform_data = &b53_switch_pdata,
+		.modalias = "b53-switch",
+		.bus_num = 0,
+		.chip_select = 0,
+		.max_speed_hz = 2000000,
+		.mode = SPI_MODE_3,
+		.platform_data = &b53_switch_pdata,
 	},
 };
 
 static struct spi_board_info scu2_spi_info[] = {
 	{
 #ifdef TESTING
-	 .modalias = "lm70",
-	 .bus_num = 0,
-	 .chip_select = 0,
-	 .max_speed_hz = 1000000,
-	 .mode = SPI_MODE_0,
+		.modalias = "lm70",
+		.bus_num = 0,
+		.chip_select = 0,
+		.max_speed_hz = 1000000,
+		.mode = SPI_MODE_0,
 #else
-	 .modalias = "robodebug",
-	 .bus_num = 0,
-	 .chip_select = 0,
-	 .max_speed_hz = 2000000,
-	 .mode = SPI_MODE_3,
+		.modalias = "robodebug",
+		.bus_num = 0,
+		.chip_select = 0,
+		.max_speed_hz = 2000000,
+		.mode = SPI_MODE_3,
 #endif
 	},
 };
@@ -1577,20 +1581,20 @@ static struct scu_platform_data scu_platform_data[] = {
 		.remove = scu3_remove,
 	},
 
-        [scu4c] = {
-                .board_type = "SCU4 Copper x86",
-                .lru_part_number = SCU_LRU_PARTNUM_GEN4_COPPER,
-                .board_part_number = SCU_ZII_BOARD_PARTNUM,
-                .board_dash_number = SCU_ZII_BOARD_DASHNUM_SCU4_COPPER,
-                .version = scu4,
-                .eeprom_len = SCU_EEPROM_LEN_GEN3,
-                .i2c_board_info = scu_i2c_info_scu4,
-                .num_i2c_board_info = ARRAY_SIZE(scu_i2c_info_scu4),
+	[scu4c] = {
+		.board_type = "SCU4 Copper x86",
+		.lru_part_number = SCU_LRU_PARTNUM_GEN4_COPPER,
+		.board_part_number = SCU_ZII_BOARD_PARTNUM,
+		.board_dash_number = SCU_ZII_BOARD_DASHNUM_SCU4_COPPER,
+		.version = scu4,
+		.eeprom_len = SCU_EEPROM_LEN_GEN3,
+		.i2c_board_info = scu_i2c_info_scu4,
+		.num_i2c_board_info = ARRAY_SIZE(scu_i2c_info_scu4),
 		.dsa_pdata = &dsa_mv88e6xxx_pdata_scu4,
 		.dsa_bdinfo = &bdinfo_scu4,
-                .init = scu3_init,
-                .remove = scu3_remove,
-        },
+		.init = scu3_init,
+		.remove = scu3_remove,
+	},
 	[unknown] = {
 		.board_type = "UNKNOWN",
 		.version = unknown,
@@ -1704,12 +1708,15 @@ static void populate_unit_info(struct nvmem_device *nvmem,
 		}
 	}
 
-	/* Check if we have an SCU2 with a Zii mainboard and update the struct if yes */
+	/* Check if we have an SCU2 with a Zii mainboard and update
+	 * the struct if yes
+	 */
 	if (pdata->version == scu2 &&
-		strnstr(data->eeprom.board_part_number,
-			SCU_ZII_BOARD_PARTNUM,
-			strlen(SCU_ZII_BOARD_PARTNUM)) != NULL) {
-			struct scu_platform_data *newSCU2pdata = &scu_platform_data[scu3];
+	    strnstr(data->eeprom.board_part_number,
+		    SCU_ZII_BOARD_PARTNUM,
+		    strlen(SCU_ZII_BOARD_PARTNUM)) != NULL) {
+		struct scu_platform_data *newSCU2pdata = &scu_platform_data[scu3];
+
 		newSCU2pdata->board_type = "SCU2 x86";
 		newSCU2pdata->lru_part_number = SCU_LRU_PARTNUM_GEN2,
 		newSCU2pdata->version = scu2,
@@ -1854,9 +1861,8 @@ static const struct proc_ops scu_proc_ops = {
 
 int nvmem_match(struct device *dev, const void *data)
 {
-	if (strstr(dev_name(dev), data)) {
+	if (strstr(dev_name(dev), data))
 		return 1;
-	}
 	return 0;
 }
 
@@ -1914,13 +1920,13 @@ static int scu_probe(struct platform_device *pdev)
 	}
 
 	/*XXX Here is we have export eeprom cells as part of
-	 * EEPROM/NVMEM or inside of populate_unit_info */
-        nvmem_np = nvmem_device_find("Nameplate eeprom", nvmem_match);
-	if (nvmem_np) {
+	 * EEPROM/NVMEM or inside of populate_unit_info
+	 */
+	nvmem_np = nvmem_device_find("Nameplate eeprom", nvmem_match);
+	if (nvmem_np)
 		populate_unit_info(nvmem_np, data);
-	} else {
+	else
 		dev_info(dev, "Failed to find nameplate eeprom\n");
-	}
 
 	pca_leds_register(dev, data);
 
