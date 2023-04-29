@@ -90,6 +90,23 @@ static void set_baseline_state(struct led_netdev_data *trigger_data)
 	}
 }
 
+/*
+ * Validate the configured netdev is the same as the hardware offload
+ * is associated to */
+static bool validate_net_dev(struct led_classdev *led_cdev,
+			     struct net_device *net_dev)
+{
+	struct device * dev = led_cdev->hw_control_get_device(led_cdev);
+	struct net_device *ndev;
+
+	if (!dev)
+		return false;
+
+	ndev = to_net_dev(dev);
+
+	return ndev == net_dev;
+}
+
 static int validate_requested_mode(struct led_netdev_data *trigger_data,
 				   unsigned long mode, bool *can_use_hw_control)
 {
@@ -115,11 +132,14 @@ static int validate_requested_mode(struct led_netdev_data *trigger_data,
 		/*
 		 * net_dev must be set with hw control, otherwise no
 		 * blinking can be happening and there is nothing to
-		 * offloaded. Interval must be set to the default
-		 * value. Any different value is rejected if in hw
-		 * control.
+		 * offloaded. Additionally, for hw control to be
+		 * valid, the configured netdev must be the same as
+		 * netdev associated to the LED. Interval must be set
+		 * to the default value. Any different value is
+		 * rejected if in hw control.
 		 */
-		if (interval == default_interval && trigger_data->net_dev &&
+		if (interval == default_interval &&
+		    validate_net_dev(led_cdev, trigger_data->net_dev) &&
 		    !force_sw && test_bit(i, &hw_supported_mode))
 			set_bit(i, &hw_mode);
 		else
