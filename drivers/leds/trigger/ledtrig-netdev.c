@@ -121,11 +121,14 @@ static int validate_requested_mode(struct led_netdev_data *trigger_data,
 		if (!test_bit(i, &mode))
 			continue;
 
-		/* net_dev is not supported and must be empty for hw control.
-		 * interval must be set to the default value. Any different
-		 * value is rejected if in hw control.
+		/*
+		 * net_dev must be set with hw control, otherwise no
+		 * blinking can be happening and there is nothing to
+		 * offloaded. Interval must be set to the default
+		 * value. Any different value is rejected if in hw
+		 * control.
 		 */
-		if (interval == default_interval && !trigger_data->net_dev &&
+		if (interval == default_interval && trigger_data->net_dev &&
 		    !force_sw && test_bit(i, &hw_supported_mode))
 			set_bit(i, &hw_mode);
 		else
