@@ -22,6 +22,7 @@
 #include <linux/module.h>
 #include <linux/netdevice.h>
 #include <linux/mutex.h>
+#include <linux/property.h>
 #include <linux/rtnetlink.h>
 #include <linux/timer.h>
 #include "../leds.h"
@@ -535,6 +536,34 @@ static void netdev_trig_work(struct work_struct *work)
 			(atomic_read(&trigger_data->interval)*2));
 }
 
+static void netdev_trig_fwnode(struct fwnode_handle *fwnode,
+                              struct led_netdev_data *trigger_data)
+{
+	if (fwnode_property_present(fwnode, "netdev-link"))
+		trigger_data->mode |= BIT(TRIGGER_NETDEV_LINK);
+
+	if (fwnode_property_present(fwnode, "netdev-link10"))
+		trigger_data->mode |= BIT(TRIGGER_NETDEV_LINK_10);
+
+	if (fwnode_property_present(fwnode, "netdev-link100"))
+		trigger_data->mode |= BIT(TRIGGER_NETDEV_LINK_100);
+
+	if (fwnode_property_present(fwnode, "netdev-link1000"))
+		trigger_data->mode |= BIT(TRIGGER_NETDEV_LINK_1000);
+
+	if (fwnode_property_present(fwnode, "netdev-half-duplex"))
+		trigger_data->mode |= BIT(TRIGGER_NETDEV_HALF_DUPLEX);
+
+	if (fwnode_property_present(fwnode, "netdev-full-duplex"))
+		trigger_data->mode |= BIT(TRIGGER_NETDEV_FULL_DUPLEX);
+
+	if (fwnode_property_present(fwnode, "netdev-tx"))
+		trigger_data->mode |= BIT(TRIGGER_NETDEV_TX);
+
+	if (fwnode_property_present(fwnode, "netdev-rx"))
+		trigger_data->mode |= BIT(TRIGGER_NETDEV_RX);
+}
+
 static int netdev_trig_activate(struct led_classdev *led_cdev)
 {
 	struct led_netdev_data *trigger_data;
@@ -558,6 +587,9 @@ static int netdev_trig_activate(struct led_classdev *led_cdev)
 	trigger_data->device_name[0] = 0;
 
 	trigger_data->mode = 0;
+	if (led_cdev->fwnode)
+		netdev_trig_fwnode(led_cdev->fwnode, trigger_data);
+
 	atomic_set(&trigger_data->interval, msecs_to_jiffies(NETDEV_LED_DEFAULT_INTERVAL));
 	trigger_data->last_activity = 0;
 
@@ -572,9 +604,11 @@ static int netdev_trig_activate(struct led_classdev *led_cdev)
 			set_device_name(trigger_data, name, strlen(name));
 			trigger_data->hw_control = true;
 
-			rc = led_cdev->hw_control_get(led_cdev, &mode);
-			if (!rc)
-				trigger_data->mode = mode;
+			if (!trigger_data->mode) {
+				rc = led_cdev->hw_control_get(led_cdev, &mode);
+				if (!rc)
+					trigger_data->mode = mode;
+			}
 		}
 	}
 
