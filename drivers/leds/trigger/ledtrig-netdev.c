@@ -167,6 +167,27 @@ static int validate_requested_mode(struct led_netdev_data *trigger_data,
 	return 0;
 }
 
+static int activate_new_mode(struct led_netdev_data *trigger_data,
+			     unsigned long new_mode)
+{
+	bool can_use_hw_control = false;
+	int ret;
+
+	ret = validate_requested_mode(trigger_data, new_mode,
+				      &can_use_hw_control);
+	if (ret)
+		return ret;
+
+	cancel_delayed_work_sync(&trigger_data->work);
+
+	trigger_data->mode = new_mode;
+	trigger_data->hw_control = can_use_hw_control;
+
+	set_baseline_state(trigger_data);
+
+	return 0;
+}
+
 static ssize_t device_name_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
@@ -264,7 +285,6 @@ static ssize_t netdev_led_attr_store(struct device *dev, const char *buf,
 {
 	struct led_netdev_data *trigger_data = led_trigger_get_drvdata(dev);
 	unsigned long state, new_mode = trigger_data->mode;
-	bool can_use_hw_control = false;
 	int ret;
 	int bit;
 
@@ -287,17 +307,9 @@ static ssize_t netdev_led_attr_store(struct device *dev, const char *buf,
 	else
 		clear_bit(bit, &new_mode);
 
-	ret = validate_requested_mode(trigger_data, new_mode,
-				      &can_use_hw_control);
+	ret = activate_new_mode(trigger_data, new_mode);
 	if (ret)
 		return ret;
-
-	cancel_delayed_work_sync(&trigger_data->work);
-
-	trigger_data->mode = new_mode;
-	trigger_data->hw_control = can_use_hw_control;
-
-	set_baseline_state(trigger_data);
 
 	return size;
 }
