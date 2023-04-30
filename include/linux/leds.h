@@ -182,6 +182,7 @@ struct led_classdev {
 	unsigned long		delayed_delay_off;
 
 #ifdef CONFIG_LEDS_TRIGGERS
+	struct fwnode_handle	*fwnode;
 	/* Protects the trigger data below */
 	struct rw_semaphore	 trigger_lock;
 

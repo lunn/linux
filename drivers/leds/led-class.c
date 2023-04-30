@@ -457,6 +457,9 @@ int led_classdev_register_ext(struct device *parent,
 			if (fwnode_property_present(init_data->fwnode,
 						    "retain-state-shutdown"))
 				led_cdev->flags |= LED_RETAIN_AT_SHUTDOWN;
+#ifdef CONFIG_LEDS_TRIGGERS
+				led_cdev->fwnode = init_data->fwnode;
+#endif
 		}
 	} else {
 		proposed_name = led_cdev->name;
