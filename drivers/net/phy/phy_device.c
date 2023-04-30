@@ -3318,19 +3318,24 @@ static int phy_probe(struct device *dev)
 	/* Set the state to READY by default */
 	phydev->state = PHY_READY;
 
-	/* Get the LEDs from the device tree, and instantiate standard
-	 * LEDs for them, if the phy driver supports it.
-	 */
-	if (phydev->drv->led_brightness_set ||
-	    phydev->drv->led_blink_set)
-		of_phy_leds(phydev);
-
 out:
 	/* Assert the reset signal */
 	if (err)
 		phy_device_reset(phydev, 1);
 
 	mutex_unlock(&phydev->lock);
+
+	if (!err) {
+		/* Get the LEDs from the device tree, and instantiate
+		 * standard LEDs for them, if the phy driver supports
+		 * it. This cannot be done while holding phydev->lock,
+		 * it might possibly deadlock against with the LED
+		 * class locks, according to lockdep.
+		 */
+		if (phydev->drv->led_brightness_set ||
+		    phydev->drv->led_blink_set)
+			of_phy_leds(phydev);
+	}
 
 	return err;
 }
