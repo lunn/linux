@@ -308,7 +308,10 @@ static ssize_t netdev_led_attr_store(struct device *dev, const char *buf,
 	else
 		clear_bit(bit, &new_mode);
 
+	mutex_lock(&trigger_data->lock);
 	ret = activate_new_mode(trigger_data, new_mode);
+	mutex_unlock(&trigger_data->lock);
+
 	if (ret)
 		return ret;
 
