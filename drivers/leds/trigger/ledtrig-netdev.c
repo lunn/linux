@@ -21,6 +21,7 @@
 #include <linux/module.h>
 #include <linux/netdevice.h>
 #include <linux/mutex.h>
+#include <linux/property.h>
 #include <linux/timer.h>
 #include "../leds.h"
 
@@ -493,6 +494,19 @@ static void netdev_trig_work(struct work_struct *work)
 			(atomic_read(&trigger_data->interval)*2));
 }
 
+static void netdev_trig_fwnode(struct fwnode_handle *fwnode,
+			       struct led_netdev_data *trigger_data)
+{
+	if (fwnode_property_present(fwnode, "netdev-link"))
+		trigger_data->mode |= BIT(TRIGGER_NETDEV_LINK);
+
+	if (fwnode_property_present(fwnode, "netdev-tx"))
+		trigger_data->mode |= BIT(TRIGGER_NETDEV_TX);
+
+	if (fwnode_property_present(fwnode, "netdev-rx"))
+		trigger_data->mode |= BIT(TRIGGER_NETDEV_RX);
+}
+
 static int netdev_trig_activate(struct led_classdev *led_cdev)
 {
 	struct led_netdev_data *trigger_data;
@@ -515,13 +529,17 @@ static int netdev_trig_activate(struct led_classdev *led_cdev)
 	trigger_data->device_name[0] = 0;
 
 	trigger_data->mode = 0;
+	if (led_cdev->fwnode)
+		netdev_trig_fwnode(led_cdev->fwnode, trigger_data);
+
 	atomic_set(&trigger_data->interval, msecs_to_jiffies(50));
 	trigger_data->last_activity = 0;
 
-	/* Check if hw control is active by default on the LED.
-	 * Init already enabled mode in hw control.
+	/* If the mode is not configured in firmware, check if hw
+	 * control is active by default on the LED.  Init already
+	 * enabled mode in hw control.
 	 */
-	if (led_trigger_can_hw_control(led_cdev) &&
+	if (!trigger_data->mode && led_trigger_can_hw_control(led_cdev) &&
 	    !led_cdev->hw_control_get(led_cdev, &trigger_data->mode))
 		trigger_data->hw_control = true;
 
@@ -532,6 +550,7 @@ static int netdev_trig_activate(struct led_classdev *led_cdev)
 		if (dev) {
 			const char *name = dev_name(dev);
 
+			/* This also activates any mode set in firmware */
 			set_device_name(trigger_data, name, strlen(name) + 1);
 		}
 	}
