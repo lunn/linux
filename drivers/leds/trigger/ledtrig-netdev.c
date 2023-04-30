@@ -233,7 +233,7 @@ static int set_device_name(struct led_netdev_data *trigger_data,
 
 	trigger_data->last_activity = 0;
 
-	set_baseline_state(trigger_data);
+	activate_new_mode(trigger_data, trigger_data->mode);
 
 out:
 	mutex_unlock(&trigger_data->lock);
