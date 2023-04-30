@@ -145,6 +145,9 @@ static int validate_requested_mode(struct led_netdev_data *trigger_data,
 
 	/* Check if the requested mode is supported */
 	ret = led_cdev->hw_control_is_supported(led_cdev, hw_mode);
+	if (ret == -EOPNOTSUPP)
+		/* Fall back to software blinking */
+		return 0;
 	if (ret)
 		return ret;
 
