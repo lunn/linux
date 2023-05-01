@@ -198,6 +198,50 @@ properties:
       Maximum timeout in microseconds after which the flash LED is turned off.
       Required for flash LED nodes with configurable timeout.
 
+  # Properties for LED triggers. Each trigger should prefix its
+  # properties with the trigger name so there is some name spacing
+
+  # netdev properties can be combined for one LED
+  netdev-link:
+    description:
+      The LED should indicate if the netdev has link, a.k.a. carrier
+    type: bool
+
+  netdev-link10:
+    description:
+      The LED should indicate if the netdev has link at 10Mbps
+    type: bool
+
+  netdev-link100:
+    description:
+      The LED should indicate if the netdev has link at 100Mbps
+    type: bool
+
+  netdev-link1000:
+    description:
+      The LED should indicate if the netdev has link at 1000Mbps
+    type: bool
+
+  netdev-half-duplex:
+    description:
+      The LED should indicate if the netdev has a half duplex link
+    type: bool
+
+  netdev-full-duplex:
+    description:
+      The LED should indicate if the netdev has a full duplex link
+    type: bool
+
+  netdev-rx:
+    description:
+      The LED should indicate if the netdev has recieve activity
+    type: bool
+
+  netdev-tx:
+    description:
+      The LED should indicate if the netdev has transmit activity
+    type: bool
+
 additionalProperties: true
 
 examples:
