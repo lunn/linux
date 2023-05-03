@@ -332,6 +332,9 @@ struct dsa_port {
 	/* List of VLANs that CPU and DSA ports are members of. */
 	struct mutex		vlans_lock;
 	struct list_head	vlans;
+
+	/* List of LEDs associated to this port */
+	struct list_head leds;
 };
 
 /* TODO: ideally DSA ports would have a single dp->link_dp member,
