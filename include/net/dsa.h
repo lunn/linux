@@ -1238,6 +1238,14 @@ struct dsa_switch_ops {
 	void	(*conduit_state_change)(struct dsa_switch *ds,
 					const struct net_device *conduit,
 					bool operational);
+
+	/*
+	 * LED control
+	 */
+	int (*led_brightness_set)(struct dsa_switch *ds, int port,
+				  u8 led, enum led_brightness value);
+	int (*led_blink_set)(struct dsa_switch *ds, int port, u8 led,
+			     unsigned long *delay_on, unsigned long *delay_off);
 };
 
 #define DSA_DEVLINK_PARAM_DRIVER(_id, _name, _type, _cmodes)		\
