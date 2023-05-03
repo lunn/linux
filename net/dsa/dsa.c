@@ -34,6 +34,15 @@
 static DEFINE_MUTEX(dsa2_mutex);
 LIST_HEAD(dsa_tree_list);
 
+struct dsa_led {
+	struct list_head led_list;
+	struct dsa_port *dp;
+	struct led_classdev led_cdev;
+	u8 index;
+};
+
+#define to_dsa_led(d) container_of(d, struct dsa_led, led_cdev)
+
 static struct workqueue_struct *dsa_owq;
 
 /* Track the bridges with forwarding offload enabled */
@@ -461,6 +470,116 @@ static void dsa_tree_teardown_cpu_ports(struct dsa_switch_tree *dst)
 			dp->cpu_dp = NULL;
 }
 
+static int dsa_led_brightness_set(struct led_classdev *led_cdev,
+				  enum led_brightness value)
+{
+	struct dsa_led *dsa_led = to_dsa_led(led_cdev);
+	struct dsa_port *dp = dsa_led->dp;
+	struct dsa_switch *ds = dp->ds;
+
+	return ds->ops->led_brightness_set(ds, dp->index, dsa_led->index,
+					   value);
+}
+
+static int dsa_led_blink_set(struct led_classdev *led_cdev,
+			     unsigned long *delay_on, unsigned long *delay_off)
+{
+	struct dsa_led *dsa_led = to_dsa_led(led_cdev);
+	struct dsa_port *dp = dsa_led->dp;
+	struct dsa_switch *ds = dp->ds;
+
+	return ds->ops->led_blink_set(ds, dp->index, dsa_led->index,
+				      delay_on, delay_off);
+}
+
+static int dsa_port_led_setup(struct dsa_port *dp,
+			      struct device_node *led)
+{
+	struct led_init_data init_data = {};
+	struct dsa_switch *ds = dp->ds;
+	struct led_classdev *cdev;
+	struct dsa_led *dsa_led;
+	u32 index;
+	int err;
+
+	dsa_led = devm_kzalloc(ds->dev, sizeof(*dsa_led), GFP_KERNEL);
+	if (!dsa_led)
+		return -ENOMEM;
+
+	dsa_led->dp = dp;
+	cdev = &dsa_led->led_cdev;
+
+	err = of_property_read_u32(led, "reg", &index);
+	if (err)
+		return err;
+	if (index > 255)
+		return -EINVAL;
+
+	dsa_led->index = index;
+
+	if (ds->ops->led_brightness_set)
+		cdev->brightness_set_blocking = dsa_led_brightness_set;
+	if (ds->ops->led_blink_set)
+		cdev->blink_set = dsa_led_blink_set;
+
+	cdev->max_brightness = 1;
+
+	init_data.fwnode = of_fwnode_handle(led);
+	if (dp->user) {
+		init_data.devicename = dev_name(&dp->user->dev);
+		err = devm_led_classdev_register_ext(&dp->user->dev, cdev,
+						     &init_data);
+	} else {
+		init_data.devicename = kasprintf(GFP_KERNEL, "%s:%d",
+						 dev_name(ds->dev), dp->index);
+		err = devm_led_classdev_register_ext(ds->dev, cdev, &init_data);
+	}
+	if (err)
+		return err;
+
+	INIT_LIST_HEAD(&dsa_led->led_list);
+	list_add(&dsa_led->led_list, &dp->leds);
+
+	if (!dp->user)
+		kfree(init_data.devicename);
+
+	return 0;
+}
+
+static int dsa_port_leds_setup(struct dsa_port *dp)
+{
+	struct device_node *leds, *led;
+	int err;
+
+	if (!dp->dn)
+		return 0;
+
+	leds = of_get_child_by_name(dp->dn, "leds");
+	if (!leds)
+		return 0;
+
+	for_each_available_child_of_node(leds, led) {
+		err = dsa_port_led_setup(dp, led);
+		if (err)
+			return err;
+	}
+
+	return 0;
+}
+
+static void dsa_port_leds_teardown(struct dsa_port *dp)
+{
+	struct dsa_switch *ds = dp->ds;
+	struct device *dev = ds->dev;
+	struct led_classdev *cdev;
+	struct dsa_led *dsa_led;
+
+	list_for_each_entry(dsa_led, &dp->leds, led_list) {
+		cdev = &dsa_led->led_cdev;
+		devm_led_classdev_unregister(dev, cdev);
+	}
+}
+
 static int dsa_port_setup(struct dsa_port *dp)
 {
 	bool dsa_port_link_registered = false;
@@ -494,6 +613,11 @@ static int dsa_port_setup(struct dsa_port *dp)
 		err = dsa_port_enable(dp, NULL);
 		if (err)
 			break;
+
+		err = dsa_port_leds_setup(dp);
+		if (err)
+			break;
+
 		dsa_port_enabled = true;
 
 		break;
@@ -512,12 +636,22 @@ static int dsa_port_setup(struct dsa_port *dp)
 		err = dsa_port_enable(dp, NULL);
 		if (err)
 			break;
+
+		err = dsa_port_leds_setup(dp);
+		if (err)
+			break;
+
 		dsa_port_enabled = true;
 
 		break;
 	case DSA_PORT_TYPE_USER:
 		of_get_mac_address(dp->dn, dp->mac);
 		err = dsa_user_create(dp);
+		if (err)
+			break;
+
+		err = dsa_port_leds_setup(dp);
+
 		break;
 	}
 
@@ -544,11 +678,13 @@ static void dsa_port_teardown(struct dsa_port *dp)
 	case DSA_PORT_TYPE_UNUSED:
 		break;
 	case DSA_PORT_TYPE_CPU:
+		dsa_port_leds_teardown(dp);
 		dsa_port_disable(dp);
 		if (dp->dn)
 			dsa_shared_port_link_unregister_of(dp);
 		break;
 	case DSA_PORT_TYPE_DSA:
+		dsa_port_leds_teardown(dp);
 		dsa_port_disable(dp);
 		if (dp->dn)
 			dsa_shared_port_link_unregister_of(dp);
@@ -556,6 +692,7 @@ static void dsa_port_teardown(struct dsa_port *dp)
 	case DSA_PORT_TYPE_USER:
 		if (dp->user) {
 			dsa_user_destroy(dp->user);
+			dsa_port_leds_teardown(dp);
 			dp->user = NULL;
 		}
 		break;
@@ -1108,6 +1245,7 @@ static struct dsa_port *dsa_port_touch(struct dsa_switch *ds, int index)
 	INIT_LIST_HEAD(&dp->mdbs);
 	INIT_LIST_HEAD(&dp->vlans); /* also initializes &dp->user_vlans */
 	INIT_LIST_HEAD(&dp->list);
+	INIT_LIST_HEAD(&dp->leds);
 	list_add_tail(&dp->list, &dst->ports);
 
 	return dp;

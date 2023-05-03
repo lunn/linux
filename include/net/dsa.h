@@ -325,6 +325,9 @@ struct dsa_port {
 		 */
 		struct list_head	user_vlans;
 	};
+
+	/* List of LEDs associated to this port */
+	struct list_head leds;
 };
 
 /* TODO: ideally DSA ports would have a single dp->link_dp member,
