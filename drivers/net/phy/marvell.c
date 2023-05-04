@@ -2039,7 +2039,7 @@ static int marvell_vct5_wait_complete(struct phy_device *phydev)
 	int i;
 	int val;
 
-	for (i = 0; i < 32; i++) {
+	for (i = 0; i < 256; i++) {
 		val = __phy_read(phydev, MII_VCT5_CTRL);
 		if (val < 0)
 			return val;
