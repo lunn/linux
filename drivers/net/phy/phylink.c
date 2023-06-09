@@ -80,6 +80,9 @@ struct phylink {
 	DECLARE_PHY_INTERFACE_MASK(sfp_interfaces);
 	__ETHTOOL_DECLARE_LINK_MODE_MASK(sfp_support);
 	u8 sfp_port;
+
+	struct eee_config eee_cfg;
+	bool eee_active;
 };
 
 #define phylink_printk(level, pl, fmt, ...) \
@@ -1253,6 +1256,24 @@ static const char *phylink_pause_to_str(int pause)
 	}
 }
 
+static void phylink_disable_tx_lpi(struct phylink *pl)
+{
+	if (pl->mac_ops->mac_disable_tx_lpi)
+		pl->mac_ops->mac_disable_tx_lpi(pl->config);
+}
+
+static void phylink_enable_tx_lpi(struct phylink *pl)
+{
+	if (pl->mac_ops->mac_enable_tx_lpi)
+		pl->mac_ops->mac_enable_tx_lpi(pl->config,
+					       pl->eee_cfg.tx_lpi_timer);
+}
+
+static bool phylink_eee_is_active(struct phylink *pl)
+{
+	return phylink_init_eee(pl, pl->config->eee_clk_stop_enable) >= 0;
+}
+
 static void phylink_link_up(struct phylink *pl,
 			    struct phylink_link_state link_state)
 {
@@ -1294,6 +1315,12 @@ static void phylink_link_up(struct phylink *pl,
 				 pl->cur_interface, speed, duplex,
 				 !!(link_state.pause & MLO_PAUSE_TX), rx_pause);
 
+	if (eeecfg_mac_can_tx_lpi(&pl->eee_cfg)) {
+		pl->eee_active = phylink_eee_is_active(pl);
+		if (pl->eee_active)
+			phylink_enable_tx_lpi(pl);
+	}
+
 	if (ndev)
 		netif_carrier_on(ndev);
 
@@ -1310,25 +1337,32 @@ static void phylink_link_down(struct phylink *pl)
 
 	if (ndev)
 		netif_carrier_off(ndev);
+
+	if (eeecfg_mac_can_tx_lpi(&pl->eee_cfg) && pl->eee_active) {
+		pl->eee_active = false;
+		phylink_disable_tx_lpi(pl);
+	}
+
 	pl->mac_ops->mac_link_down(pl->config, pl->cur_link_an_mode,
 				   pl->cur_interface);
 	phylink_info(pl, "Link is Down\n");
+}
+
+static bool phylink_link_is_up(struct phylink *pl)
+{
+	return pl->netdev ? netif_carrier_ok(pl->netdev) : pl->old_link_state;
 }
 
 static void phylink_resolve(struct work_struct *w)
 {
 	struct phylink *pl = container_of(w, struct phylink, resolve);
 	struct phylink_link_state link_state;
-	struct net_device *ndev = pl->netdev;
 	bool mac_config = false;
 	bool retrigger = false;
 	bool cur_link_state;
 
 	mutex_lock(&pl->state_mutex);
-	if (pl->netdev)
-		cur_link_state = netif_carrier_ok(ndev);
-	else
-		cur_link_state = pl->old_link_state;
+	cur_link_state = phylink_link_is_up(pl);
 
 	if (pl->phylink_disable_state) {
 		pl->mac_link_dropped = false;
@@ -1570,6 +1604,9 @@ struct phylink *phylink_create(struct phylink_config *config,
 	bitmap_fill(pl->supported, __ETHTOOL_LINK_MODE_MASK_NBITS);
 	linkmode_copy(pl->link_config.advertising, pl->supported);
 	phylink_validate(pl, pl->supported, &pl->link_config);
+
+	/* Set the default EEE configuration */
+	pl->eee_cfg = pl->config->eee;
 
 	ret = phylink_parse_mode(pl, fwnode);
 	if (ret < 0) {
@@ -2589,6 +2626,12 @@ int phylink_ethtool_get_eee(struct phylink *pl, struct ethtool_eee *eee)
 	if (pl->phydev)
 		ret = phy_ethtool_get_eee(pl->phydev, eee);
 
+	if (!ret) {
+		/* Overwrite phylib's interpretation of configuration */
+		eeecfg_to_eee(&pl->eee_cfg, eee);
+		eee->eee_active = pl->eee_active;
+	}
+
 	return ret;
 }
 EXPORT_SYMBOL_GPL(phylink_ethtool_get_eee);
@@ -2606,6 +2649,35 @@ int phylink_ethtool_set_eee(struct phylink *pl, struct ethtool_eee *eee)
 
 	if (pl->phydev)
 		ret = phy_ethtool_set_eee(pl->phydev, eee);
+
+	if (!ret) {
+		bool can_lpi, old_can_lpi;
+
+		mutex_lock(&pl->state_mutex);
+		old_can_lpi = eeecfg_mac_can_tx_lpi(&pl->eee_cfg);
+		eee_to_eeecfg(eee, &pl->eee_cfg);
+		can_lpi = eeecfg_mac_can_tx_lpi(&pl->eee_cfg);
+
+		/* IF the link is up, and the configuration changes the
+		 * LPI permissive state, deal with the change at the MAC.
+		 */
+		if (phylink_link_is_up(pl) && old_can_lpi != can_lpi) {
+			if (can_lpi) {
+				/* If LPI wasn't enabled, eee_active (result
+				 * of any AN) will be false. Update it here.
+				 * If the advertisement has been changed, the
+				 * link will cycle which will update this.
+				 */
+				pl->eee_active = phylink_eee_is_active(pl);
+				if (pl->eee_active)
+					phylink_enable_tx_lpi(pl);
+			} else {
+				phylink_disable_tx_lpi(pl);
+			}
+		}
+
+		mutex_unlock(&pl->state_mutex);
+	}
 
 	return ret;
 }
