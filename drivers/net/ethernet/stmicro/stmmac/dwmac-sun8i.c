@@ -556,6 +556,14 @@ static void sun8i_dwmac_dma_operation_mode_tx(struct stmmac_priv *priv,
 	writel(v, ioaddr + EMAC_TX_CTL1);
 }
 
+static int sun8i_dwmac_get_hw_feature(void __iomem *ioaddr,
+				      struct dma_features *dma_cap)
+{
+	dma_cap->eee = 1;
+
+	return 0;
+}
+
 static const struct stmmac_dma_ops sun8i_dwmac_dma_ops = {
 	.reset = sun8i_dwmac_dma_reset,
 	.init = sun8i_dwmac_dma_init,
@@ -572,6 +580,7 @@ static const struct stmmac_dma_ops sun8i_dwmac_dma_ops = {
 	.start_rx = sun8i_dwmac_dma_start_rx,
 	.stop_rx = sun8i_dwmac_dma_stop_rx,
 	.dma_interrupt = sun8i_dwmac_dma_interrupt,
+	.get_hw_feature = sun8i_dwmac_get_hw_feature,
 };
 
 static int sun8i_dwmac_power_internal_phy(struct stmmac_priv *priv);
