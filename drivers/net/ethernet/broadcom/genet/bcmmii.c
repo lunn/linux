@@ -87,11 +87,6 @@ static void bcmgenet_mac_config(struct net_device *dev)
 		reg |= CMD_TX_EN | CMD_RX_EN;
 	}
 	bcmgenet_umac_writel(priv, reg, UMAC_CMD);
-
-	priv->eee.eee_active = phy_init_eee(phydev, 0) >= 0;
-	bcmgenet_eee_enable_set(dev,
-				priv->eee.eee_enabled && priv->eee.eee_active,
-				priv->eee.tx_lpi_enabled);
 }
 
 /* setup netdev link state when PHY link status change and
@@ -105,6 +100,7 @@ void bcmgenet_mii_setup(struct net_device *dev)
 
 	if (phydev->link) {
 		bcmgenet_mac_config(dev);
+		bcmgenet_eee_enable_set(dev, phydev->enable_tx_lpi);
 	} else {
 		reg = bcmgenet_ext_readl(priv, EXT_RGMII_OOB_CTRL);
 		reg &= ~RGMII_LINK;
