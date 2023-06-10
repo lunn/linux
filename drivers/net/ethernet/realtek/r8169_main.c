@@ -627,7 +627,6 @@ struct rtl8169_private {
 	struct rtl8169_counters *counters;
 	struct rtl8169_tc_offsets tc_offset;
 	u32 saved_wolopts;
-	int eee_adv;
 
 	const char *fw_name;
 	struct rtl_fw *rtl_fw;
@@ -1340,19 +1339,27 @@ static void rtl8169_irq_mask_and_ack(struct rtl8169_private *tp)
 	rtl_pci_commit(tp);
 }
 
-static void rtl8168_config_eee_mac(struct rtl8169_private *tp)
+static void rtl8168_config_eee_mac(struct rtl8169_private *tp, bool enable)
 {
 	/* Adjust EEE LED frequency */
 	if (tp->mac_version != RTL_GIGA_MAC_VER_38)
 		RTL_W8(tp, EEE_LED, RTL_R8(tp, EEE_LED) & ~0x07);
 
-	rtl_eri_set_bits(tp, 0x1b0, 0x0003);
+	if (enable)
+		rtl_eri_set_bits(tp, 0x1b0, 0x0003);
+	else
+		rtl_eri_set_bits(tp, 0x1b0, 0x0000);
 }
 
-static void rtl8125a_config_eee_mac(struct rtl8169_private *tp)
+static void rtl8125a_config_eee_mac(struct rtl8169_private *tp, bool enable)
 {
-	r8168_mac_ocp_modify(tp, 0xe040, 0, BIT(1) | BIT(0));
-	r8168_mac_ocp_modify(tp, 0xeb62, 0, BIT(2) | BIT(1));
+	if (enable) {
+		r8168_mac_ocp_modify(tp, 0xe040, 0, BIT(1) | BIT(0));
+		r8168_mac_ocp_modify(tp, 0xeb62, 0, BIT(2) | BIT(1));
+	} else {
+		r8168_mac_ocp_modify(tp, 0xe040, BIT(1) | BIT(0), 0);
+		r8168_mac_ocp_modify(tp, 0xeb62, BIT(2) | BIT(1), 0);
+	}
 }
 
 static void rtl8125_set_eee_txidle_timer(struct rtl8169_private *tp)
@@ -1360,10 +1367,44 @@ static void rtl8125_set_eee_txidle_timer(struct rtl8169_private *tp)
 	RTL_W16(tp, EEE_TXIDLE_TIMER_8125, tp->dev->mtu + ETH_HLEN + 0x20);
 }
 
-static void rtl8125b_config_eee_mac(struct rtl8169_private *tp)
+static void rtl8125b_config_eee_mac(struct rtl8169_private *tp, bool enable)
 {
 	rtl8125_set_eee_txidle_timer(tp);
-	r8168_mac_ocp_modify(tp, 0xe040, 0, BIT(1) | BIT(0));
+	if (enable)
+		r8168_mac_ocp_modify(tp, 0xe040, 0, BIT(1) | BIT(0));
+	else
+		r8168_mac_ocp_modify(tp, 0xe040, BIT(1) | BIT(0), 0);
+}
+
+static void rtl8169_config_mac_eee(struct rtl8169_private *tp, bool enable)
+{
+	if (!rtl_supports_eee(tp))
+	    return;
+
+	switch(tp->mac_version) {
+	case RTL_GIGA_MAC_VER_34:
+	case RTL_GIGA_MAC_VER_35:
+	case RTL_GIGA_MAC_VER_36:
+	case RTL_GIGA_MAC_VER_38:
+	case RTL_GIGA_MAC_VER_40:
+	case RTL_GIGA_MAC_VER_42:
+	case RTL_GIGA_MAC_VER_43:
+	case RTL_GIGA_MAC_VER_46:
+	case RTL_GIGA_MAC_VER_48:
+	case RTL_GIGA_MAC_VER_51:
+	case RTL_GIGA_MAC_VER_52:
+	case RTL_GIGA_MAC_VER_53:
+		rtl8168_config_eee_mac(tp, enable);
+		break;
+	case RTL_GIGA_MAC_VER_61:
+		rtl8125a_config_eee_mac(tp, enable);
+		break;
+	case RTL_GIGA_MAC_VER_63:
+		rtl8125a_config_eee_mac(tp, enable);
+		break;
+	default:
+		netdev_warn(tp->dev, "Missing EEE support\n");
+	}
 }
 
 static void rtl_link_chg_patch(struct rtl8169_private *tp)
@@ -1400,6 +1441,8 @@ static void rtl_link_chg_patch(struct rtl8169_private *tp)
 			rtl_eri_write(tp, 0x1d0, ERIAR_MASK_0011, 0x0000);
 		}
 	}
+
+	rtl8169_config_mac_eee(tp, phydev->enable_tx_lpi);
 }
 
 #define WAKE_ANY (WAKE_PHY | WAKE_MAGIC | WAKE_UCAST | WAKE_BCAST | WAKE_MCAST)
@@ -1943,17 +1986,11 @@ static int rtl8169_get_eee(struct net_device *dev, struct ethtool_eee *data)
 static int rtl8169_set_eee(struct net_device *dev, struct ethtool_eee *data)
 {
 	struct rtl8169_private *tp = netdev_priv(dev);
-	int ret;
 
 	if (!rtl_supports_eee(tp))
 		return -EOPNOTSUPP;
 
-	ret = phy_ethtool_set_eee(tp->phydev, data);
-
-	if (!ret)
-		tp->eee_adv = phy_read_mmd(dev->phydev, MDIO_MMD_AN,
-					   MDIO_AN_EEE_ADV);
-	return ret;
+	return phy_ethtool_set_eee(tp->phydev, data);
 }
 
 static void rtl8169_get_ringparam(struct net_device *dev,
@@ -2017,21 +2054,6 @@ static const struct ethtool_ops rtl8169_ethtool_ops = {
 	.get_pauseparam		= rtl8169_get_pauseparam,
 	.set_pauseparam		= rtl8169_set_pauseparam,
 };
-
-static void rtl_enable_eee(struct rtl8169_private *tp)
-{
-	struct phy_device *phydev = tp->phydev;
-	int adv;
-
-	/* respect EEE advertisement the user may have set */
-	if (tp->eee_adv >= 0)
-		adv = tp->eee_adv;
-	else
-		adv = phy_read_mmd(phydev, MDIO_MMD_PCS, MDIO_PCS_EEE_ABLE);
-
-	if (adv >= 0)
-		phy_write_mmd(phydev, MDIO_MMD_AN, MDIO_AN_EEE_ADV, adv);
-}
 
 static enum mac_version rtl8169_get_mac_version(u16 xid, bool gmii)
 {
@@ -2239,9 +2261,6 @@ static void rtl8169_init_phy(struct rtl8169_private *tp)
 
 	/* We may have called phy_speed_down before */
 	phy_speed_up(tp->phydev);
-
-	if (rtl_supports_eee(tp))
-		rtl_enable_eee(tp);
 
 	genphy_soft_reset(tp->phydev);
 }
@@ -2960,7 +2979,7 @@ static void rtl_hw_start_8168e_2(struct rtl8169_private *tp)
 
 	RTL_W8(tp, MCU, RTL_R8(tp, MCU) & ~NOW_IS_OOB);
 
-	rtl8168_config_eee_mac(tp);
+	rtl8168_config_eee_mac(tp, false);
 
 	RTL_W8(tp, DLLPR, RTL_R8(tp, DLLPR) | PFM_EN);
 	RTL_W32(tp, MISC, RTL_R32(tp, MISC) | PWM_EN);
@@ -2987,7 +3006,7 @@ static void rtl_hw_start_8168f(struct rtl8169_private *tp)
 	RTL_W32(tp, MISC, RTL_R32(tp, MISC) | PWM_EN);
 	rtl_mod_config5(tp, Spi_en, 0);
 
-	rtl8168_config_eee_mac(tp);
+	rtl8168_config_eee_mac(tp, false);
 }
 
 static void rtl_hw_start_8168f_1(struct rtl8169_private *tp)
@@ -3037,7 +3056,7 @@ static void rtl_hw_start_8168g(struct rtl8169_private *tp)
 	rtl_eri_write(tp, 0xc0, ERIAR_MASK_0011, 0x0000);
 	rtl_eri_write(tp, 0xb8, ERIAR_MASK_0011, 0x0000);
 
-	rtl8168_config_eee_mac(tp);
+	rtl8168_config_eee_mac(tp, false);
 
 	rtl_w0w1_eri(tp, 0x2fc, 0x01, 0x06);
 	rtl_eri_clear_bits(tp, 0x1b0, BIT(12));
@@ -3262,7 +3281,7 @@ static void rtl_hw_start_8168h_1(struct rtl8169_private *tp)
 	rtl_eri_write(tp, 0xc0, ERIAR_MASK_0011, 0x0000);
 	rtl_eri_write(tp, 0xb8, ERIAR_MASK_0011, 0x0000);
 
-	rtl8168_config_eee_mac(tp);
+	rtl8168_config_eee_mac(tp, false);
 
 	RTL_W8(tp, DLLPR, RTL_R8(tp, DLLPR) & ~PFM_EN);
 	RTL_W8(tp, MISC_1, RTL_R8(tp, MISC_1) & ~PFM_D3COLD_EN);
@@ -3311,7 +3330,7 @@ static void rtl_hw_start_8168ep(struct rtl8169_private *tp)
 	rtl_eri_write(tp, 0xc0, ERIAR_MASK_0011, 0x0000);
 	rtl_eri_write(tp, 0xb8, ERIAR_MASK_0011, 0x0000);
 
-	rtl8168_config_eee_mac(tp);
+	rtl8168_config_eee_mac(tp, false);
 
 	rtl_w0w1_eri(tp, 0x2fc, 0x01, 0x06);
 
@@ -3368,7 +3387,7 @@ static void rtl_hw_start_8117(struct rtl8169_private *tp)
 	rtl_eri_write(tp, 0xc0, ERIAR_MASK_0011, 0x0000);
 	rtl_eri_write(tp, 0xb8, ERIAR_MASK_0011, 0x0000);
 
-	rtl8168_config_eee_mac(tp);
+	rtl8168_config_eee_mac(tp, false);
 
 	RTL_W8(tp, DLLPR, RTL_R8(tp, DLLPR) & ~PFM_EN);
 	RTL_W8(tp, MISC_1, RTL_R8(tp, MISC_1) & ~PFM_D3COLD_EN);
@@ -3598,9 +3617,9 @@ static void rtl_hw_start_8125_common(struct rtl8169_private *tp)
 	rtl_loop_wait_low(tp, &rtl_mac_ocp_e00e_cond, 1000, 10);
 
 	if (tp->mac_version == RTL_GIGA_MAC_VER_63)
-		rtl8125b_config_eee_mac(tp);
+		rtl8125b_config_eee_mac(tp, false);
 	else
-		rtl8125a_config_eee_mac(tp);
+		rtl8125a_config_eee_mac(tp, false);
 
 	rtl_disable_rxdvgate(tp);
 }
@@ -4620,6 +4639,9 @@ static int r8169_phy_connect(struct rtl8169_private *tp)
 	if (!tp->supports_gmii)
 		phy_set_max_speed(phydev, SPEED_100);
 
+	if (rtl_supports_eee(tp))
+	    phy_support_eee(phydev);
+
 	phy_attached_info(phydev);
 
 	return 0;
@@ -5177,7 +5199,6 @@ static int rtl_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 	tp->dev = dev;
 	tp->pci_dev = pdev;
 	tp->supports_gmii = ent->driver_data == RTL_CFG_NO_GBIT ? 0 : 1;
-	tp->eee_adv = -1;
 	tp->ocp_base = OCP_STD_PHY_BASE;
 
 	raw_spin_lock_init(&tp->cfg9346_usage_lock);
