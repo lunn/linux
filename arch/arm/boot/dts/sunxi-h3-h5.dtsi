@@ -48,6 +48,7 @@
 #include <dt-bindings/reset/sun8i-de2.h>
 #include <dt-bindings/reset/sun8i-h3-ccu.h>
 #include <dt-bindings/reset/sun8i-r-ccu.h>
+#include <dt-bindings/leds/common.h>
 
 / {
 	interrupt-parent = <&gic>;
@@ -562,6 +563,18 @@
 						reg = <1>;
 						clocks = <&ccu CLK_BUS_EPHY>;
 						resets = <&ccu RST_BUS_EPHY>;
+
+						leds {
+							#address-cells = <1>;
+							#size-cells = <0>;
+
+							led@0 {
+								reg = <0>;
+								color = <LED_COLOR_ID_WHITE>;
+								function = LED_FUNCTION_WAN;
+								default-state = "keep";
+							};
+						};
 					};
 				};
 
