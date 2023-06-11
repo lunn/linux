@@ -1340,6 +1340,32 @@ static void rtl8169_irq_mask_and_ack(struct rtl8169_private *tp)
 	rtl_pci_commit(tp);
 }
 
+static void rtl8168_config_eee_mac(struct rtl8169_private *tp)
+{
+	/* Adjust EEE LED frequency */
+	if (tp->mac_version != RTL_GIGA_MAC_VER_38)
+		RTL_W8(tp, EEE_LED, RTL_R8(tp, EEE_LED) & ~0x07);
+
+	rtl_eri_set_bits(tp, 0x1b0, 0x0003);
+}
+
+static void rtl8125a_config_eee_mac(struct rtl8169_private *tp)
+{
+	r8168_mac_ocp_modify(tp, 0xe040, 0, BIT(1) | BIT(0));
+	r8168_mac_ocp_modify(tp, 0xeb62, 0, BIT(2) | BIT(1));
+}
+
+static void rtl8125_set_eee_txidle_timer(struct rtl8169_private *tp)
+{
+	RTL_W16(tp, EEE_TXIDLE_TIMER_8125, tp->dev->mtu + ETH_HLEN + 0x20);
+}
+
+static void rtl8125b_config_eee_mac(struct rtl8169_private *tp)
+{
+	rtl8125_set_eee_txidle_timer(tp);
+	r8168_mac_ocp_modify(tp, 0xe040, 0, BIT(1) | BIT(0));
+}
+
 static void rtl_link_chg_patch(struct rtl8169_private *tp)
 {
 	struct phy_device *phydev = tp->phydev;
@@ -2163,32 +2189,6 @@ void r8169_apply_firmware(struct rtl8169_private *tp)
 				      !(val & BMCR_RESET),
 				      50000, 600000, true);
 	}
-}
-
-static void rtl8168_config_eee_mac(struct rtl8169_private *tp)
-{
-	/* Adjust EEE LED frequency */
-	if (tp->mac_version != RTL_GIGA_MAC_VER_38)
-		RTL_W8(tp, EEE_LED, RTL_R8(tp, EEE_LED) & ~0x07);
-
-	rtl_eri_set_bits(tp, 0x1b0, 0x0003);
-}
-
-static void rtl8125a_config_eee_mac(struct rtl8169_private *tp)
-{
-	r8168_mac_ocp_modify(tp, 0xe040, 0, BIT(1) | BIT(0));
-	r8168_mac_ocp_modify(tp, 0xeb62, 0, BIT(2) | BIT(1));
-}
-
-static void rtl8125_set_eee_txidle_timer(struct rtl8169_private *tp)
-{
-	RTL_W16(tp, EEE_TXIDLE_TIMER_8125, tp->dev->mtu + ETH_HLEN + 0x20);
-}
-
-static void rtl8125b_config_eee_mac(struct rtl8169_private *tp)
-{
-	rtl8125_set_eee_txidle_timer(tp);
-	r8168_mac_ocp_modify(tp, 0xe040, 0, BIT(1) | BIT(0));
 }
 
 static void rtl_rar_exgmac_set(struct rtl8169_private *tp, const u8 *addr)
