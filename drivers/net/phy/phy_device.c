@@ -3434,6 +3434,15 @@ void phy_drivers_unregister(struct phy_driver *drv, int n)
 }
 EXPORT_SYMBOL(phy_drivers_unregister);
 
+static int genphy_led_brightness_set(struct phy_device *phydev,
+				     u8 index, enum led_brightness value)
+{
+	phydev_info(phydev, "LED %d brightness %d\n",
+		    index, value);
+	return 0;
+}
+
+
 static struct phy_driver genphy_driver = {
 	.phy_id		= 0xffffffff,
 	.phy_id_mask	= 0xffffffff,
@@ -3442,6 +3451,7 @@ static struct phy_driver genphy_driver = {
 	.suspend	= genphy_suspend,
 	.resume		= genphy_resume,
 	.set_loopback   = genphy_loopback,
+	.led_brightness_set = genphy_led_brightness_set,
 };
 
 static const struct ethtool_phy_ops phy_ethtool_phy_ops = {
