@@ -6982,7 +6982,7 @@ static int mvpp2_port_probe(struct platform_device *pdev,
 		port->phylink_config.dev = &dev->dev;
 		port->phylink_config.type = PHYLINK_NETDEV;
 		port->phylink_config.mac_capabilities =
-			MAC_2500FD | MAC_1000FD | MAC_100 | MAC_10;
+			MAC_2500FD | MAC_1000FD | MAC_100 | MAC_10 | MAC_EEE;
 
 		if (port->priv->global_tx_fc)
 			port->phylink_config.mac_capabilities |=
