@@ -1315,7 +1315,8 @@ static void phylink_link_up(struct phylink *pl,
 				 pl->cur_interface, speed, duplex,
 				 !!(link_state.pause & MLO_PAUSE_TX), rx_pause);
 
-	if (eeecfg_mac_can_tx_lpi(&pl->eee_cfg)) {
+	if (pl->config->mac_capabilities & MAC_EEE &&
+	    eeecfg_mac_can_tx_lpi(&pl->eee_cfg)) {
 		pl->eee_active = phylink_eee_is_active(pl);
 		if (pl->eee_active)
 			phylink_enable_tx_lpi(pl);
@@ -1338,7 +1339,8 @@ static void phylink_link_down(struct phylink *pl)
 	if (ndev)
 		netif_carrier_off(ndev);
 
-	if (eeecfg_mac_can_tx_lpi(&pl->eee_cfg) && pl->eee_active) {
+	if (pl->config->mac_capabilities & MAC_EEE &&
+	    eeecfg_mac_can_tx_lpi(&pl->eee_cfg) && pl->eee_active) {
 		pl->eee_active = false;
 		phylink_disable_tx_lpi(pl);
 	}
@@ -1605,8 +1607,9 @@ struct phylink *phylink_create(struct phylink_config *config,
 	linkmode_copy(pl->link_config.advertising, pl->supported);
 	phylink_validate(pl, pl->supported, &pl->link_config);
 
-	/* Set the default EEE configuration */
-	pl->eee_cfg = pl->config->eee;
+	/* Set the default EEE configuration, if EEE is supported by the MAC */
+	if (pl->config->mac_capabilities & MAC_EEE)
+		pl->eee_cfg = pl->config->eee;
 
 	ret = phylink_parse_mode(pl, fwnode);
 	if (ret < 0) {
@@ -2590,6 +2593,9 @@ int phylink_get_eee_err(struct phylink *pl)
 
 	ASSERT_RTNL();
 
+	if (!(pl->config->mac_capabilities & MAC_EEE))
+		return -EOPNOTSUPP;
+
 	if (pl->phydev)
 		ret = phy_get_eee_err(pl->phydev);
 
@@ -2626,6 +2632,9 @@ int phylink_ethtool_get_eee(struct phylink *pl, struct ethtool_eee *eee)
 
 	ASSERT_RTNL();
 
+	if (!(pl->config->mac_capabilities & MAC_EEE))
+		return -EOPNOTSUPP;
+
 	if (pl->phydev)
 		ret = phy_ethtool_get_eee(pl->phydev, eee);
 
@@ -2649,6 +2658,9 @@ int phylink_ethtool_set_eee(struct phylink *pl, struct ethtool_eee *eee)
 	int ret = -EOPNOTSUPP;
 
 	ASSERT_RTNL();
+
+	if (!(pl->config->mac_capabilities & MAC_EEE))
+		return -EOPNOTSUPP;
 
 	if (pl->phydev)
 		ret = phy_ethtool_set_eee(pl->phydev, eee);
