@@ -1271,7 +1271,9 @@ static void phylink_enable_tx_lpi(struct phylink *pl)
 
 static bool phylink_eee_is_active(struct phylink *pl)
 {
-	return phylink_init_eee(pl, pl->config->eee_clk_stop_enable) >= 0;
+	if (pl->phydev)
+		return pl->phy_state.enable_tx_lpi;
+	return false;
 }
 
 static void phylink_link_up(struct phylink *pl,
@@ -1694,6 +1696,7 @@ static void phylink_phy_change(struct phy_device *phydev, bool up)
 		pl->phy_state.pause |= MLO_PAUSE_RX;
 	pl->phy_state.interface = phydev->interface;
 	pl->phy_state.link = up;
+	pl->phy_state.enable_tx_lpi = phydev->enable_tx_lpi;
 	mutex_unlock(&pl->state_mutex);
 
 	phylink_run_resolve(pl);
