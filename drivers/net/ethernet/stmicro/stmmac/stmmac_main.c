@@ -459,14 +459,14 @@ static void stmmac_eee_ctrl_timer(struct timer_list *t)
 }
 
 /**
- * stmmac_eee_init - init EEE
+ * stmmac_eee_disable
  * @priv: driver private structure
  * Description:
- *  if the GMAC supports the EEE (from the HW cap reg) and the phy device
+ *  Disable the LPI state and stop the related timer
  *  can also manage EEE, this function enable the LPI state and start related
  *  timer.
  */
-bool stmmac_eee_init(struct stmmac_priv *priv)
+void stmmac_eee_disable(struct stmmac_priv *priv)
 {
 	int eee_tw_timer = priv->eee_tw_timer;
 
@@ -475,31 +475,53 @@ bool stmmac_eee_init(struct stmmac_priv *priv)
 	 */
 	if (priv->hw->pcs == STMMAC_PCS_TBI ||
 	    priv->hw->pcs == STMMAC_PCS_RTBI)
-		return false;
+		return;
 
 	/* Check if MAC core supports the EEE feature. */
 	if (!priv->dma_cap.eee)
-		return false;
+		return;
 
 	mutex_lock(&priv->lock);
 
 	/* Check if it needs to be deactivated */
-	if (!priv->eee_active) {
-		if (priv->eee_enabled) {
-			netdev_dbg(priv->dev, "disable EEE\n");
-			stmmac_lpi_entry_timer_config(priv, 0);
-			del_timer_sync(&priv->eee_ctrl_timer);
-			stmmac_set_eee_timer(priv, priv->hw, 0, eee_tw_timer);
-			if (priv->hw->xpcs)
-				xpcs_config_eee(priv->hw->xpcs,
-						priv->plat->mult_fact_100ns,
-						false);
-		}
-		mutex_unlock(&priv->lock);
-		return false;
+	if (priv->eee_enabled) {
+		netdev_dbg(priv->dev, "disable EEE\n");
+		stmmac_lpi_entry_timer_config(priv, 0);
+		del_timer_sync(&priv->eee_ctrl_timer);
+		stmmac_set_eee_timer(priv, priv->hw, 0, eee_tw_timer);
+		if (priv->hw->xpcs)
+			xpcs_config_eee(priv->hw->xpcs,
+					priv->plat->mult_fact_100ns,
+					false);
+		priv->eee_enabled = false;
 	}
+	mutex_unlock(&priv->lock);
+}
 
-	if (priv->eee_active && !priv->eee_enabled) {
+/**
+ * stmmac_eee_enable
+ * @priv: driver private structure
+ * Description:
+ *  Enable the LPI state and start the related timer
+ */
+void stmmac_eee_enable(struct stmmac_priv *priv)
+{
+	int eee_tw_timer = priv->eee_tw_timer;
+
+	/* Using PCS we cannot dial with the phy registers at this stage
+	 * so we do not support extra feature like EEE.
+	 */
+	if (priv->hw->pcs == STMMAC_PCS_TBI ||
+	    priv->hw->pcs == STMMAC_PCS_RTBI)
+		return;
+
+	/* Check if MAC core supports the EEE feature. */
+	if (!priv->dma_cap.eee)
+		return;
+
+	mutex_lock(&priv->lock);
+
+	if (!priv->eee_enabled) {
 		timer_setup(&priv->eee_ctrl_timer, stmmac_eee_ctrl_timer, 0);
 		stmmac_set_eee_timer(priv, priv->hw, STMMAC_DEFAULT_LIT_LS,
 				     eee_tw_timer);
@@ -518,10 +540,11 @@ bool stmmac_eee_init(struct stmmac_priv *priv)
 		mod_timer(&priv->eee_ctrl_timer,
 			  STMMAC_LPI_T(priv->tx_lpi_timer));
 	}
+	priv->eee_enabled = true;
 
 	mutex_unlock(&priv->lock);
 	netdev_dbg(priv->dev, "Energy-Efficient Ethernet initialized\n");
-	return true;
+	return;
 }
 
 /* stmmac_get_tx_hwtstamp - get HW TX timestamps
@@ -973,9 +996,7 @@ static void stmmac_mac_link_down(struct phylink_config *config,
 	struct stmmac_priv *priv = netdev_priv(to_net_dev(config->dev));
 
 	stmmac_mac_set(priv, priv->ioaddr, false);
-	priv->eee_active = false;
-	priv->tx_lpi_enabled = false;
-	priv->eee_enabled = stmmac_eee_init(priv);
+	stmmac_eee_disable(priv);
 	stmmac_set_eee_pls(priv, priv->hw, false);
 
 	if (priv->dma_cap.fpesel)
@@ -1082,16 +1103,25 @@ static void stmmac_mac_link_up(struct phylink_config *config,
 		writel(ctrl, priv->ioaddr + MAC_CTRL_REG);
 
 	stmmac_mac_set(priv, priv->ioaddr, true);
-	if (phy && priv->dma_cap.eee) {
-		priv->eee_active =
-			phy_init_eee(phy, !priv->plat->rx_clk_runs_in_lpi) >= 0;
-		priv->eee_enabled = stmmac_eee_init(priv);
-		priv->tx_lpi_enabled = priv->eee_enabled;
-		stmmac_set_eee_pls(priv, priv->hw, true);
-	}
 
 	if (priv->dma_cap.fpesel)
 		stmmac_fpe_link_state_handle(priv, true);
+}
+
+static void stmmac_mac_enable_tx_lpi(struct phylink_config *config, u32 timer)
+{
+	struct stmmac_priv *priv = netdev_priv(to_net_dev(config->dev));
+
+	priv->tx_lpi_timer = timer;
+
+	stmmac_eee_enable(priv);
+}
+
+static void stmmac_mac_disable_tx_lpi(struct phylink_config *config)
+{
+	struct stmmac_priv *priv = netdev_priv(to_net_dev(config->dev));
+
+	stmmac_eee_disable(priv);
 }
 
 static const struct phylink_mac_ops stmmac_phylink_mac_ops = {
@@ -1099,6 +1129,8 @@ static const struct phylink_mac_ops stmmac_phylink_mac_ops = {
 	.mac_config = stmmac_mac_config,
 	.mac_link_down = stmmac_mac_link_down,
 	.mac_link_up = stmmac_mac_link_up,
+	.mac_disable_tx_lpi = stmmac_mac_disable_tx_lpi,
+	.mac_enable_tx_lpi = stmmac_mac_enable_tx_lpi,
 };
 
 /**
@@ -1245,8 +1277,12 @@ static int stmmac_phy_setup(struct stmmac_priv *priv)
 			~(MAC_10HD | MAC_100HD | MAC_1000HD);
 	priv->phylink_config.mac_managed_pm = true;
 
-	if (priv->dma_cap.eee)
+	if (priv->dma_cap.eee) {
 		priv->phylink_config.mac_capabilities |= MAC_EEE;
+		priv->phylink_config.eee.eee_enabled = true;
+		priv->phylink_config.eee.tx_lpi_enabled = true;
+		priv->phylink_config.eee.tx_lpi_timer = eee_timer * 1000;
+	}
 
 	phylink = phylink_create(&priv->phylink_config, fwnode,
 				 mode, &stmmac_phylink_mac_ops);
