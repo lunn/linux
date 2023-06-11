@@ -531,6 +531,8 @@ EXPORT_SYMBOL_GPL(led_classdev_register_ext);
  */
 void led_classdev_unregister(struct led_classdev *led_cdev)
 {
+	pr_info("%s", __func__);
+
 	if (IS_ERR_OR_NULL(led_cdev->dev))
 		return;
 
@@ -550,6 +552,7 @@ void led_classdev_unregister(struct led_classdev *led_cdev)
 		led_set_brightness(led_cdev, LED_OFF);
 
 	flush_work(&led_cdev->set_brightness_work);
+	pr_info("%s: flushed", __func__);
 
 	if (led_cdev->flags & LED_BRIGHT_HW_CHANGED)
 		led_remove_brightness_hw_changed(led_cdev);

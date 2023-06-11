@@ -659,6 +659,8 @@ int stmmac_mdio_unregister(struct net_device *ndev)
 {
 	struct stmmac_priv *priv = netdev_priv(ndev);
 
+	pr_info("%s\n", __func__);
+
 	if (!priv->mii)
 		return 0;
 
@@ -669,6 +671,8 @@ int stmmac_mdio_unregister(struct net_device *ndev)
 	priv->mii->priv = NULL;
 	mdiobus_free(priv->mii);
 	priv->mii = NULL;
+
+	pr_info("%s Done\n", __func__);
 
 	return 0;
 }

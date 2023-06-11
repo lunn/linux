@@ -120,6 +120,8 @@ static void set_brightness_delayed(struct work_struct *ws)
 		container_of(ws, struct led_classdev, set_brightness_work);
 	int ret = 0;
 
+	pr_info("%s", __func__);
+
 	if (test_and_clear_bit(LED_BLINK_DISABLE, &led_cdev->work_flags)) {
 		led_cdev->delayed_set_value = LED_OFF;
 		led_stop_software_blink(led_cdev);

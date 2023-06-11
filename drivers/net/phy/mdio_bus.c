@@ -761,6 +761,8 @@ void mdiobus_unregister(struct mii_bus *bus)
 	struct mdio_device *mdiodev;
 	int i;
 
+	pr_info("mdiobus_unregister");
+
 	if (WARN_ON_ONCE(bus->state != MDIOBUS_REGISTERED))
 		return;
 	bus->state = MDIOBUS_UNREGISTERED;
@@ -782,6 +784,7 @@ void mdiobus_unregister(struct mii_bus *bus)
 		gpiod_set_value_cansleep(bus->reset_gpiod, 1);
 
 	device_del(&bus->dev);
+	pr_info("mdiobus_unregister done");
 }
 EXPORT_SYMBOL(mdiobus_unregister);
 

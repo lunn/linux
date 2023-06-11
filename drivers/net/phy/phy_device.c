@@ -3307,6 +3307,8 @@ static int phy_remove(struct device *dev)
 {
 	struct phy_device *phydev = to_phy_device(dev);
 
+	phydev_info(phydev, "%s\n", __func__);
+
 	cancel_delayed_work_sync(&phydev->state_queue);
 
 	phydev->state = PHY_DOWN;
@@ -3320,6 +3322,7 @@ static int phy_remove(struct device *dev)
 	/* Assert the reset signal */
 	phy_device_reset(phydev, 1);
 
+	pr_info("%s: phydev->drv \n", __func__);
 	phydev->drv = NULL;
 
 	return 0;
