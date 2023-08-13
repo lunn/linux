@@ -145,6 +145,9 @@
 				color = <LED_COLOR_ID_WHITE>;
 				function = LED_FUNCTION_WAN;
 				default-state = "keep";
+				netdev-link;
+				netdev-tx;
+				netdev-rx;
 			};
 		};
 	};
