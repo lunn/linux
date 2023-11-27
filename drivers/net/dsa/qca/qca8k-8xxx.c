@@ -1838,10 +1838,6 @@ qca8k_setup(struct dsa_switch *ds)
 	if (ret)
 		return ret;
 
-	ret = qca8k_setup_led_ctrl(priv);
-	if (ret)
-		return ret;
-
 	qca8k_setup_pcs(priv, &priv->pcs_port_0, 0);
 	qca8k_setup_pcs(priv, &priv->pcs_port_6, 6);
 
@@ -2018,6 +2014,13 @@ static const struct dsa_switch_ops qca8k_switch_ops = {
 	.port_lag_leave		= qca8k_port_lag_leave,
 	.conduit_state_change	= qca8k_conduit_change,
 	.connect_tag_protocol	= qca8k_connect_tag_protocol,
+#ifdef CONFIG_NET_DSA_QCA8K_LEDS_SUPPORT
+	.led_brightness_set	= qca8k_led_brightness_set,
+	.led_blink_set		= qca8k_led_blink_set,
+	.led_hw_control_is_supported = qca8k_led_hw_control_is_supported,
+	.led_hw_control_set	= qca8k_led_hw_control_set,
+	.led_hw_control_get	= qca8k_led_hw_control_get,
+#endif
 };
 
 static int
