@@ -5,12 +5,6 @@
 
 /* Leds Support function */
 #ifdef CONFIG_NET_DSA_QCA8K_LEDS_SUPPORT
-int qca8k_setup_led_ctrl(struct qca8k_priv *priv);
-#else
-static inline int qca8k_setup_led_ctrl(struct qca8k_priv *priv)
-{
-	return 0;
-}
-#endif
-
+extern struct netdev_leds_ops qca8k_netdev_leds_ops;
+#endif /* CONFIG_NET_DSA_QCA8K_LEDS_SUPPORT */
 #endif /* __QCA8K_LEDS_H */

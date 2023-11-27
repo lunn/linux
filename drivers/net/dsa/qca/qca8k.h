@@ -433,14 +433,6 @@ struct qca8k_led_pattern_en {
 	u8 shift;
 };
 
-struct qca8k_led {
-	u8 port_num;
-	u8 led_num;
-	u16 old_rule;
-	struct qca8k_priv *priv;
-	struct led_classdev cdev;
-};
-
 struct qca8k_priv {
 	u8 switch_id;
 	u8 switch_revision;
@@ -466,7 +458,7 @@ struct qca8k_priv {
 	struct qca8k_pcs pcs_port_0;
 	struct qca8k_pcs pcs_port_6;
 	const struct qca8k_match_data *info;
-	struct qca8k_led ports_led[QCA8K_LED_COUNT];
+	struct list_head leds;
 };
 
 struct qca8k_mib_desc {

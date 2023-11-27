@@ -12,6 +12,7 @@
 #include <linux/bitfield.h>
 #include <linux/regmap.h>
 #include <net/dsa.h>
+#include <net/netdev_leds.h>
 #include <linux/of_net.h>
 #include <linux/of_mdio.h>
 #include <linux/of_platform.h>
@@ -1820,6 +1821,29 @@ static void qca8k_setup_hol_fixup(struct qca8k_priv *priv, int port)
 			   mask);
 }
 
+static int qca8k_port_setup(struct dsa_switch *ds, int port)
+{
+#ifdef CONFIG_NET_DSA_QCA8K_LEDS_SUPPORT
+	struct dsa_port *dp = dsa_to_port(ds, port);
+	struct qca8k_priv *priv = ds->priv;
+
+	return netdev_leds_setup(dp->user, dp->dn, &priv->leds,
+				 &qca8k_netdev_leds_ops);
+#else
+	return 0;
+#endif
+}
+
+static void qca8k_port_teardown(struct dsa_switch *ds, int port)
+{
+#ifdef CONFIG_NET_DSA_QCA8K_LEDS_SUPPORT
+	struct dsa_port *dp = dsa_to_port(ds, port);
+	struct qca8k_priv *priv = ds->priv;
+
+	netdev_leds_teardown(&priv->leds, dp->user);
+#endif
+}
+
 static int
 qca8k_setup(struct dsa_switch *ds)
 {
@@ -1848,10 +1872,6 @@ qca8k_setup(struct dsa_switch *ds)
 		return ret;
 
 	ret = qca8k_setup_mac_pwr_sel(priv);
-	if (ret)
-		return ret;
-
-	ret = qca8k_setup_led_ctrl(priv);
 	if (ret)
 		return ret;
 
@@ -1995,6 +2015,8 @@ qca8k_setup(struct dsa_switch *ds)
 static const struct dsa_switch_ops qca8k_switch_ops = {
 	.get_tag_protocol	= qca8k_get_tag_protocol,
 	.setup			= qca8k_setup,
+	.port_setup		= qca8k_port_setup,
+	.port_teardown		= qca8k_port_teardown,
 	.get_strings		= qca8k_get_strings,
 	.get_ethtool_stats	= qca8k_get_ethtool_stats,
 	.get_sset_count		= qca8k_get_sset_count,
