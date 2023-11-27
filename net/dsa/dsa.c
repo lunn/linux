@@ -492,6 +492,52 @@ static int dsa_led_blink_set(struct led_classdev *led_cdev,
 				      delay_on, delay_off);
 }
 
+static __maybe_unused int
+dsa_led_hw_control_is_supported(struct led_classdev *led_cdev,
+				unsigned long flags)
+{
+	struct dsa_led *dsa_led = to_dsa_led(led_cdev);
+	struct dsa_port *dp = dsa_led->dp;
+	struct dsa_switch *ds = dp->ds;
+
+	return ds->ops->led_hw_control_is_supported(ds, dp->index,
+						    dsa_led->index,
+						    flags);
+}
+
+static __maybe_unused int dsa_led_hw_control_set(struct led_classdev *led_cdev,
+						 unsigned long flags)
+{
+	struct dsa_led *dsa_led = to_dsa_led(led_cdev);
+	struct dsa_port *dp = dsa_led->dp;
+	struct dsa_switch *ds = dp->ds;
+
+	return ds->ops->led_hw_control_set(ds, dp->index, dsa_led->index,
+					   flags);
+}
+
+static __maybe_unused int dsa_led_hw_control_get(struct led_classdev *led_cdev,
+						 unsigned long *flags)
+{
+	struct dsa_led *dsa_led = to_dsa_led(led_cdev);
+	struct dsa_port *dp = dsa_led->dp;
+	struct dsa_switch *ds = dp->ds;
+
+	return ds->ops->led_hw_control_get(ds, dp->index, dsa_led->index,
+					   flags);
+}
+
+static struct device *
+dsa_led_hw_control_get_device(struct led_classdev *led_cdev)
+{
+	struct dsa_led *dsa_led = to_dsa_led(led_cdev);
+	struct dsa_port *dp = dsa_led->dp;
+
+	if (dp->user)
+		return &dp->user->dev;
+	return NULL;
+}
+
 static int dsa_port_led_setup(struct dsa_port *dp,
 			      struct device_node *led)
 {
@@ -521,7 +567,16 @@ static int dsa_port_led_setup(struct dsa_port *dp,
 		cdev->brightness_set_blocking = dsa_led_brightness_set;
 	if (ds->ops->led_blink_set)
 		cdev->blink_set = dsa_led_blink_set;
-
+#ifdef CONFIG_LEDS_TRIGGERS
+	if (ds->ops->led_hw_control_is_supported)
+		cdev->hw_control_is_supported = dsa_led_hw_control_is_supported;
+	if (ds->ops->led_hw_control_set)
+		cdev->hw_control_set = dsa_led_hw_control_set;
+	if (ds->ops->led_hw_control_get)
+		cdev->hw_control_get = dsa_led_hw_control_get;
+	cdev->hw_control_trigger = "netdev";
+#endif
+	cdev->hw_control_get_device = dsa_led_hw_control_get_device;
 	cdev->max_brightness = 1;
 
 	init_data.fwnode = of_fwnode_handle(led);

@@ -1249,6 +1249,12 @@ struct dsa_switch_ops {
 				  u8 led, enum led_brightness value);
 	int (*led_blink_set)(struct dsa_switch *ds, int port, u8 led,
 			     unsigned long *delay_on, unsigned long *delay_off);
+	int (*led_hw_control_is_supported)(struct dsa_switch *ds, int port,
+					   u8 led, unsigned long flags);
+	int (*led_hw_control_set)(struct dsa_switch *ds, int port, u8 led,
+				  unsigned long flags);
+	int (*led_hw_control_get)(struct dsa_switch *ds, int port, u8 led,
+				  unsigned long *flags);
 };
 
 #define DSA_DEVLINK_PARAM_DRIVER(_id, _name, _type, _cmodes)		\
