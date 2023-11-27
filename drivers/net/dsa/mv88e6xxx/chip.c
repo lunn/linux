@@ -6836,6 +6836,55 @@ static int mv88e6xxx_led_blink_set(struct dsa_switch *ds, int port,
 	return -EOPNOTSUPP;
 }
 
+static int mv88e6xxx_led_hw_control_is_supported(struct dsa_switch *ds,
+						 int port, u8 led,
+						 unsigned long flags)
+{
+	struct mv88e6xxx_chip *chip = ds->priv;
+	int err;
+
+	if (chip->info->ops->led_hw_control_is_supported) {
+		mv88e6xxx_reg_lock(chip);
+		err = chip->info->ops->led_hw_control_is_supported(chip, port,
+								   led, flags);
+		mv88e6xxx_reg_unlock(chip);
+		return err;
+	}
+	return -EOPNOTSUPP;
+}
+
+static int mv88e6xxx_led_hw_control_set(struct dsa_switch *ds, int port,
+					u8 led, unsigned long flags)
+{
+	struct mv88e6xxx_chip *chip = ds->priv;
+	int err;
+
+	if (chip->info->ops->led_hw_control_set) {
+		mv88e6xxx_reg_lock(chip);
+		err = chip->info->ops->led_hw_control_set(chip, port,
+							  led, flags);
+		mv88e6xxx_reg_unlock(chip);
+		return err;
+	}
+	return -EOPNOTSUPP;
+}
+
+static int mv88e6xxx_led_hw_control_get(struct dsa_switch *ds, int port,
+					u8 led, unsigned long *flags)
+{
+	struct mv88e6xxx_chip *chip = ds->priv;
+	int err;
+
+	if (chip->info->ops->led_hw_control_get) {
+		mv88e6xxx_reg_lock(chip);
+		err = chip->info->ops->led_hw_control_get(chip, port,
+							  led, flags);
+		mv88e6xxx_reg_unlock(chip);
+		return err;
+	}
+	return -EOPNOTSUPP;
+}
+
 static const struct dsa_switch_ops mv88e6xxx_switch_ops = {
 	.get_tag_protocol	= mv88e6xxx_get_tag_protocol,
 	.change_tag_protocol	= mv88e6xxx_change_tag_protocol,
@@ -6902,6 +6951,9 @@ static const struct dsa_switch_ops mv88e6xxx_switch_ops = {
 	.crosschip_lag_leave	= mv88e6xxx_crosschip_lag_leave,
 	.led_brightness_set	= mv88e6xxx_led_brightness_set,
 	.led_blink_set		= mv88e6xxx_led_blink_set,
+	.led_hw_control_is_supported = mv88e6xxx_led_hw_control_is_supported,
+	.led_hw_control_set	= mv88e6xxx_led_hw_control_set,
+	.led_hw_control_get	= mv88e6xxx_led_hw_control_get,
 };
 
 static int mv88e6xxx_register_switch(struct mv88e6xxx_chip *chip)
