@@ -4,3 +4,4 @@
 #
 
 obj-y += switchdev.o
+obj-$(CONFIG_LEDS_CLASS) += port_leds.o
