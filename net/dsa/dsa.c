@@ -462,6 +462,15 @@ static void dsa_tree_teardown_cpu_ports(struct dsa_switch_tree *dst)
 
 static int dsa_unused_port_setup(struct dsa_port *dp)
 {
+	struct dsa_switch *ds = dp->ds;
+	int err;
+
+	if (ds->ops->port_setup) {
+		err = ds->ops->port_setup(ds, dp->index);
+		if (err)
+			return err;
+	}
+
 	dsa_port_disable(dp);
 
 	return 0;
@@ -469,6 +478,10 @@ static int dsa_unused_port_setup(struct dsa_port *dp)
 
 static void dsa_unused_port_teardown(struct dsa_port *dp)
 {
+	struct dsa_switch *ds = dp->ds;
+
+	if (ds->ops->port_teardown)
+		ds->ops->port_teardown(ds, dp->index);
 }
 
 static int dsa_shared_port_setup(struct dsa_port *dp)
@@ -490,8 +503,23 @@ static int dsa_shared_port_setup(struct dsa_port *dp)
 			 dp->index);
 	}
 
+	if (ds->ops->port_setup) {
+		err = ds->ops->port_setup(ds, dp->index);
+		if (err)
+			goto unregister_link;
+	}
+
 	err = dsa_port_enable(dp, NULL);
-	if (err && link_registered)
+	if (err)
+		goto port_teardown;
+
+	return 0;
+
+port_teardown:
+	if (ds->ops->port_teardown)
+		ds->ops->port_teardown(ds, dp->index);
+unregister_link:
+	if (link_registered)
 		dsa_shared_port_link_unregister_of(dp);
 
 	return err;
@@ -499,22 +527,49 @@ static int dsa_shared_port_setup(struct dsa_port *dp)
 
 static void dsa_shared_port_teardown(struct dsa_port *dp)
 {
+	struct dsa_switch *ds = dp->ds;
+
 	dsa_port_disable(dp);
+	if (ds->ops->port_teardown)
+		ds->ops->port_teardown(ds, dp->index);
 	if (dp->dn)
 		dsa_shared_port_link_unregister_of(dp);
 }
 
 static int dsa_user_port_setup(struct dsa_port *dp)
 {
+	struct dsa_switch *ds = dp->ds;
+	int err;
+
 	of_get_mac_address(dp->dn, dp->mac);
 
-	return dsa_user_create(dp);
+	err = dsa_user_create(dp);
+	if (err)
+		return err;
+
+	if (ds->ops->port_setup) {
+		err = ds->ops->port_setup(ds, dp->index);
+		if (err)
+			goto user_destroy;
+	}
+
+	return 0;
+
+user_destroy:
+	dsa_user_destroy(dp->user);
+	dp->user = NULL;
+	return err;
 }
 
 static void dsa_user_port_teardown(struct dsa_port *dp)
 {
+	struct dsa_switch *ds = dp->ds;
+
 	if (!dp->user)
 		return;
+
+	if (ds->ops->port_teardown)
+		ds->ops->port_teardown(ds, dp->index);
 
 	dsa_user_destroy(dp->user);
 	dp->user = NULL;
