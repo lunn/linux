@@ -479,23 +479,6 @@ static int dsa_port_setup(struct dsa_port *dp)
 		dsa_port_disable(dp);
 		break;
 	case DSA_PORT_TYPE_CPU:
-		if (dp->dn) {
-			err = dsa_shared_port_link_register_of(dp);
-			if (err)
-				break;
-			dsa_port_link_registered = true;
-		} else {
-			dev_warn(ds->dev,
-				 "skipping link registration for CPU port %d\n",
-				 dp->index);
-		}
-
-		err = dsa_port_enable(dp, NULL);
-		if (err)
-			break;
-		dsa_port_enabled = true;
-
-		break;
 	case DSA_PORT_TYPE_DSA:
 		if (dp->dn) {
 			err = dsa_shared_port_link_register_of(dp);
@@ -504,7 +487,8 @@ static int dsa_port_setup(struct dsa_port *dp)
 			dsa_port_link_registered = true;
 		} else {
 			dev_warn(ds->dev,
-				 "skipping link registration for DSA port %d\n",
+				 "skipping link registration for %s port %d\n",
+				 dsa_port_is_cpu(dp) ? "CPU" : "DSA",
 				 dp->index);
 		}
 
@@ -543,10 +527,6 @@ static void dsa_port_teardown(struct dsa_port *dp)
 	case DSA_PORT_TYPE_UNUSED:
 		break;
 	case DSA_PORT_TYPE_CPU:
-		dsa_port_disable(dp);
-		if (dp->dn)
-			dsa_shared_port_link_unregister_of(dp);
-		break;
 	case DSA_PORT_TYPE_DSA:
 		dsa_port_disable(dp);
 		if (dp->dn)
