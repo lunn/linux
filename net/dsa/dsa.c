@@ -460,12 +460,69 @@ static void dsa_tree_teardown_cpu_ports(struct dsa_switch_tree *dst)
 			dp->cpu_dp = NULL;
 }
 
+static int dsa_unused_port_setup(struct dsa_port *dp)
+{
+	dsa_port_disable(dp);
+
+	return 0;
+}
+
+static void dsa_unused_port_teardown(struct dsa_port *dp)
+{
+}
+
+static int dsa_shared_port_setup(struct dsa_port *dp)
+{
+	struct dsa_switch *ds = dp->ds;
+	bool link_registered = false;
+	int err;
+
+	if (dp->dn) {
+		err = dsa_shared_port_link_register_of(dp);
+		if (err)
+			return err;
+
+		link_registered = true;
+	} else {
+		dev_warn(ds->dev,
+			 "skipping link registration for %s port %d\n",
+			 dsa_port_is_cpu(dp) ? "CPU" : "DSA",
+			 dp->index);
+	}
+
+	err = dsa_port_enable(dp, NULL);
+	if (err && link_registered)
+		dsa_shared_port_link_unregister_of(dp);
+
+	return err;
+}
+
+static void dsa_shared_port_teardown(struct dsa_port *dp)
+{
+	dsa_port_disable(dp);
+	if (dp->dn)
+		dsa_shared_port_link_unregister_of(dp);
+}
+
+static int dsa_user_port_setup(struct dsa_port *dp)
+{
+	of_get_mac_address(dp->dn, dp->mac);
+
+	return dsa_user_create(dp);
+}
+
+static void dsa_user_port_teardown(struct dsa_port *dp)
+{
+	if (!dp->user)
+		return;
+
+	dsa_user_destroy(dp->user);
+	dp->user = NULL;
+}
+
 static int dsa_port_setup(struct dsa_port *dp)
 {
-	bool dsa_port_link_registered = false;
-	struct dsa_switch *ds = dp->ds;
-	bool dsa_port_enabled = false;
-	int err = 0;
+	int err;
 
 	if (dp->setup)
 		return 0;
@@ -476,38 +533,17 @@ static int dsa_port_setup(struct dsa_port *dp)
 
 	switch (dp->type) {
 	case DSA_PORT_TYPE_UNUSED:
-		dsa_port_disable(dp);
+		err = dsa_unused_port_setup(dp);
 		break;
 	case DSA_PORT_TYPE_CPU:
 	case DSA_PORT_TYPE_DSA:
-		if (dp->dn) {
-			err = dsa_shared_port_link_register_of(dp);
-			if (err)
-				break;
-			dsa_port_link_registered = true;
-		} else {
-			dev_warn(ds->dev,
-				 "skipping link registration for %s port %d\n",
-				 dsa_port_is_cpu(dp) ? "CPU" : "DSA",
-				 dp->index);
-		}
-
-		err = dsa_port_enable(dp, NULL);
-		if (err)
-			break;
-		dsa_port_enabled = true;
-
+		err = dsa_shared_port_setup(dp);
 		break;
 	case DSA_PORT_TYPE_USER:
-		of_get_mac_address(dp->dn, dp->mac);
-		err = dsa_user_create(dp);
+		err = dsa_user_port_setup(dp);
 		break;
 	}
 
-	if (err && dsa_port_enabled)
-		dsa_port_disable(dp);
-	if (err && dsa_port_link_registered)
-		dsa_shared_port_link_unregister_of(dp);
 	if (err) {
 		dsa_port_devlink_teardown(dp);
 		return err;
@@ -525,18 +561,14 @@ static void dsa_port_teardown(struct dsa_port *dp)
 
 	switch (dp->type) {
 	case DSA_PORT_TYPE_UNUSED:
+		dsa_unused_port_teardown(dp);
 		break;
 	case DSA_PORT_TYPE_CPU:
 	case DSA_PORT_TYPE_DSA:
-		dsa_port_disable(dp);
-		if (dp->dn)
-			dsa_shared_port_link_unregister_of(dp);
+		dsa_shared_port_teardown(dp);
 		break;
 	case DSA_PORT_TYPE_USER:
-		if (dp->user) {
-			dsa_user_destroy(dp->user);
-			dp->user = NULL;
-		}
+		dsa_user_port_teardown(dp);
 		break;
 	}
 
