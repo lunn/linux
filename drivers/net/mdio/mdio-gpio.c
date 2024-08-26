@@ -110,7 +110,6 @@ static struct mii_bus *mdio_gpio_bus_init(struct device *dev,
 					  struct mdio_gpio_info *bitbang,
 					  int bus_id)
 {
-	struct mdio_gpio_platform_data *pdata = dev_get_platdata(dev);
 	struct mii_bus *new_bus;
 
 	bitbang->ctrl.ops = &mdio_gpio_ops;
@@ -126,11 +125,6 @@ static struct mii_bus *mdio_gpio_bus_init(struct device *dev,
 		snprintf(new_bus->id, sizeof(new_bus->id), "gpio-%x", bus_id);
 	else
 		strscpy(new_bus->id, "gpio", sizeof(new_bus->id));
-
-	if (pdata) {
-		new_bus->phy_mask = pdata->phy_mask;
-		new_bus->phy_ignore_ta_mask = pdata->phy_ignore_ta_mask;
-	}
 
 	if (device_is_compatible(dev, "microchip,mdio-smi0")) {
 		bitbang->ctrl.op_c22_read = 0;
@@ -185,6 +179,11 @@ static int mdio_gpio_probe(struct platform_device *pdev)
 	new_bus = mdio_gpio_bus_init(&pdev->dev, bitbang, bus_id);
 	if (!new_bus)
 		return -ENODEV;
+
+	if (!pdev->dev.of_node) {
+		new_bus->phy_mask = ~0;
+		new_bus->phy_ignore_ta_mask = ~0;
+	}
 
 	ret = of_mdiobus_register(new_bus, pdev->dev.of_node);
 	if (ret)
