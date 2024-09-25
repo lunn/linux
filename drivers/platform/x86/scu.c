@@ -1044,6 +1044,7 @@ static int scu_gpio_common_setup(unsigned int gpio_base, unsigned int ngpio,
 	for (i = 0; i < ngpio; i++) {
 		if (!(mask & (1 << i)))
 			continue;
+		gpio_request(gpio_base + i, "scu");
 		desc = gpio_to_desc(gpio_base + i);
 		gpiod_export(desc, false);
 		if (is_input & (1 << i)) {
@@ -1332,6 +1333,8 @@ static const char * const ichx_gpiolib_names[128] = {
 static struct gpiod_lookup_table scu_gpios_table = {
 	.dev_id = "scu",
 	.table = {
+		GPIO_LOOKUP_IDX("gpio_ich", SCU_GPIO_SW_INT,
+				NULL, SCU_GPIO_SW_INT, 0),
 		GPIO_LOOKUP_IDX("gpio_ich", SCU_GPIO_IRQ,
 				NULL, SCU_GPIO_IRQ, 0),
 		GPIO_LOOKUP_IDX("gpio_ich", SCU_GPIO_AC_LOS,
