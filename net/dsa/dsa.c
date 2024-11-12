@@ -1728,6 +1728,7 @@ EXPORT_SYMBOL_GPL(dsa_mdb_present_in_other_db);
 void dsa_inband_init(struct dsa_inband *inband, u32 seqno_mask)
 {
 	init_completion(&inband->completion);
+	mutex_init(&inband->lock);
 	spin_lock_init(&inband->resp_lock);
 	inband->seqno_mask = seqno_mask;
 	inband->seqno = 0;
@@ -1776,6 +1777,11 @@ int dsa_inband_request(struct dsa_inband *inband, struct sk_buff *skb,
 
 	inband->err = 0;
 
+	if (!skb->dev)
+		return -EOPNOTSUPP;
+
+	mutex_lock(&inband->lock);
+
 	spin_lock_bh(&inband->resp_lock);
 	inband->resp = resp;
 	inband->resp_len = resp_len;
@@ -1796,6 +1802,7 @@ int dsa_inband_request(struct dsa_inband *inband, struct sk_buff *skb,
 	inband->resp = NULL;
 	inband->resp_len = 0;
 	spin_unlock_bh(&inband->resp_lock);
+	mutex_unlock(&inband->lock);
 
 	if (ret == 0)
 		return -ETIMEDOUT;
