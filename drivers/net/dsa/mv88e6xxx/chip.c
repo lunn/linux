@@ -1563,14 +1563,6 @@ static int mv88e6xxx_trunk_setup(struct mv88e6xxx_chip *chip)
 	return 0;
 }
 
-static int mv88e6xxx_rmu_setup(struct mv88e6xxx_chip *chip)
-{
-	if (chip->info->ops->rmu_disable)
-		return chip->info->ops->rmu_disable(chip);
-
-	return 0;
-}
-
 static int mv88e6xxx_pot_setup(struct mv88e6xxx_chip *chip)
 {
 	if (chip->info->ops->pot_clear)
@@ -3899,10 +3891,6 @@ static int mv88e6xxx_setup(struct dsa_switch *ds)
 		goto unlock;
 
 	err = mv88e6xxx_pot_setup(chip);
-	if (err)
-		goto unlock;
-
-	err = mv88e6xxx_rmu_setup(chip);
 	if (err)
 		goto unlock;
 
