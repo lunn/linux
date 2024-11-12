@@ -427,6 +427,7 @@ struct mv88e6xxx_chip {
 	/* Remote Management Unit state. */
 	struct net_device *rmu_master;
 	struct dsa_inband rmu_inband;
+	bool rmu_enabled;
 };
 
 struct mv88e6xxx_bus_ops {
