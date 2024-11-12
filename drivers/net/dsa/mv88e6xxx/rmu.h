@@ -15,6 +15,7 @@
 #define MV88E6XXX_RMU_REQ_FORMAT_SOHO		htons(0x0001)
 #define MV88E6XXX_RMU_REQ_PAD			htons(0x0000)
 #define MV88E6XXX_RMU_REQ_CODE_GET_ID		htons(0x0000)
+#define MV88E6XXX_RMU_REQ_CODE_MIB		htons(0x1020)
 #define MV88E6XXX_RMU_REQ_CODE_REG_RW		htons(0x2000)
 #define MV88E6XXX_RMU_REQ_DATA			htons(0x0000)
 
@@ -47,6 +48,7 @@
 #define MV88E6XXX_RMU_RESP_FORMAT_1		htons(0x0001)
 #define MV88E6XXX_RMU_RESP_FORMAT_2		htons(0x0002)
 #define MV88E6XXX_RMU_RESP_CODE_GOT_ID		htons(0x0000)
+#define MV88E6XXX_RMU_RESP_CODE_MIB		htons(0x1020)
 #define MV88E6XXX_RMU_RESP_CODE_REG_RW		htons(0x2000)
 
 struct mv88e6xxx_rmu_header {
@@ -63,6 +65,19 @@ struct mv88e6xxx_rmu_rw_resp {
 	__be16 end1;
 } __packed;
 
+struct mv88e6xxx_rmu_mib_resp {
+	struct mv88e6xxx_rmu_header rmu_header;
+	__be16 swport;
+	__be32 timestamp;
+	__be32 bank0[32];
+	__be16 port[6];
+};
+
+int mv88e6xxx_rmu_stats(struct mv88e6xxx_chip *chip, int port,
+			uint64_t *data,
+			struct mv88e6xxx_hw_stat *hw_stats,
+			int num_hw_stats,
+			u16 bank1_select, u16 histogram);
 int mv88e6xxx_rmu_write(struct mv88e6xxx_chip *chip, int addr, int reg,
 			u16 val);
 int mv88e6xxx_rmu_read(struct mv88e6xxx_chip *chip, int addr, int reg,

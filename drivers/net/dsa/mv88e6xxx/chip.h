@@ -838,4 +838,9 @@ int mv88e6xxx_vtu_walk(struct mv88e6xxx_chip *chip,
 
 int mv88e6xxx_fid_map(struct mv88e6xxx_chip *chip, unsigned long *bitmap);
 
+uint64_t mv88e6xxx_get_ethtool_stat(struct mv88e6xxx_chip *chip,
+				    struct mv88e6xxx_hw_stat *s,
+				    int port, u16 bank1_select,
+				    u16 histogram);
+
 #endif /* _MV88E6XXX_CHIP_H */
