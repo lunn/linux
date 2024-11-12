@@ -368,6 +368,10 @@
 	qcom,mode = <GSBI_PROT_I2C_UART>;
 };
 
+&gsbi4_serial {
+	status = "disabled";
+};
+
 &gsbi7_serial {
 	status = "okay";
 };
