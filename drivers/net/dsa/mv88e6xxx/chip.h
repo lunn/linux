@@ -429,6 +429,10 @@ struct mv88e6xxx_chip {
 	struct net_device *rmu_master;
 	struct dsa_inband rmu_inband;
 	bool rmu_enabled;
+	ktime_t rmu_read_latancies[16];
+	u32 rmu_samples;
+	ktime_t smi_read_latancy;
+	bool rmu_is_slow;
 };
 
 struct mv88e6xxx_bus_ops {

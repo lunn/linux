@@ -188,7 +188,7 @@ int mv88e6xxx_rmu_write(struct mv88e6xxx_chip *chip, int addr, int reg, u16 val)
 	int resp_len;
 	int ret = -1;
 
-	if (!chip->rmu_enabled)
+	if (!chip->rmu_enabled || chip->rmu_is_slow)
 		return -EOPNOTSUPP;
 
 	resp_len = sizeof(resp);
@@ -215,6 +215,33 @@ int mv88e6xxx_rmu_write(struct mv88e6xxx_chip *chip, int addr, int reg, u16 val)
 	return 0;
 }
 
+static void mv88e6xxx_rmu_read_latancy(struct mv88e6xxx_chip *chip,
+				       ktime_t latency)
+{
+	ktime_t average = 0;
+	int i;
+
+	if (chip->rmu_samples > ARRAY_SIZE(chip->rmu_read_latancies))
+		return;
+
+	chip->rmu_read_latancies[chip->rmu_samples++] = latency;
+
+	if (chip->rmu_samples == ARRAY_SIZE(chip->rmu_read_latancies)) {
+		for (i = 0; i < ARRAY_SIZE(chip->rmu_read_latancies); i++)
+			average += chip->rmu_read_latancies[i];
+		average = average / ARRAY_SIZE(chip->rmu_read_latancies);
+
+		dev_dbg(chip->dev, "RMU %lldus, smi %lldus\n",
+			div_u64(average, 1000),
+			div_u64(chip->smi_read_latancy, 1000));
+
+		if (chip->smi_read_latancy < average)
+			chip->rmu_is_slow = true;
+
+		chip->rmu_samples = U32_MAX;
+	}
+}
+
 int mv88e6xxx_rmu_read(struct mv88e6xxx_chip *chip, int addr, int reg,
 		       u16 *val)
 {
@@ -229,10 +256,13 @@ int mv88e6xxx_rmu_read(struct mv88e6xxx_chip *chip, int addr, int reg,
 	};
 	struct mv88e6xxx_rmu_rw_resp resp;
 	int resp_len;
-	int ret = -1;
+	ktime_t start;
+	int ret;
 
-	if (!chip->rmu_enabled)
+	if (!chip->rmu_enabled || chip->rmu_is_slow)
 		return -EOPNOTSUPP;
+
+	start = ktime_get();
 
 	resp_len = sizeof(resp);
 	ret = mv88e6xxx_rmu_request(chip, req, sizeof(req),
@@ -255,6 +285,8 @@ int mv88e6xxx_rmu_read(struct mv88e6xxx_chip *chip, int addr, int reg,
 		return -EPROTO;
 	}
 
+	mv88e6xxx_rmu_read_latancy(chip, ktime_get() - start);
+
 	*val = ntohs(resp.value);
 	return 0;
 }
@@ -276,7 +308,7 @@ int mv88e6xxx_rmu_wait_bit(struct mv88e6xxx_chip *chip, int addr, int reg,
 	int resp_len;
 	int ret = -1;
 
-	if (!chip->rmu_enabled)
+	if (!chip->rmu_enabled || chip->rmu_is_slow)
 		return -EOPNOTSUPP;
 
 	resp_len = sizeof(resp);
@@ -346,8 +378,10 @@ void mv88e6xxx_rmu_conduit_state_change(struct dsa_switch *ds,
 {
 	struct dsa_port *cpu_dp = master->dsa_ptr;
 	struct mv88e6xxx_chip *chip = ds->priv;
+	ktime_t start;
 	int port;
 	int ret;
+	u16 id;
 
 	port = dsa_towards_port(ds, cpu_dp->ds->index, cpu_dp->index);
 
@@ -374,6 +408,12 @@ void mv88e6xxx_rmu_conduit_state_change(struct dsa_switch *ds,
 				ERR_PTR(ret));
 			goto out;
 		}
+
+		start = ktime_get();
+		ret = mv88e6xxx_port_read(chip, 0, MV88E6XXX_PORT_SWITCH_ID,
+					  &id);
+		chip->smi_read_latancy = ktime_get() - start;
+
 		chip->rmu_enabled = true;
 
 		dev_dbg(chip->dev, "RMU: Enabled on port %d", port);
