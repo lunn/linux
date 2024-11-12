@@ -555,6 +555,31 @@ int mv88e6085_g1_rmu_enable(struct mv88e6xxx_chip *chip, int port)
 				      MV88E6085_G1_CTL2_RM_ENABLE, val);
 }
 
+int mv88e6165_g1_rmu_disable(struct mv88e6xxx_chip *chip)
+{
+	return mv88e6xxx_g1_ctl2_mask(chip, MV88E6165_G1_CTL2_RMU_MODE_MASK,
+				      MV88E6165_G1_CTL2_RMU_DISABLED);
+}
+
+int mv88e6165_g1_rmu_enable(struct mv88e6xxx_chip *chip, int port)
+{
+	int val;
+
+	switch (port) {
+	case 4:
+		val = MV88E6165_G1_CTL2_RMU_MODE_PORT_4;
+		break;
+	case 5:
+		val = MV88E6165_G1_CTL2_RMU_MODE_PORT_5;
+		break;
+	default:
+		return -EOPNOTSUPP;
+	}
+
+	return mv88e6xxx_g1_ctl2_mask(chip, MV88E6165_G1_CTL2_RMU_MODE_MASK,
+				      val);
+}
+
 int mv88e6352_g1_rmu_disable(struct mv88e6xxx_chip *chip)
 {
 	return mv88e6xxx_g1_ctl2_mask(chip, MV88E6352_G1_CTL2_RMU_MODE_MASK,
