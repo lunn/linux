@@ -423,6 +423,9 @@ struct mv88e6xxx_chip {
 
 	/* Bridge MST to SID mappings */
 	struct list_head msts;
+
+	/* Remote Management Unit state. */
+	struct net_device *rmu_master;
 };
 
 struct mv88e6xxx_bus_ops {

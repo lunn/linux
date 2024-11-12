@@ -40,6 +40,7 @@
 #include "phy.h"
 #include "port.h"
 #include "ptp.h"
+#include "rmu.h"
 #include "serdes.h"
 #include "smi.h"
 
@@ -7015,6 +7016,7 @@ static const struct dsa_switch_ops mv88e6xxx_switch_ops = {
 	.crosschip_lag_change	= mv88e6xxx_crosschip_lag_change,
 	.crosschip_lag_join	= mv88e6xxx_crosschip_lag_join,
 	.crosschip_lag_leave	= mv88e6xxx_crosschip_lag_leave,
+	.master_state_change	= mv88e6xxx_rmu_conduit_state_change,
 };
 
 static int mv88e6xxx_register_switch(struct mv88e6xxx_chip *chip)
