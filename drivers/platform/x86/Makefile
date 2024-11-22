@@ -103,7 +103,9 @@ obj-$(CONFIG_TOSHIBA_BT_RFKILL)	+= toshiba_bluetooth.o
 obj-$(CONFIG_TOSHIBA_HAPS)	+= toshiba_haps.o
 obj-$(CONFIG_TOSHIBA_WMI)	+= toshiba-wmi.o
 
-# SPI
+# Zodiac SCU
+scu-objs			:= scu.o
+scu-objs			+= scu.dtbo.o
 obj-$(CONFIG_SCU)               += scu.o
 
 # toshiba_acpi must link after wmi to ensure that wmi devices are found

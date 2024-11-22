@@ -486,6 +486,10 @@ config LENOVO_YMC
 config SCU
 	tristate "SCU driver"
 	depends on DMI
+	depends on OF
+	depends on OF_DYNAMIC
+	depends on OF_OVERLAY
+	depends on PCI_DYNAMIC_OF_NODES
 	help
 	  This driver enables suuport for SPI Sytem control units (SCU) and
 	  defines internal hardware layout

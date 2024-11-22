@@ -1,0 +1,287 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Copyright (C) 2024 Andrew Lunn <andrew@lunn.ch>
+ */
+
+#include <dt-bindings/gpio/gpio.h>
+
+/dts-v1/;
+/plugin/;
+
+/ {
+    fragment@0 {
+        target-path = "/";
+        __overlay__ {
+            mdio0: mdio {
+                compatible = "virtual,mdio-gpio";
+                #address-cells = <1>;
+                #size-cells = <0>;
+                gpios = <&gpio_gpio_ich_1_auto 17 GPIO_ACTIVE_HIGH>,
+                        <&gpio_gpio_ich_1_auto 2 GPIO_OPEN_SOURCE>,
+                        <&gpio_gpio_ich_1_auto 21 GPIO_ACTIVE_LOW>;
+
+                switch0: switch@0 {
+                    compatible = "marvell,mv88e6085";
+                    reg = <0>;
+                    dsa,member = <0 0>;
+                    eeprom-length = <512>;
+                    reset-gpio = <&gpio_gpio_ich_1_auto 20 GPIO_ACTIVE_LOW>;
+                    interrupt-parent = <&gpio_gpio_ich_1_auto>;
+                    interrupts = <0 GPIO_ACTIVE_HIGH>;
+
+                    ports {
+                        #address-cells = <1>;
+                        #size-cells = <0>;
+
+                        port@0 {
+                            reg = <0>;
+                            phy-mode = "rmii";
+                            ethernet = <&pci_0000_03_00_0>;
+
+                            fixed-link {
+                                    speed = <100>;
+                                    full-duplex;
+                            };
+                        };
+
+                        port@1 {
+                            reg = <1>;
+                            label = "port1";
+                        };
+
+                        port@2 {
+                            reg = <2>;
+                            label = "port2";
+                        };
+
+                        port@3 {
+                            reg = <3>;
+                            label = "port8";
+                        };
+
+                        port@4 {
+                            reg = <4>;
+                            label = "host2esb";
+                        };
+                    };
+                };
+            };
+        };
+    };
+    fragment@1 {
+        target-path = "/i2c-kempld";
+        __overlay__ {
+            #address-cells = <1>;
+            #size-cells = <0>;
+
+            /* SD Card Detect 1-6 */
+            io-expander@1c {
+                compatible = "nxp,pca9538";
+                reg = <0x1c>;
+                gpio-controller;
+                #gpio-cells = <2>;
+                gpio-line-names = "pca9557:sd_card_detect_1",
+                    "pca9557:sd_card_detect_2",
+                    "pca9557:sd_card_detect_3",
+                    "pca9557:sd_card_detect_4",
+                    "pca9557:sd_card_detect_5",
+                    "pca9557:sd_card_detect_6",
+                    "pca9557:pmode_sel",
+                    "pca9557:spare2";
+            };
+
+            /* PIC
+            io-expander@20 {
+                compatible = "zii,scu_pic";
+                reg = <0x20>;
+            };
+
+            /* SDR Copper and Assemly Rev */
+            io-expander@23 {
+                compatible = "nxp,pca9554";
+                reg = <0x23>;
+                gpio-controller;
+                #gpio-cells = <2>;
+            };
+
+            /* Bit EEPROM */
+            eeprom@52 {
+                compatible = "atmel,24c04";
+                reg = <0x52>;
+            };
+
+            /* Nameplate EEPROM */
+            nameplate: eeprom@54 {
+                compatible = "atmel,24c08";
+                reg = <0x54>;
+                label = "nameplate";
+            };
+
+            /* Elapsed Time Counter */
+            ds1682@6b {
+                compatible = "dallas,ds1682";
+                reg = <0x6b>;
+            };
+
+            /* Input Discretes */
+            io-expander@70 {
+                compatible = "nxp,pca9538";
+                reg = <0x70>;
+                gpio-controller;
+                #gpio-cells = <2>;
+                interrupt-parent = <&gpio_gpio_ich_1_auto>;
+                interrupts = <1 GPIO_ACTIVE_HIGH>;
+                gpio-line-names = "pca9538_ext0:wireless_ena_1",
+                    "pca9538_ext0:wireless_ena_2",
+                    "pca9538_ext0:wireless_a_radio_disable",
+                    "pca9538_ext0:wireless_a_reset",
+                    "pca9538_ext0:in_spare_1",
+                    "pca9538_ext0:in_spare_2",
+                    "pca9538_ext0:wireless_b_radio_disable",
+                    "pca9538_ext0:wireless_b_reset";
+            };
+
+            /* LEDs + Output Discretes */
+            ext1: io-expander@71 {
+                compatible = "nxp,pca9538";
+                reg = <0x71>;
+                gpio-controller;
+                #gpio-cells = <2>;
+                gpio-line-names = "pca9538_ext1:rd_led_on",
+                    "pca9538_ext1:wless_led_on",
+                    "pca9538_ext1:ld_fail_led_on",
+                    "pca9538_ext1:sw_led_on",
+                    "pca9538_ext1:discrete_out_1",
+                    "pca9538_ext1:discrete_out_2",
+                    "pca9538_ext1:discrete_out_3",
+                    "pca9538_ext1:discrete_out_4";
+            };
+
+            /* SD Card LEDS 1-3 and Hubs 1-2 Reset */
+            ext2: io-expander@72 {
+                compatible = "nxp,pca9538";
+                reg = <0x72>;
+                gpio-controller;
+                #gpio-cells = <2>;
+                gpio-line-names = "pca9538_ext2:sd_active_1",
+                    "pca9538_ext2:sd_error_1",
+                    "pca9538_ext2:sd_active_2",
+                    "pca9538_ext2:sd_error_2",
+                    "pca9538_ext2:sd_error_3",
+                    "pca9538_ext2:sd_active_3",
+                    "pca9538_ext2:hub_1_reset",
+                    "pca9538_ext2:hub_2_reset";
+            };
+
+            /* SD Card LEDS 4-6 and Hubs 3-4 Reset */
+            ext3: io-expander@73 {
+                compatible = "nxp,pca9538";
+                reg = <0x73>;
+                gpio-controller;
+                #gpio-cells = <2>;
+                gpio-line-names = "pca9538_ext3:sd_error_4",
+                    "pca9538_ext3:sd_active_4",
+                    "pca9538_ext3:sd_error_5",
+                    "pca9538_ext3:sd_active_5",
+                    "pca9538_ext3:sd_error_6",
+                    "pca9538_ext3:sd_active_6",
+                    "pca9538_ext3:hub_3_reset",
+                    "pca9538_ext3:hub_4_reset";
+            };
+        };
+    };
+    fragment@2 {
+        target-path = "/";
+        __overlay__ {
+            leds-ext1 {
+                compatible = "gpio-leds";
+		led-0 {
+		    gpios = <&ext1 0 GPIO_ACTIVE_LOW>;
+		    linux,default_trigger = "heartbeat";
+		    label = "scu_status:g:RD";
+                };
+		led-1 {
+		    gpios = <&ext1 1 GPIO_ACTIVE_LOW>;
+		    label = "scu_status:a:WLess";
+		    default-state = "off";
+                };
+		led-2 {
+		    gpios = <&ext1 2 GPIO_ACTIVE_LOW>;
+		    label = "scu_status:r:LDFail";
+		    default-state = "off";
+                };
+		led-3 {
+		    gpios = <&ext1 3 GPIO_ACTIVE_LOW>;
+		    label = "scu_status:a:SW";
+		    default-state = "off";
+                };
+	    };
+            leds-ext2 {
+                compatible = "gpio-leds";
+		led-0 {
+		    gpios = <&ext2 0 GPIO_ACTIVE_LOW>;
+		    label = "SD1:g:active";
+		    default-state = "off";
+                };
+		led-1 {
+		    gpios = <&ext2 1 GPIO_ACTIVE_LOW>;
+		    label = "SD1:a:error";
+		    default-state = "off";
+                };
+		led-2 {
+		    gpios = <&ext2 2 GPIO_ACTIVE_LOW>;
+		    label = "SD2:g:active";
+		    default-state = "off";
+                };
+		led-3 {
+		    gpios = <&ext2 3 GPIO_ACTIVE_LOW>;
+		    label = "SD2:a:error";
+		    default-state = "off";
+                };
+		led-4 {
+		    gpios = <&ext2 4 GPIO_ACTIVE_LOW>;
+		    label = "SD3:g:active";
+		    default-state = "off";
+                };
+		led-5 {
+		    gpios = <&ext2 5 GPIO_ACTIVE_LOW>;
+		    label = "SD3:a:error";
+		    default-state = "off";
+                };
+	    };
+            leds-ext3 {
+                compatible = "gpio-leds";
+		led-0 {
+		    gpios = <&ext3 0 GPIO_ACTIVE_LOW>;
+		    label = "SD4:g:active";
+		    default-state = "off";
+                };
+		led-1 {
+		    gpios = <&ext3 1 GPIO_ACTIVE_LOW>;
+		    label = "SD4:a:error";
+		    default-state = "off";
+                };
+		led-2 {
+		    gpios = <&ext3 2 GPIO_ACTIVE_LOW>;
+		    label = "SD5:g:active";
+		    default-state = "off";
+                };
+		led-3 {
+		    gpios = <&ext3 3 GPIO_ACTIVE_LOW>;
+		    label = "SD5:a:error";
+		    default-state = "off";
+                };
+		led-4 {
+		    gpios = <&ext3 4 GPIO_ACTIVE_LOW>;
+		    label = "SD6:g:active";
+		    default-state = "off";
+                };
+		led-5 {
+		    gpios = <&ext3 5 GPIO_ACTIVE_LOW>;
+		    label = "SD6:a:error";
+		    default-state = "off";
+                };
+	    };
+	};
+    };
+};
