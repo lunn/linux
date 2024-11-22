@@ -1187,3 +1187,83 @@ void of_gpiochip_remove(struct gpio_chip *chip)
 {
 	of_node_put(dev_of_node(&chip->gpiodev->dev));
 }
+
+#ifdef CONFIG_OF_DYNAMIC
+void of_gpiochip_remove_dev_node(struct gpio_chip *chip)
+{
+	struct device_node *np;
+
+	np = dev_of_node(&chip->gpiodev->dev);
+	if (!np || !of_node_check_flag(np, OF_DYNAMIC))
+		return;
+
+	chip->gpiodev->dev.of_node = NULL;
+
+	of_changeset_revert(np->data);
+	of_changeset_destroy(np->data);
+	of_node_put(np);
+}
+
+static int of_gpiochip_add_properties(struct gpio_chip *chip,
+				      struct of_changeset *ocs,
+				      struct device_node *np)
+{
+	int ret;
+
+	/*
+	 * The added properties will be released when the
+	 * changeset is destroyed.
+	 */
+
+	ret = of_changeset_add_prop_bool(ocs, np, "gpio-controller");
+	if (ret)
+		return ret;
+
+	return of_changeset_add_prop_u32(ocs, np, "#gpio-cells", 2);
+}
+
+void of_gpiochip_make_dev_node(struct gpio_chip *chip)
+{
+	struct device_node *np = NULL;
+	struct of_changeset *cset;
+	int ret;
+
+	/*
+	 * If there is already a device tree node linked to this device,
+	 * return immediately.
+	 */
+	if (chip->gpiodev->dev.of_node)
+		return;
+
+	cset = kmalloc(sizeof(*cset), GFP_KERNEL);
+	if (!cset)
+	       return;
+
+	of_changeset_init(cset);
+
+	np = of_changeset_create_node(cset, of_root, chip->label);
+	if (!np)
+		goto out_destroy_cset;
+
+	ret = of_gpiochip_add_properties(chip, cset, np);
+	if (ret)
+		goto out_free_node;
+
+	ret = of_changeset_apply(cset);
+	if (ret)
+		goto out_free_node;
+
+	np->data = cset;
+	chip->gpiodev->dev.of_node = np;
+
+	return;
+
+out_free_node:
+	of_node_put(np);
+out_destroy_cset:
+	of_changeset_destroy(cset);
+	kfree(cset);
+
+	dev_err(&chip->gpiodev->dev, "Failed to create device node\n");
+}
+#endif

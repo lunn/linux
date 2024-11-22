@@ -42,4 +42,12 @@ static inline int of_gpio_count(const struct fwnode_handle *fwnode,
 
 extern struct notifier_block gpio_of_notifier;
 
+#ifdef CONFIG_OF_DYNAMIC
+void of_gpiochip_make_dev_node(struct gpio_chip *chip);
+void of_gpiochip_remove_dev_node(struct gpio_chip *chip);
+#else
+static inline void of_gpiochip_make_dev_node(struct gpio_chip *chip) {}
+static inline void of_gpiochip_remove_dev_node(struct gpio_chip *chip) {};
+#endif
+
 #endif /* GPIOLIB_OF_H */

@@ -1027,9 +1027,11 @@ int gpiochip_add_data_with_key(struct gpio_chip *gc, void *data,
 		}
 	}
 
+	of_gpiochip_make_dev_node(gc);
+
 	ret = of_gpiochip_add(gc);
 	if (ret)
-		goto err_free_valid_mask;
+		goto err_remove_dev_node;
 
 	ret = gpiochip_add_pin_ranges(gc);
 	if (ret)
@@ -1076,7 +1078,8 @@ err_free_hogs:
 	gpiochip_remove_pin_ranges(gc);
 err_remove_of_chip:
 	of_gpiochip_remove(gc);
-err_free_valid_mask:
+err_remove_dev_node:
+	of_gpiochip_remove_dev_node(gc);
 	gpiochip_free_valid_mask(gc);
 err_cleanup_desc_srcu:
 	cleanup_srcu_struct(&gdev->desc_srcu);
@@ -1136,6 +1139,7 @@ void gpiochip_remove(struct gpio_chip *gc)
 	gpiochip_irqchip_remove(gc);
 	acpi_gpiochip_remove(gc);
 	of_gpiochip_remove(gc);
+	of_gpiochip_remove_dev_node(gc);
 	gpiochip_remove_pin_ranges(gc);
 	gpiochip_free_valid_mask(gc);
 	/*
