@@ -1768,7 +1768,18 @@ static inline int of_overlay_notifier_unregister(struct notifier_block *nb)
 {
 	return 0;
 }
+#endif
 
+#if defined(CONFIG_OF_RESOLVE)
+int of_add_resolver_symbol(const char *name, const struct device *dev,
+			   const char *path);
+#else
+static inline int of_add_resolver_symbol(const char *name,
+					 const struct device *dev,
+					 const char *path)
+{
+	return 0;
+}
 #endif
 
 #endif /* _LINUX_OF_H */

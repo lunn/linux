@@ -9,6 +9,7 @@
 #define pr_fmt(fmt)	"OF: resolver: " fmt
 
 #include <linux/cleanup.h>
+#include <linux/device.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/of.h>
@@ -345,3 +346,102 @@ void of_adjust_dynamic_phandles(struct device_node *np)
 	adjust_overlay_phandles(np, phandle_delta);
 }
 EXPORT_SYMBOL_GPL(of_adjust_dynamic_phandles);
+
+/* Construct a label from a prefix and a device. Caller is responsible
+ * for freeing the memory holding the string.
+ */
+static char *of_construct_label(const char *prefix, const struct device *dev)
+{
+	char *name, *ptr;
+
+	/* Must start with a letter */
+	if (!isalpha(prefix[0]))
+		return ERR_PTR(-EINVAL);
+
+	name = kasprintf(GFP_KERNEL, "%s_%s", prefix, dev_name(dev));
+	if (!name)
+		return NULL;
+
+	/* Only A-Za-Z0-9 and _ are allowed in labels. */
+	ptr = name;
+	while (*ptr) {
+		if (!isalnum(*ptr) && *ptr != '_')
+			*ptr = '_';
+		ptr++;
+	}
+
+	return name;
+}
+
+/**
+ * of_add_resolver_symbol - Add to /__symbols__
+ *
+ * @prefix: 	First part of symbol
+ * @dev:	Device to take the name from
+ * @path: 	Path of the symbol in the device tree
+ *
+ * In order that the overlay resolver can resolve phandles in the
+ * overlay to nodes in the base tree, the phandle needs an entry in
+ * __symbols__.  When a dynamic node is added, use this helper to add
+ * such an entry. The symbol is constructed from the prefix and the
+ * device name, which is then mangled to make it DT confirming.
+ *
+ * Return: %0 on success or a negative error value on error.
+ */
+int of_add_resolver_symbol(const char *prefix, const struct device *dev,
+			   const char *path)
+{
+	struct device_node *tree_symbols;
+	struct of_changeset *cset;
+	char *label, *abs_path = NULL;
+	int ret;
+
+	tree_symbols = of_find_node_by_path("/__symbols__");
+	if (!tree_symbols) {
+		pr_err("no symbols in root of device tree.\n");
+		return -EINVAL;
+	}
+
+	label = of_construct_label(prefix, dev);
+	if (IS_ERR(label))
+		return PTR_ERR(label);
+
+	if (path[0] != '/') {
+		abs_path = kasprintf(GFP_KERNEL, "/%s", path);
+		if (!abs_path)
+			return -ENOMEM;
+		path = abs_path;
+	}
+
+	cset = kmalloc(sizeof(*cset), GFP_KERNEL);
+	if (!cset)
+		return -ENOMEM;
+
+	of_changeset_init(cset);
+
+	ret = of_changeset_add_prop_string(cset, tree_symbols,
+					   label, path);
+
+	if (ret)
+		goto out_destroy_cset;
+
+        ret = of_changeset_apply(cset);
+        if (ret)
+                goto out_destroy_cset;
+
+	of_node_put(tree_symbols);
+	kfree(label);
+	kfree(abs_path);
+
+       return 0;
+
+ out_destroy_cset:
+        of_changeset_destroy(cset);
+        kfree(cset);
+	of_node_put(tree_symbols);
+	kfree(label);
+	kfree(abs_path);
+
+	return ret;
+}
+EXPORT_SYMBOL_GPL(of_add_resolver_symbol);
