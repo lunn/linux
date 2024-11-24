@@ -1215,6 +1215,10 @@ static int of_gpiochip_add_properties(struct gpio_chip *chip,
 	 * changeset is destroyed.
 	 */
 
+	ret = of_changeset_add_prop_u32(ocs, np, "phandle", 1);
+	if (ret)
+		return ret;
+
 	ret = of_changeset_add_prop_bool(ocs, np, "gpio-controller");
 	if (ret)
 		return ret;
@@ -1252,6 +1256,11 @@ void of_gpiochip_make_dev_node(struct gpio_chip *chip)
 	ret = of_changeset_apply(cset);
 	if (ret)
 		goto out_free_node;
+
+	if (chip->parent)
+		of_add_resolver_symbol("gpio", chip->parent, chip->label);
+	else
+		of_add_resolver_symbol("gpio", &chip->gpiodev->dev, chip->label);
 
 	np->data = cset;
 	chip->gpiodev->dev.of_node = np;
