@@ -750,6 +750,20 @@ int __of_changeset_apply_notify(struct of_changeset *ocs)
 }
 
 /*
+ * Adjust any phandles in the changeset entries in @ocs.
+ */
+static void __of_changeset_adjust_phandles(struct of_changeset *ocs)
+{
+       struct of_changeset_entry *ce;
+
+       pr_debug("changeset: adjusting phandles...\n");
+       list_for_each_entry(ce, &ocs->entries, node) {
+               if (ce->action == OF_RECONFIG_ATTACH_NODE)
+                       of_adjust_dynamic_phandles(ce->np);
+       }
+}
+
+/*
  * Returns 0 on success, a negative error value in case of an error.
  *
  * If a changeset entry apply fails, an attempt is made to revert any
@@ -765,6 +779,7 @@ static int __of_changeset_apply(struct of_changeset *ocs)
 	if (!ret)
 		ret = __of_changeset_apply_notify(ocs);
 
+	__of_changeset_adjust_phandles(ocs);
 	return ret;
 }
 

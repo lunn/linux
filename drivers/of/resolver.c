@@ -336,3 +336,12 @@ out:
 	return err;
 }
 EXPORT_SYMBOL_GPL(of_resolve_phandles);
+
+void of_adjust_dynamic_phandles(struct device_node *np)
+{
+	phandle phandle_delta;
+
+	phandle_delta = live_tree_max_phandle() + 1;
+	adjust_overlay_phandles(np, phandle_delta);
+}
+EXPORT_SYMBOL_GPL(of_adjust_dynamic_phandles);
