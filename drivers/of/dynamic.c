@@ -616,6 +616,10 @@ static int __of_changeset_entry_apply(struct of_changeset_entry *ce)
 		break;
 	case OF_RECONFIG_ADD_PROPERTY:
 		ret = __of_add_property(ce->np, ce->prop);
+		if (ret)
+			break;
+		if (!strcmp(ce->prop->name, "phandle"))
+			ce->np->phandle = be32_to_cpup(ce->prop->value);
 		break;
 	case OF_RECONFIG_REMOVE_PROPERTY:
 		ret = __of_remove_property(ce->np, ce->prop);
