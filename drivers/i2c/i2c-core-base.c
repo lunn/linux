@@ -1577,6 +1577,9 @@ static int i2c_register_adapter(struct i2c_adapter *adap)
 
 	dev_dbg(&adap->dev, "adapter [%s] registered\n", adap->name);
 
+	/* Add to device tree if not already part of it */
+	of_i2c_make_adapter_dev_node(adap);
+
 	/* create pre-declared device nodes */
 	of_i2c_register_devices(adap);
 	i2c_acpi_install_space_handler(adap);
@@ -1789,6 +1792,9 @@ void i2c_del_adapter(struct i2c_adapter *adap)
 	pm_runtime_disable(&adap->dev);
 
 	i2c_host_notify_irq_teardown(adap);
+
+	/* Remove from device tree if added dynamically */
+	of_i2c_remove_adapter_dev_node(adap);
 
 	debugfs_remove_recursive(adap->debugfs);
 

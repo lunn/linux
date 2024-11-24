@@ -217,4 +217,66 @@ static int of_i2c_notify(struct notifier_block *nb, unsigned long action,
 struct notifier_block i2c_of_notifier = {
 	.notifier_call = of_i2c_notify,
 };
+
+void of_i2c_remove_adapter_dev_node(struct i2c_adapter *adap)
+{
+	struct device_node *np;
+
+	np = dev_of_node(&adap->dev);
+	if (!np || !of_node_check_flag(np, OF_DYNAMIC))
+		return;
+
+	adap->dev.of_node = NULL;
+
+	of_changeset_revert(np->data);
+	of_changeset_destroy(np->data);
+	of_node_put(np);
+}
+
+void of_i2c_make_adapter_dev_node(struct i2c_adapter *adap)
+{
+	struct device_node *np = NULL;
+	struct of_changeset *cset;
+	int ret;
+
+	/*
+	 * If there is already a device tree node linked to this device,
+	 * return immediately.
+	 */
+	if (adap->dev.of_node)
+		return;
+
+	cset = kmalloc(sizeof(*cset), GFP_KERNEL);
+	if (!cset)
+		return;
+
+	of_changeset_init(cset);
+
+	np = of_changeset_create_node(cset, of_root, adap->name);
+	if (!np)
+		goto out_destroy_cset;
+
+	ret = of_changeset_add_prop_u32(cset, np, "phandle", 1);
+	if (ret)
+		goto out_free_node;
+
+	ret = of_changeset_apply(cset);
+	if (ret)
+		goto out_free_node;
+
+	np->data = cset;
+	adap->dev.of_node = np;
+
+	of_add_resolver_symbol("i2c", adap->dev.parent, adap->name);
+	return;
+
+ out_free_node:
+	of_node_put(np);
+ out_destroy_cset:
+	of_changeset_destroy(cset);
+	kfree(cset);
+
+	dev_err(&adap->dev, "Failed to create device node\n");
+}
+
 #endif /* CONFIG_OF_DYNAMIC */

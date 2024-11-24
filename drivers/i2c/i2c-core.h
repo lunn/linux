@@ -89,6 +89,14 @@ static inline void of_i2c_register_devices(struct i2c_adapter *adap) { }
 #endif
 extern struct notifier_block i2c_of_notifier;
 
+#ifdef CONFIG_OF_DYNAMIC
+void of_i2c_remove_adapter_dev_node(struct i2c_adapter *adap);
+void of_i2c_make_adapter_dev_node(struct i2c_adapter *adap);
+#else
+static inline void of_i2c_make_adapter_dev_node(struct i2c_adapter *adap) {};
+static inline void of_i2c_remove_adapter_dev_node(struct i2c_adapter *adap) {};
+#endif
+
 #if IS_ENABLED(CONFIG_I2C_SMBUS)
 int i2c_setup_smbus_alert(struct i2c_adapter *adap);
 #else
