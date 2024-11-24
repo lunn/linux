@@ -338,6 +338,12 @@ static int of_pci_prop_compatible(struct pci_dev *pdev,
 	return ret;
 }
 
+static int of_pci_prop_phandle(struct of_changeset *ocs,
+			       struct device_node *np)
+{
+	return of_changeset_add_prop_u32(ocs, np, "phandle", 1);
+}
+
 int of_pci_add_properties(struct pci_dev *pdev, struct of_changeset *ocs,
 			  struct device_node *np)
 {
@@ -362,6 +368,10 @@ int of_pci_add_properties(struct pci_dev *pdev, struct of_changeset *ocs,
 			return ret;
 	} else {
 		ret = of_pci_prop_intr_ctrl(pdev, ocs, np);
+		if (ret)
+			return ret;
+
+		ret = of_pci_prop_phandle(ocs, np);
 		if (ret)
 			return ret;
 	}

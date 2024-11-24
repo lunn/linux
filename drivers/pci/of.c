@@ -716,6 +716,12 @@ void of_pci_make_dev_node(struct pci_dev *pdev)
 	device_add_of_node(&pdev->dev, np);
 	kfree(name);
 
+	if (!pci_is_bridge(pdev)) {
+		char path[64];
+		snprintf(path, sizeof(path), "%pOF", np);
+		of_add_resolver_symbol("pci", &pdev->dev, path);
+	}
+
 	return;
 
 out_free_node:
