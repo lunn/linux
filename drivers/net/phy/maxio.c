@@ -154,7 +154,7 @@ static int maxio_mae0621a_config_init(struct phy_device *phydev)
 	printk("eee value: 0x%x \n",maxio_read_mmd(phydev, MDIO_MMD_AN, MDIO_AN_EEE_ADV));
 	broken |= MDIO_EEE_100TX;
 	broken |= MDIO_EEE_1000T;
-	phydev->eee_broken_modes = broken;
+	phy_disable_eee(phydev);
 
 	//enable auto_speed_down
 	ret = maxio_write_paged(phydev, 0xd8f, 0x0, 0x300 );
