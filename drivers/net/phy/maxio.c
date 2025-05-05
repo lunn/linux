@@ -94,46 +94,6 @@ static int maxio_mae0621a_clk_init(struct phy_device *phydev)
 	return 0;
 }
 
-static int maxio_read_mmd(struct phy_device *phydev, int devnum, u16 regnum)
-{
-	int ret = 0, oldpage;
-	oldpage = phy_read(phydev, MAXIO_PAGE_SELECT);
-
-	if (devnum == MDIO_MMD_AN && regnum == MDIO_AN_EEE_ADV) {// eee info
-		phy_write(phydev, MAXIO_PAGE_SELECT ,0);
-		phy_write(phydev, 0xd, MDIO_MMD_AN);
-		phy_write(phydev, 0xe, MDIO_AN_EEE_ADV);
-		phy_write(phydev, 0xd, 0x4000 | MDIO_MMD_AN);
-		ret = phy_read(phydev, 0x0e);
-	} else {
-		ret = -EOPNOTSUPP;
-	}
-	phy_write(phydev, MAXIO_PAGE_SELECT, oldpage);
-
-	return ret;
-}
-
-static int maxio_write_mmd(struct phy_device *phydev, int devnum, u16 regnum, u16 val)
-{
-	int ret = 0, oldpage;
-	oldpage = phy_read(phydev, MAXIO_PAGE_SELECT);
-
-	if (devnum == MDIO_MMD_AN && regnum == MDIO_AN_EEE_ADV) { // eee info
-		phy_write(phydev, MAXIO_PAGE_SELECT ,0);
-		ret |= phy_write(phydev, 0xd, MDIO_MMD_AN);
-		ret |= phy_write(phydev, 0xe, MDIO_AN_EEE_ADV);
-		ret |= phy_write(phydev, 0xd, 0x4000 | MDIO_MMD_AN);
-		ret |= phy_write(phydev, 0xe, val);
-		msleep(100);
-		ret |= genphy_restart_aneg(phydev);
-	} else {
-		ret = -EOPNOTSUPP;
-	}
-	phy_write(phydev, MAXIO_PAGE_SELECT, oldpage);
-
-	return ret;
-}
-
 static int maxio_mae0621a_config_aneg(struct phy_device *phydev)
 {
 	return genphy_config_aneg(phydev);
@@ -145,16 +105,9 @@ static int maxio_mae0621a_config_init(struct phy_device *phydev)
 	struct device *dev = &phydev->mdio.dev;
 	u16 val;
 	int ret;
-	u32 broken = 0;
 
 	maxio_mae0621a_clk_init(phydev);
 
-	//disable eee
-	printk("eee value: 0x%x \n",maxio_read_mmd(phydev, MDIO_MMD_AN, MDIO_AN_EEE_ADV));
-	maxio_write_mmd(phydev, MDIO_MMD_AN, MDIO_AN_EEE_ADV, 0);
-	printk("eee value: 0x%x \n",maxio_read_mmd(phydev, MDIO_MMD_AN, MDIO_AN_EEE_ADV));
-	broken |= MDIO_EEE_100TX;
-	broken |= MDIO_EEE_1000T;
 	phy_disable_eee(phydev);
 
 	//enable auto_speed_down
