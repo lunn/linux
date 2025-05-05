@@ -25,6 +25,15 @@
 #define MAXIO_MAE0621A_CLK_MODE_REG      0x02
 #define MAXIO_MAE0621A_WORK_STATUS_REG   0x1d
 
+static int maxio_read_page(struct phy_device *phydev)
+{
+	return __phy_read(phydev, MAXIO_PAGE_SELECT);
+}
+
+static int maxio_write_page(struct phy_device *phydev, int page)
+{
+	return __phy_write(phydev, MAXIO_PAGE_SELECT, page);
+}
 
 static int maxio_read_paged(struct phy_device *phydev, int page, u32 regnum)
 {
@@ -188,6 +197,8 @@ static struct phy_driver maxio_nc_drvs[] = {
 		.read_status	= genphy_read_status,
 		.suspend		= maxio_mae0621a_suspend,
 		.resume			= maxio_mae0621a_resume,
+		.read_page	= maxio_read_page,
+		.write_page	= maxio_write_page,
 	},
 };
 module_phy_driver(maxio_nc_drvs);
