@@ -55,12 +55,12 @@ static int maxio_mae0621a_clk_init(struct phy_device *phydev)
 
 	if (0 == (workmode & BIT(5))) {
 		if (0 == (clkmode & BIT(8))) {
-			//oscillator
+			/* oscillator */
 			ret = phy_write_paged(phydev, 0xd92,
 					      MAXIO_MAE0621A_CLK_MODE_REG,
 					      clkmode | BIT(8));
 		} else {
-			//crystal
+			/* crystal */
 			ret = phy_write_paged(phydev, 0xd92,
 					      MAXIO_MAE0621A_CLK_MODE_REG,
 					      clkmode & ~BIT(8));
@@ -85,7 +85,7 @@ static int maxio_mae0621a_config_init(struct phy_device *phydev)
 	if (ret < 0)
 		return ret;
 
-	//adjust TX/RX delay
+	/* adjust TX/RX delay */
 	switch (phydev->interface) {
 	case PHY_INTERFACE_MODE_RGMII:
 		val = 0x0;
