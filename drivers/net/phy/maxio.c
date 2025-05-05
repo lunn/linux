@@ -94,12 +94,6 @@ static int maxio_mae0621a_clk_init(struct phy_device *phydev)
 	return 0;
 }
 
-static int maxio_mae0621a_config_aneg(struct phy_device *phydev)
-{
-	return genphy_config_aneg(phydev);
-}
-
-
 static int maxio_mae0621a_config_init(struct phy_device *phydev)
 {
 	struct device *dev = &phydev->mdio.dev;
@@ -195,7 +189,7 @@ static struct phy_driver maxio_nc_drvs[] = {
 		.features		= PHY_GBIT_FEATURES,
 		.probe			= maxio_mae0621a_probe,
 		.config_init	= maxio_mae0621a_config_init,
-		.config_aneg	= maxio_mae0621a_config_aneg,
+		.config_aneg	= genphy_config_aneg,
 		.read_status	= maxio_mae0621a_status,
 		.suspend		= maxio_mae0621a_suspend,
 		.resume			= maxio_mae0621a_resume,
