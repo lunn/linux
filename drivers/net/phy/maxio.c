@@ -106,6 +106,8 @@ static int maxio_mae0621a_config_init(struct phy_device *phydev)
 		return ret;
 	}
 
+	ret &= ~(MAXIO_MAE0621A_TX_DELAY | MAXIO_MAE0621A_RX_DELAY);
+
 	ret = phy_write_paged(phydev, 0xd96, 0x0, val|ret );
 	if (ret < 0) {
 		dev_err(dev, "Failed to update the TX delay register\n");
