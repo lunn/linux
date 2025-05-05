@@ -83,7 +83,7 @@ static int maxio_mae0621a_config_init(struct phy_device *phydev)
 
 	phy_disable_eee(phydev);
 
-	//enable auto_speed_down
+	/* enable downshift */
 	ret = phy_write_paged(phydev, 0xd8f, 0x0, 0x300 );
 	if (ret < 0)
 		return ret;
