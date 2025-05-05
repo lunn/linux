@@ -147,8 +147,7 @@ static int maxio_mae0621a_probe(struct phy_device *phydev)
 
 static struct phy_driver maxio_nc_drvs[] = {
 	{
-		.phy_id		= 0x7b744411,
-		.phy_id_mask	= 0x7fffffff,
+		PHY_ID_MATCH_EXACT(0x7b744411),
 		.name		= "MAE0621A Gigabit Ethernet",
 		.features	= PHY_GBIT_FEATURES,
 		.probe		= maxio_mae0621a_probe,
