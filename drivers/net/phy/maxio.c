@@ -9,12 +9,9 @@
  * Copyright (c) 2004 maxio technology, Inc.
  */
 #include <linux/bitops.h>
-#include <linux/phy.h>
-#include <linux/module.h>
 #include <linux/delay.h>
-#include <linux/device.h>
-#include <linux/timer.h>
-#include <linux/netdevice.h>
+#include <linux/module.h>
+#include <linux/phy.h>
 
 #define MAXIO_PAGE_SELECT		0x1f
 #define MAXIO_MAE0621A_INER		0x12
