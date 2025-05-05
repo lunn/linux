@@ -47,26 +47,30 @@ static int maxio_mae0621a_clk_init(struct phy_device *phydev)
 	//get workmode
 	workmode = phy_read_paged(phydev, 0xa43,
 				  MAXIO_MAE0621A_WORK_STATUS_REG);
+	if (workmode < 0)
+		return workmode;
 
 	//get clkmode
 	clkmode = phy_read_paged(phydev, 0xd92, MAXIO_MAE0621A_CLK_MODE_REG);
+	if (clkmode < 0)
+		return clkmode;
 
 	//abnormal
 	if (0 == (workmode&BIT(5))) {
 		if (0 == (clkmode&BIT(8))) {
 			//oscillator
-			phy_write_paged(phydev, 0xd92,
-					MAXIO_MAE0621A_CLK_MODE_REG,
-					clkmode | BIT(8));
+			ret = phy_write_paged(phydev, 0xd92,
+					      MAXIO_MAE0621A_CLK_MODE_REG,
+					      clkmode | BIT(8));
 		} else {
 			//crystal
-			phy_write_paged(phydev, 0xd92,
-					MAXIO_MAE0621A_CLK_MODE_REG,
-					clkmode &(~ BIT(8)));
+			ret = phy_write_paged(phydev, 0xd92,
+					      MAXIO_MAE0621A_CLK_MODE_REG,
+					      clkmode &(~ BIT(8)));
 		}
 	}
 
-	return 0;
+	return ret;
 }
 
 static int maxio_mae0621a_config_init(struct phy_device *phydev)
@@ -81,6 +85,8 @@ static int maxio_mae0621a_config_init(struct phy_device *phydev)
 
 	//enable auto_speed_down
 	ret = phy_write_paged(phydev, 0xd8f, 0x0, 0x300 );
+	if (ret < 0)
+		return ret;
 
 	//adjust TX/RX delay
 	switch (phydev->interface) {
