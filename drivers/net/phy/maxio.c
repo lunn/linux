@@ -138,11 +138,6 @@ static int maxio_mae0621a_resume(struct phy_device *phydev)
 	return genphy_soft_reset(phydev);
 }
 
-static int maxio_mae0621a_suspend(struct phy_device *phydev)
-{
-	return genphy_suspend(phydev);
-}
-
 static int maxio_mae0621a_probe(struct phy_device *phydev)
 {
 	int ret = maxio_mae0621a_clk_init(phydev);
@@ -160,7 +155,7 @@ static struct phy_driver maxio_nc_drvs[] = {
 		.config_init	= maxio_mae0621a_config_init,
 		.config_aneg	= genphy_config_aneg,
 		.read_status	= genphy_read_status,
-		.suspend		= maxio_mae0621a_suspend,
+		.suspend	= genphy_suspend,
 		.resume			= maxio_mae0621a_resume,
 		.read_page	= maxio_read_page,
 		.write_page	= maxio_write_page,
