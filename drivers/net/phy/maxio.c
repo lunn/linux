@@ -112,10 +112,6 @@ static int maxio_mae0621a_config_init(struct phy_device *phydev)
 	if (ret < 0) {
 		dev_err(dev, "Failed to update the TX delay register\n");
 		return ret;
-	} else if (ret == 0) {
-		dev_dbg(dev,
-			"2ns  delay was already %s (by pin-strapping RXD1 or bootloader configuration)\n",
-			val ? "enabled" : "disabled");
 	}
 delay_skip:
 
