@@ -162,6 +162,13 @@ static struct phy_driver maxio_nc_drvs[] = {
 };
 module_phy_driver(maxio_nc_drvs);
 
+static const struct mdio_device_id __maybe_unused maxio_tbl[] = {
+	{ PHY_ID_MATCH_EXACT(0x7b744411) },
+	{ }
+};
+
+MODULE_DEVICE_TABLE(mdio, maxio_tbl);
+
 MODULE_DESCRIPTION("Maxio PHY driver");
 MODULE_AUTHOR("Zhao Yang");
 MODULE_LICENSE("GPL");
