@@ -44,18 +44,15 @@ static int maxio_mae0621a_clk_init(struct phy_device *phydev)
 	if (ret < 0)
 		return ret;
 
-	//get workmode
 	workmode = phy_read_paged(phydev, 0xa43,
 				  MAXIO_MAE0621A_WORK_STATUS_REG);
 	if (workmode < 0)
 		return workmode;
 
-	//get clkmode
 	clkmode = phy_read_paged(phydev, 0xd92, MAXIO_MAE0621A_CLK_MODE_REG);
 	if (clkmode < 0)
 		return clkmode;
 
-	//abnormal
 	if (0 == (workmode&BIT(5))) {
 		if (0 == (clkmode&BIT(8))) {
 			//oscillator
