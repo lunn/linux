@@ -66,15 +66,16 @@ static int maxio_write_paged(struct phy_device *phydev, int page, u32 regnum, u1
 static int maxio_mae0621a_clk_init(struct phy_device *phydev)
 {
 	u32 workmode,clkmode,oldpage;
+	int ret;
 
 	oldpage = phy_read(phydev, MAXIO_PAGE_SELECT);
 	if (oldpage == 0xFFFF)	{
 		oldpage = phy_read(phydev, MAXIO_PAGE_SELECT);
 	}
 
-	//soft reset
-	phy_write(phydev, MAXIO_PAGE_SELECT, 0x0);
-	phy_write(phydev, MII_BMCR, BMCR_RESET | phy_read(phydev, MII_BMCR));
+	ret = genphy_soft_reset(phydev);
+	if (ret < 0)
+		return ret;
 
 	//get workmode
 	phy_write(phydev, MAXIO_PAGE_SELECT, 0xa43);
@@ -151,8 +152,10 @@ static int maxio_mae0621a_config_init(struct phy_device *phydev)
 	}
 delay_skip:
 
-	phy_write(phydev, MII_BMCR, BMCR_RESET | phy_read(phydev, MII_BMCR));
-	msleep(1);
+	ret = genphy_soft_reset(phydev);
+	if (ret < 0)
+		return ret;
+
 	phy_write(phydev, MAXIO_PAGE_SELECT, 0x0);
 
 	return 0;
@@ -162,12 +165,10 @@ delay_skip:
 static int maxio_mae0621a_resume(struct phy_device *phydev)
 {
 	int ret = genphy_resume(phydev);
+	if (ret < 0)
+		return ret;
 
-	ret |= phy_write(phydev, MII_BMCR, BMCR_RESET | phy_read(phydev, MII_BMCR));
-
-	msleep(20);
-
-	return ret;
+	return genphy_soft_reset(phydev);
 }
 
 static int maxio_mae0621a_suspend(struct phy_device *phydev)
