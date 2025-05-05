@@ -26,7 +26,7 @@
 #define MAXIO_MAE0621A_WORK_STATUS_REG   0x1d
 
 
-int maxio_read_paged(struct phy_device *phydev, int page, u32 regnum)
+static int maxio_read_paged(struct phy_device *phydev, int page, u32 regnum)
 {
 	int ret = 0, oldpage;
 
@@ -40,7 +40,7 @@ int maxio_read_paged(struct phy_device *phydev, int page, u32 regnum)
 	return ret;
 }
 
-int maxio_write_paged(struct phy_device *phydev, int page, u32 regnum, u16 val)
+static int maxio_write_paged(struct phy_device *phydev, int page, u32 regnum, u16 val)
 {
 	int ret = 0, oldpage;
 
@@ -214,7 +214,7 @@ static int maxio_mae0621a_resume(struct phy_device *phydev)
 	return ret;
 }
 
-int maxio_mae0621a_suspend(struct phy_device *phydev)
+static int maxio_mae0621a_suspend(struct phy_device *phydev)
 {
 	genphy_suspend(phydev);
 	phy_write(phydev, MAXIO_PAGE_SELECT ,0);
