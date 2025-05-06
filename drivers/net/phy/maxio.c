@@ -99,7 +99,7 @@ static int maxio_mae0621a_config_init(struct phy_device *phydev)
 
 	ret = phy_read_paged(phydev, 0xd96, 0x0);
 	if (ret < 0) {
-		phydev_err(phydev, "Failed to update the TX delay register\n");
+		phydev_err(phydev, "Failed to read RGMII delay register\n");
 		return ret;
 	}
 
@@ -107,7 +107,7 @@ static int maxio_mae0621a_config_init(struct phy_device *phydev)
 
 	ret = phy_write_paged(phydev, 0xd96, 0x0, val | ret);
 	if (ret < 0) {
-		phydev_err(phydev, "Failed to update the TX delay register\n");
+		phydev_err(phydev, "Failed to write RGMII delay register\n");
 		return ret;
 	}
 
