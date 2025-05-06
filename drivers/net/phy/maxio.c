@@ -34,7 +34,7 @@ static int maxio_write_page(struct phy_device *phydev, int page)
 
 static int maxio_mae0621a_clk_init(struct phy_device *phydev)
 {
-	u32 workmode, clkmode;
+	int workmode, clkmode;
 	int ret;
 
 	ret = genphy_soft_reset(phydev);
