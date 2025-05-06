@@ -256,6 +256,11 @@ config MARVELL_88X2222_PHY
 	  Support for the Marvell 88X2222 Dual-port Multi-speed Ethernet
 	  Transceiver.
 
+config MAXIO_PHY
+        tristate "Maxio MAE0621A PHY"
+        help
+          Supports the Maxio MAExxxx PHY.
+
 config MAXLINEAR_GPHY
 	tristate "Maxlinear Ethernet PHYs"
 	select POLYNOMIAL if HWMON
@@ -359,11 +364,6 @@ config ROCKCHIP_PHY
 	tristate "Rockchip Ethernet PHYs"
 	help
 	  Currently supports the integrated Ethernet PHY.
-
-config MAXIO_PHY
-        tristate "Maxio PHYs"
-        help
-          Supports the Maxio MAExxxx PHY.
 
 config SMSC_PHY
 	tristate "SMSC PHYs"
