@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0+
 /*
- * drivers/net/phy/maxio.c
- *
  * Driver for maxio PHYs
  *
  * Author: zhao yang <yang_zhao@maxio-tech.com>
