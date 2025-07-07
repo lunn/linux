@@ -602,8 +602,7 @@ static int netdev_trig_notify(struct notifier_block *nb,
 		return NOTIFY_DONE;
 
 	if (!(dev == trigger_data->net_dev ||
-	      (evt == NETDEV_CHANGENAME && !strcmp(dev->name, trigger_data->device_name)) ||
-	      (evt == NETDEV_REGISTER && !strcmp(dev->name, trigger_data->device_name))))
+	      (evt == NETDEV_CHANGENAME && !strcmp(dev->name, trigger_data->device_name))))
 		return NOTIFY_DONE;
 
 	cancel_delayed_work_sync(&trigger_data->work);
@@ -614,8 +613,18 @@ static int netdev_trig_notify(struct notifier_block *nb,
 	trigger_data->link_speed = SPEED_UNKNOWN;
 	trigger_data->duplex = DUPLEX_UNKNOWN;
 	switch (evt) {
-	case NETDEV_CHANGENAME:
 	case NETDEV_REGISTER:
+		/* A new interface has popped into existence */
+		if (trigger_data->net_dev)
+			break;
+		if (!strcmp(dev->name, trigger_data->device_name) &&
+		    trigger_data->ns == dev_net(dev)) {
+			dev_hold(dev);
+			trigger_data->net_dev = dev;
+			get_device_state(trigger_data);
+		}
+		break;
+	case NETDEV_CHANGENAME:
 		dev_put(trigger_data->net_dev);
 		dev_hold(dev);
 		trigger_data->net_dev = dev;
