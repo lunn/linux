@@ -62,6 +62,7 @@ struct led_netdev_data {
 
 	struct led_classdev *led_cdev;
 	struct net_device *net_dev;
+	struct net_device *last_net_dev;
 	struct net *ns;
 
 	char device_name[IFNAMSIZ];
@@ -300,6 +301,8 @@ static int set_device_name(struct led_netdev_data *trigger_data,
 		trigger_data->ns = ns;
 		trigger_data->net_dev =
 		    dev_get_by_name(ns, trigger_data->device_name);
+	} else {
+		trigger_data->last_net_dev = NULL;
 	}
 
 	trigger_data->carrier_link_up = false;
@@ -633,10 +636,32 @@ static int netdev_trig_notify(struct notifier_block *nb,
 			trigger_data->net_dev = dev;
 			get_device_state(trigger_data);
 		}
+		if (trigger_data->last_net_dev == dev) {
+			/* Device has unregistered and reregistered in
+			 * a new netns. Reassociate it to the
+			 * trigger
+			 */
+			struct net *ns = dev_net(dev);
+
+			if (trigger_data->ns)
+				put_net(trigger_data->ns);
+			get_net(ns);
+			trigger_data->ns = ns;
+
+			strscpy(trigger_data->device_name, dev->name,
+				sizeof(trigger_data->device_name));
+			trigger_data->last_net_dev = NULL;
+			dev_hold(dev);
+			trigger_data->net_dev = dev;
+			get_device_state(trigger_data);
+		}
 		break;
 	case NETDEV_UNREGISTER:
-		dev_put(trigger_data->net_dev);
-		trigger_data->net_dev = NULL;
+		if (trigger_data->net_dev == dev) {
+			dev_put(trigger_data->net_dev);
+			trigger_data->last_net_dev = dev;
+			trigger_data->net_dev = NULL;
+		}
 		break;
 	case NETDEV_UP:
 		trigger_data->hw_control = can_hw_control(trigger_data);
