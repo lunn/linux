@@ -601,10 +601,6 @@ static int netdev_trig_notify(struct notifier_block *nb,
 	    && evt != NETDEV_CHANGENAME)
 		return NOTIFY_DONE;
 
-	if (!(dev == trigger_data->net_dev ||
-	      (evt == NETDEV_CHANGENAME && !strcmp(dev->name, trigger_data->device_name))))
-		return NOTIFY_DONE;
-
 	cancel_delayed_work_sync(&trigger_data->work);
 
 	mutex_lock(&trigger_data->lock);
@@ -613,6 +609,20 @@ static int netdev_trig_notify(struct notifier_block *nb,
 	trigger_data->link_speed = SPEED_UNKNOWN;
 	trigger_data->duplex = DUPLEX_UNKNOWN;
 	switch (evt) {
+	case NETDEV_CHANGENAME:
+		/* An interface has changed name. */
+		if (trigger_data->net_dev == dev) {
+			/* This netdev is associated to the trigger. So update
+			 * the name in the trigger
+			 */
+			strscpy(trigger_data->device_name, dev->name,
+				sizeof(trigger_data->device_name));
+			break;
+		}
+		/* Handle the case that the new name matches the name
+		 * associated with the trigger by falling through.
+		 */
+		fallthrough;
 	case NETDEV_REGISTER:
 		/* A new interface has popped into existence */
 		if (trigger_data->net_dev)
@@ -623,13 +633,6 @@ static int netdev_trig_notify(struct notifier_block *nb,
 			trigger_data->net_dev = dev;
 			get_device_state(trigger_data);
 		}
-		break;
-	case NETDEV_CHANGENAME:
-		dev_put(trigger_data->net_dev);
-		dev_hold(dev);
-		trigger_data->net_dev = dev;
-		if (evt == NETDEV_CHANGENAME)
-			get_device_state(trigger_data);
 		break;
 	case NETDEV_UNREGISTER:
 		dev_put(trigger_data->net_dev);
