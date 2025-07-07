@@ -62,6 +62,7 @@ struct led_netdev_data {
 
 	struct led_classdev *led_cdev;
 	struct net_device *net_dev;
+	struct net *ns;
 
 	char device_name[IFNAMSIZ];
 	atomic_t interval;
@@ -264,6 +265,8 @@ static ssize_t device_name_show(struct device *dev,
 static int set_device_name(struct led_netdev_data *trigger_data,
 			   const char *name, size_t size)
 {
+	struct net *ns = current->nsproxy->net_ns;
+
 	if (size >= IFNAMSIZ)
 		return -EINVAL;
 
@@ -282,13 +285,22 @@ static int set_device_name(struct led_netdev_data *trigger_data,
 	}
 
 	memcpy(trigger_data->device_name, name, size);
+
+	if (trigger_data->ns) {
+		put_net(trigger_data->ns);
+		trigger_data->ns = NULL;
+	}
+
 	trigger_data->device_name[size] = 0;
 	if (size > 0 && trigger_data->device_name[size - 1] == '\n')
 		trigger_data->device_name[size - 1] = 0;
 
-	if (trigger_data->device_name[0] != 0)
+	if (trigger_data->device_name[0] != 0) {
+		get_net(ns);
+		trigger_data->ns = ns;
 		trigger_data->net_dev =
-		    dev_get_by_name(&init_net, trigger_data->device_name);
+		    dev_get_by_name(ns, trigger_data->device_name);
+	}
 
 	trigger_data->carrier_link_up = false;
 	trigger_data->link_speed = SPEED_UNKNOWN;
