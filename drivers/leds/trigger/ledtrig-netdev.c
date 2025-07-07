@@ -264,10 +264,8 @@ static ssize_t device_name_show(struct device *dev,
 }
 
 static int set_device_name(struct led_netdev_data *trigger_data,
-			   const char *name, size_t size)
+			   const char *name, size_t size, struct net *ns)
 {
-	struct net *ns = current->nsproxy->net_ns;
-
 	if (size >= IFNAMSIZ)
 		return -EINVAL;
 
@@ -328,9 +326,11 @@ static ssize_t device_name_store(struct device *dev,
 				 size_t size)
 {
 	struct led_netdev_data *trigger_data = led_trigger_get_drvdata(dev);
+	struct net *ns = current->nsproxy->net_ns;
+
 	int ret;
 
-	ret = set_device_name(trigger_data, buf, size);
+	ret = set_device_name(trigger_data, buf, size, ns);
 
 	if (ret < 0)
 		return ret;
@@ -775,10 +775,12 @@ static int netdev_trig_activate(struct led_classdev *led_cdev)
 	if (supports_hw_control(led_cdev)) {
 		dev = led_cdev->hw_control_get_device(led_cdev);
 		if (dev) {
+			struct net_device *ndev = to_net_dev(dev);
 			const char *name = dev_name(dev);
+			struct net *ns = dev_net(ndev);
 
 			trigger_data->hw_control = true;
-			set_device_name(trigger_data, name, strlen(name));
+			set_device_name(trigger_data, name, strlen(name), ns);
 
 			rc = led_cdev->hw_control_get(led_cdev, &mode);
 			if (!rc)
